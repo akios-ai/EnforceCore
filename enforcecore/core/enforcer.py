@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
 
     from enforcecore.auditor.engine import Auditor
+    from enforcecore.guard.engine import ResourceGuard
 
 logger = structlog.get_logger("enforcecore.enforcer")
 
@@ -67,12 +68,13 @@ class Enforcer:
         result = await enforcer.enforce_async(my_tool, "arg1", key="val")
     """
 
-    __slots__ = ("_auditor", "_engine", "_redactor")
+    __slots__ = ("_auditor", "_engine", "_guard", "_redactor")
 
     def __init__(self, policy: Policy) -> None:
         self._engine = PolicyEngine(policy)
         self._redactor = self._build_redactor(policy)
         self._auditor = self._build_auditor()
+        self._guard = self._build_guard()
 
     @classmethod
     def from_file(cls, path: str | Path) -> Enforcer:
@@ -86,6 +88,33 @@ class Enforcer:
     @property
     def policy_name(self) -> str:
         return self._engine.policy.name
+
+    @property
+    def guard(self) -> ResourceGuard:
+        """The resource guard for this enforcer."""
+        return self._guard
+
+    def record_cost(self, cost_usd: float) -> float:
+        """Record a cost for the current enforcer scope.
+
+        Call this after each enforced call to track cumulative cost
+        against the configured budget.
+
+        Args:
+            cost_usd: The cost in USD for the call that just completed.
+
+        Returns:
+            The new cumulative total cost.
+        """
+        return self._guard.cost_tracker.record(cost_usd)
+
+    @staticmethod
+    def _build_guard() -> ResourceGuard:
+        """Create a ResourceGuard with cost budget from global settings."""
+        from enforcecore.guard.engine import CostTracker
+        from enforcecore.guard.engine import ResourceGuard as _Guard
+
+        return _Guard(cost_tracker=CostTracker(budget_usd=settings.cost_budget_usd))
 
     @staticmethod
     def _build_redactor(policy: Policy) -> Redactor | None:
@@ -215,9 +244,25 @@ class Enforcer:
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
 
-            # Execute
+            # Check cost budget before execution
+            limits = self._engine.policy.rules.resource_limits
+            self._guard.cost_tracker.check_budget(
+                resolved_name,
+                self.policy_name,
+                per_call_budget=limits.max_cost_usd,
+            )
+
+            # Execute with resource guards (time/memory limits)
             call_t0 = time.perf_counter()
-            result = func(*r_args, **r_kwargs)
+            result: T = self._guard.execute_sync(
+                func,
+                r_args,
+                r_kwargs,
+                max_duration_seconds=limits.max_call_duration_seconds,
+                max_memory_mb=limits.max_memory_mb,
+                tool_name=resolved_name,
+                policy_name=self.policy_name,
+            )
             call_duration = (time.perf_counter() - call_t0) * 1000
 
             # Redact outputs
@@ -304,9 +349,25 @@ class Enforcer:
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
 
-            # Execute
+            # Check cost budget before execution
+            limits = self._engine.policy.rules.resource_limits
+            self._guard.cost_tracker.check_budget(
+                resolved_name,
+                self.policy_name,
+                per_call_budget=limits.max_cost_usd,
+            )
+
+            # Execute with resource guards (time/memory limits)
             call_t0 = time.perf_counter()
-            result = await func(*r_args, **r_kwargs)
+            result = await self._guard.execute_async(
+                func,
+                r_args,
+                r_kwargs,
+                max_duration_seconds=limits.max_call_duration_seconds,
+                max_memory_mb=limits.max_memory_mb,
+                tool_name=resolved_name,
+                policy_name=self.policy_name,
+            )
             call_duration = (time.perf_counter() - call_t0) * 1000
 
             # Redact outputs

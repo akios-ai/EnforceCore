@@ -167,11 +167,12 @@ async def expensive_tool(args):
 ```
 
 ### Definition of Done:
-- [ ] Time limits work on Linux and macOS
-- [ ] Memory limits work on Linux and macOS (best-effort on Windows)
-- [ ] Cost tracking is cumulative and thread-safe
-- [ ] KillSwitch terminates calls cleanly on breach
-- [ ] Platform abstraction documented (what works where)
+- [x] Time limits work on Linux and macOS
+- [x] Memory limits work on Linux and macOS (best-effort on Windows)
+- [x] Cost tracking is cumulative and thread-safe
+- [x] KillSwitch terminates calls cleanly on breach
+- [x] Platform abstraction documented (what works where)
+- [x] 284 tests passing, 96% coverage
 
 ---
 

@@ -41,6 +41,11 @@ from enforcecore import (
     verify_trail,              # Verify integrity of a JSONL trail file
     load_trail,                # Load trail entries from a JSONL file
 
+    # Guard (v1.0.3)
+    ResourceGuard,             # Time/memory limit enforcer
+    CostTracker,               # Thread-safe cumulative cost tracker
+    KillSwitch,                # Hard termination on limit breach
+
     # Exceptions
     EnforceCoreError,          # Base exception
     EnforcementViolation,      # Policy violation (call blocked)
@@ -410,32 +415,91 @@ Any modification to the JSONL file is detected by `verify_trail()`:
 
 ---
 
-## Guard API
+## Guard API (v1.0.3)
 
 ```python
-from enforcecore.guard import Guard, ResourceLimits
+from enforcecore.guard import ResourceGuard, CostTracker, KillSwitch
 
-# Standalone usage
-guard = Guard(
-    limits=ResourceLimits(
-        max_call_duration_seconds=30,
-        max_memory_mb=256,
-    )
-)
-
-async with guard.protect() as ctx:
-    result = await long_running_tool()
-    # Automatically killed if exceeds 30s or 256MB
-
-# Cost tracking
-from enforcecore.guard import CostTracker
+# ── CostTracker — thread-safe cumulative cost tracking ──────────────
 
 tracker = CostTracker(budget_usd=10.0)
-tracker.record_cost(0.05)   # Record tool call cost
-tracker.record_cost(0.10)
-print(tracker.remaining)    # 9.85
-print(tracker.can_afford(1.0))  # True
+tracker.record(0.05)            # Record a cost, returns new total
+tracker.record(0.10)
+print(tracker.total_cost)       # 0.15
+print(tracker.budget)           # 10.0
+tracker.check_budget()          # Passes — under budget
+tracker.reset()                 # Reset to zero
+
+# Per-policy budget check
+tracker.check_budget(
+    "my_tool", "my_policy",
+    per_call_budget=5.0,        # From policy's resource_limits.max_cost_usd
+)
+
+# ── KillSwitch — coordinated hard termination ──────────────────────
+
+ks = KillSwitch()
+ks.trip("memory exceeded 256MB")
+print(ks.is_tripped)            # True
+print(ks.reason)                # "memory exceeded 256MB"
+ks.check("tool", "policy")     # Raises ResourceLimitError
+ks.reset()                      # Re-enable calls
+
+# ── ResourceGuard — time/memory limit enforcement ──────────────────
+
+guard = ResourceGuard(
+    cost_tracker=tracker,
+    kill_switch=ks,
+)
+
+# Sync execution with time limit
+result = guard.execute_sync(
+    my_func, (arg1,), {"key": "val"},
+    max_duration_seconds=30.0,
+    max_memory_mb=256,
+    tool_name="my_tool",
+)
+
+# Async execution with time limit
+result = await guard.execute_async(
+    my_async_func, (arg1,), {},
+    max_duration_seconds=30.0,
+)
+
+# Platform support info
+info = ResourceGuard.platform_info()
+# {"platform": "Darwin", "time_limits": True, "memory_limits": True, ...}
+
+# ── Enforcer integration (automatic) ───────────────────────────────
+
+from enforcecore import Enforcer, Policy
+
+policy = Policy.from_file("policy.yaml")
+enforcer = Enforcer(policy)
+
+# Access the guard
+guard = enforcer.guard
+guard.cost_tracker.total_cost   # Cumulative cost
+
+# Record cost after each call
+enforcer.record_cost(2.50)
+
+# Resource limits come from policy YAML:
+# rules:
+#   resource_limits:
+#     max_call_duration_seconds: 30
+#     max_memory_mb: 256
+#     max_cost_usd: 5.00
 ```
+
+### Platform Support
+
+| Feature | Linux | macOS | Windows |
+|---|---|---|---|
+| Time limits | ✓ | ✓ | ✓ |
+| Memory limits | ✓ (`RLIMIT_AS`) | ~ (`RLIMIT_RSS`, advisory) | ✗ |
+| Cost tracking | ✓ | ✓ | ✓ |
+| KillSwitch | ✓ | ✓ | ✓ |
 
 ---
 

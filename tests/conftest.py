@@ -77,3 +77,21 @@ def pii_redaction_policy() -> Policy:
 def pii_mask_policy() -> Policy:
     """A policy with PII redaction using mask strategy."""
     return Policy.from_file(FIXTURES_DIR / "pii_mask.yaml")
+
+
+@pytest.fixture
+def time_limit_policy() -> Policy:
+    """A policy with a 5-second call duration limit."""
+    return Policy.from_file(FIXTURES_DIR / "time_limit.yaml")
+
+
+@pytest.fixture
+def cost_limit_policy() -> Policy:
+    """A policy with a $5.00 cumulative cost budget."""
+    return Policy.from_file(FIXTURES_DIR / "cost_limit.yaml")
+
+
+@pytest.fixture
+def resource_limits_policy() -> Policy:
+    """A policy with time (10s), memory (256MB), and cost ($10) limits."""
+    return Policy.from_file(FIXTURES_DIR / "resource_limits.yaml")

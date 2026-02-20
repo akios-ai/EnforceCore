@@ -1,0 +1,13 @@
+# Cost-limited policy — cumulative cost capped at $5.00
+name: "cost-limit"
+version: "1.0"
+
+rules:
+  allowed_tools: null
+  denied_tools: []
+  pii_redaction:
+    enabled: false
+  resource_limits:
+    max_cost_usd: 5.00
+
+on_violation: "block"
