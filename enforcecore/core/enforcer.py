@@ -34,6 +34,7 @@ from enforcecore.core.types import (
     EnforceCoreError,
     EnforcementViolation,
 )
+from enforcecore.redactor.engine import Redactor
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -64,10 +65,11 @@ class Enforcer:
         result = await enforcer.enforce_async(my_tool, "arg1", key="val")
     """
 
-    __slots__ = ("_engine",)
+    __slots__ = ("_engine", "_redactor")
 
     def __init__(self, policy: Policy) -> None:
         self._engine = PolicyEngine(policy)
+        self._redactor = self._build_redactor(policy)
 
     @classmethod
     def from_file(cls, path: str | Path) -> Enforcer:
@@ -81,6 +83,54 @@ class Enforcer:
     @property
     def policy_name(self) -> str:
         return self._engine.policy.name
+
+    @staticmethod
+    def _build_redactor(policy: Policy) -> Redactor | None:
+        """Create a Redactor from the policy's PII config, if enabled."""
+        pii_cfg = policy.rules.pii_redaction
+        if not pii_cfg.enabled or not settings.redaction_enabled:
+            return None
+        return Redactor(
+            categories=pii_cfg.categories,
+            strategy=pii_cfg.strategy,
+        )
+
+    def _redact_args(
+        self,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> tuple[tuple[Any, ...], dict[str, Any], int]:
+        """Redact string args and kwargs. Returns (new_args, new_kwargs, count)."""
+        if self._redactor is None:
+            return args, kwargs, 0
+
+        total = 0
+        new_args = []
+        for a in args:
+            if isinstance(a, str):
+                res = self._redactor.redact(a)
+                new_args.append(res.text)
+                total += res.count
+            else:
+                new_args.append(a)
+
+        new_kwargs = {}
+        for k, v in kwargs.items():
+            if isinstance(v, str):
+                res = self._redactor.redact(v)
+                new_kwargs[k] = res.text
+                total += res.count
+            else:
+                new_kwargs[k] = v
+
+        return tuple(new_args), new_kwargs, total
+
+    def _redact_output(self, result: Any) -> tuple[Any, int]:
+        """Redact PII from output if it's a string."""
+        if self._redactor is None or not isinstance(result, str):
+            return result, 0
+        res = self._redactor.redact(result)
+        return res.text, res.count
 
     # -- Sync enforcement ---------------------------------------------------
 
@@ -115,10 +165,16 @@ class Enforcer:
             pre = self._engine.evaluate_pre_call(ctx)
             self._engine.raise_if_blocked(pre, ctx)
 
+            # Redact inputs
+            r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+
             # Execute
             call_t0 = time.perf_counter()
-            result = func(*args, **kwargs)
+            result = func(*r_args, **r_kwargs)
             call_duration = (time.perf_counter() - call_t0) * 1000
+
+            # Redact outputs
+            result, output_redactions = self._redact_output(result)
 
             # Post-call
             post = self._engine.evaluate_post_call(ctx, result)
@@ -132,6 +188,8 @@ class Enforcer:
                 decision="allowed",
                 overhead_ms=round(overhead, 2),
                 call_ms=round(call_duration, 2),
+                input_redactions=input_redactions,
+                output_redactions=output_redactions,
             )
 
             return result
@@ -172,10 +230,16 @@ class Enforcer:
             pre = self._engine.evaluate_pre_call(ctx)
             self._engine.raise_if_blocked(pre, ctx)
 
+            # Redact inputs
+            r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+
             # Execute
             call_t0 = time.perf_counter()
-            result = await func(*args, **kwargs)
+            result = await func(*r_args, **r_kwargs)
             call_duration = (time.perf_counter() - call_t0) * 1000
+
+            # Redact outputs
+            result, output_redactions = self._redact_output(result)
 
             # Post-call
             post = self._engine.evaluate_post_call(ctx, result)
@@ -189,6 +253,8 @@ class Enforcer:
                 decision="allowed",
                 overhead_ms=round(overhead, 2),
                 call_ms=round(call_duration, 2),
+                input_redactions=input_redactions,
+                output_redactions=output_redactions,
             )
 
             return result

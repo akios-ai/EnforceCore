@@ -39,8 +39,9 @@ from enforcecore.core.types import (
     ViolationAction,
     ViolationType,
 )
+from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
 
-__version__ = "1.0.0a1"
+__version__ = "1.0.1a1"
 
 __all__ = [
     # Exceptions
@@ -49,6 +50,7 @@ __all__ = [
     "CallContext",
     "CostLimitError",
     "Decision",
+    "DetectedEntity",
     "DomainDeniedError",
     "EnforceCoreError",
     "EnforcementResult",
@@ -63,7 +65,9 @@ __all__ = [
     "PolicyValidationError",
     "RedactionError",
     "RedactionEvent",
+    "RedactionResult",
     "RedactionStrategy",
+    "Redactor",
     "ResourceLimitError",
     # Config
     "Settings",

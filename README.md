@@ -210,7 +210,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | Release | Focus | Status |
 |---|---|---|
 | **v1.0.0** | Core Enforcer + Policy Engine | ✅ Shipped |
-| **v1.0.1** | PII Redactor | 🔨 Next |
+| **v1.0.1** | PII Redactor | ✅ Shipped |
 | v1.0.2 | Merkle Audit Trail | Planned |
 | v1.0.3 | Resource Guard + KillSwitch | Planned |
 | v1.0.4 | Framework Integrations | Planned |

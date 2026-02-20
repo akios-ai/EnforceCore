@@ -1,0 +1,16 @@
+# Policy with PII redaction using mask strategy
+name: "pii-mask"
+version: "1.0"
+
+rules:
+  allowed_tools: null
+  denied_tools: []
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+    strategy: mask
+  resource_limits: {}
+
+on_violation: "block"

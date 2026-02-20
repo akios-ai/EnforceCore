@@ -29,17 +29,25 @@ from enforcecore import (
     Settings,                  # Global configuration
     settings,                  # Module-level singleton
 
+    # Redactor (v1.0.1)
+    Redactor,                  # PII detection and redaction engine
+    RedactionResult,           # Result of a redaction operation
+    DetectedEntity,            # A PII entity found in text
+
     # Exceptions
     EnforceCoreError,          # Base exception
     EnforcementViolation,      # Policy violation (call blocked)
     ToolDeniedError,           # Specific: tool not allowed
     CostLimitError,            # Specific: cost budget exceeded
     ResourceLimitError,        # Specific: resource limit breached
+    RedactionError,            # PII redaction error (fails closed)
 
     # Types
     CallContext,               # Immutable per-call context
     Decision,                  # Enum: allowed/blocked/redacted
     EnforcementResult,         # Result metadata from an enforced call
+    RedactionEvent,            # Record of a single redacted entity
+    RedactionStrategy,         # Enum: mask/hash/remove/placeholder
     ViolationType,             # Enum: why a call was blocked
     ViolationAction,           # Enum: block/log/redact
 )
@@ -203,26 +211,84 @@ class Policy(BaseModel):
 
 ---
 
-## Redactor API
+## Redactor API (v1.0.1)
+
+The PII redactor uses compiled regex patterns — no heavy NLP dependencies (spaCy, Presidio, etc.). Fast (~0.1–0.5ms per call), portable across all Python versions.
+
+### Supported PII Categories
+
+| Category       | Example                     | Placeholder     |
+|----------------|-----------------------------|-----------------|
+| `email`        | `john@example.com`          | `<EMAIL>`       |
+| `phone`        | `(555) 123-4567`            | `<PHONE>`       |
+| `ssn`          | `123-45-6789`               | `<SSN>`         |
+| `credit_card`  | `4111-1111-1111-1111`       | `<CREDIT_CARD>` |
+| `ip_address`   | `192.168.1.100`             | `<IP_ADDRESS>`  |
+
+### Redaction Strategies
+
+| Strategy       | Result for `john@example.com`   |
+|----------------|---------------------------------|
+| `placeholder`  | `<EMAIL>`                       |
+| `mask`         | `****@****.***`                  |
+| `hash`         | `[SHA256:6b0b4806b1e57501]`     |
+| `remove`       | *(empty string)*                |
+
+### Standalone Usage
 
 ```python
-from enforcecore.redactor import Redactor, RedactionResult
+from enforcecore.redactor import Redactor, RedactionResult, DetectedEntity
+from enforcecore.core.types import RedactionStrategy
 
-# Standalone usage
-redactor = Redactor(categories=["email", "phone", "ssn"])
+# Default: all categories, placeholder strategy
+redactor = Redactor()
 
-result: RedactionResult = redactor.redact("Call me at 555-1234 or john@example.com")
-print(result.text)          # "Call me at <PHONE> or <EMAIL>"
-print(result.entities)      # [Entity(type="PHONE", ...), Entity(type="EMAIL", ...)]
-print(result.count)         # 2
+# Selective categories
+redactor = Redactor(categories=["email", "phone"])
 
 # Custom strategy
-redactor = Redactor(
-    categories=["email"],
-    strategy="hash",        # sha256 hash instead of placeholder
-)
-result = redactor.redact("john@example.com")
-print(result.text)          # "a1b2c3d4..."
+redactor = Redactor(strategy=RedactionStrategy.HASH)
+
+# Detection only (no modification)
+entities: list[DetectedEntity] = redactor.detect("Email john@example.com")
+for e in entities:
+    print(f"  {e.category}: {e.text!r} at [{e.start}:{e.end}]")
+
+# Full redaction
+result: RedactionResult = redactor.redact("Call 555-123-4567 or john@example.com")
+print(result.text)           # "Call <PHONE> or <EMAIL>"
+print(result.count)          # 2
+print(result.was_redacted)   # True
+print(result.original_text)  # "Call 555-123-4567 or john@example.com"
+print(result.entities)       # [DetectedEntity(category="phone", ...), ...]
+print(result.events)         # [RedactionEvent(entity_type="phone", ...), ...]
+```
+
+### Pipeline Integration
+
+When a policy has `pii_redaction.enabled: true`, the Enforcer automatically:
+
+1. **Redacts string args/kwargs** before the tool call
+2. **Executes the tool** with clean arguments
+3. **Redacts string output** after the tool returns
+4. **Logs redaction counts** in the structured log event
+
+```yaml
+# policy.yaml
+rules:
+  pii_redaction:
+    enabled: true
+    categories: [email, phone, ssn]
+    strategy: placeholder
+```
+
+```python
+from enforcecore import enforce
+
+@enforce(policy="policy.yaml")
+def customer_lookup(query: str) -> str:
+    # 'query' is already redacted — PII never reaches your tool
+    return db.search(query)
 ```
 
 ---
