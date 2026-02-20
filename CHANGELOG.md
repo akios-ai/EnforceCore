@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5a1] — 2025-02-20
+
+### Added
+
+#### Evaluation Suite (`enforcecore.eval`)
+- **13 adversarial scenarios** across 7 threat categories:
+  - **Tool abuse** (3) — denied tool, not-in-allowed-list, rapid-fire 100× calls
+  - **Data exfiltration** (2) — oversized output, PII leakage in output
+  - **Resource exhaustion** (2) — timeout violation, cost budget exceeded
+  - **Policy evasion** (2) — tool name spoofing, case-variant bypass
+  - **PII leakage** (1) — PII in tool input arguments
+  - **Privilege escalation** (1) — exhaustive denied-tools enumeration
+  - **Prompt injection** (2) — injection payloads in args + tool names
+
+- **Scenario runner** (`ScenarioRunner`)
+  - `run_all()` — execute all or filtered scenarios against a policy
+  - `run_quick()` — run HIGH + CRITICAL severity only
+  - `run_scenario()` — execute a single scenario
+  - `list_scenarios()` — filter by category, severity, or tags
+  - `SuiteResult` with containment rate, per-category/severity breakdowns
+
+- **Benchmark suite** (`BenchmarkRunner`)
+  - 7 component benchmarks: policy pre-call, post-call, PII redaction,
+    audit record, guard overhead, enforcer E2E, enforcer E2E with PII
+  - Statistics: mean, median, P95, P99, min, max, ops/sec
+  - `BenchmarkSuite` with platform info and timestamp
+
+- **Report generator** (`generate_report`)
+  - `generate_suite_report()` — Markdown with containment rates, emojis, tables
+  - `generate_benchmark_report()` — Markdown with performance tables
+  - `generate_report()` — combined evaluation + benchmark report
+
+- **Type system** (`enforcecore.eval.types`)
+  - `ThreatCategory` enum (7 categories)
+  - `Severity` enum (4 levels)
+  - `ScenarioOutcome` enum (CONTAINED, ESCAPED, ERROR, SKIPPED)
+  - `Scenario`, `ScenarioResult`, `SuiteResult` dataclasses
+  - `BenchmarkResult`, `BenchmarkSuite` dataclasses
+
+#### New Public Exports
+- 11 new exports: `BenchmarkResult`, `BenchmarkRunner`, `BenchmarkSuite`,
+  `Scenario`, `ScenarioOutcome`, `ScenarioResult`, `ScenarioRunner`,
+  `Severity`, `SuiteResult`, `ThreatCategory`, `generate_report`
+
+#### Testing
+- 97 new tests across 4 test files:
+  - `test_types.py` — 30 tests (enums, dataclasses, aggregation, properties)
+  - `test_scenarios.py` — 21 tests (registry, all 7 categories, metadata)
+  - `test_runner.py` — 16 tests (runner, filters, containment rates)
+  - `test_benchmarks.py` — 13 tests (measure helper, per-benchmark, full suite)
+  - `test_report.py` — 17 tests (suite report, benchmark report, combined)
+- Total: **431 tests, 96% coverage**
+
+#### Examples & Documentation
+- `examples/evaluation_suite.py` — complete demo of scenarios, benchmarks, reports
+- `docs/evaluation.md` — comprehensive evaluation suite guide
+
+### Changed
+- Version bumped from `1.0.4a1` to `1.0.5a1`
+- `enforcecore.__init__.py` updated with eval exports (51 total public exports)
+
 ## [1.0.4a1] — 2025-02-20
 
 ### Added

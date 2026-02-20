@@ -245,11 +245,11 @@ enforcecore eval --compare baseline,enforcecore --output comparison.md
 ```
 
 ### Definition of Done:
-- [ ] 5+ adversarial scenarios implemented and documented
-- [ ] Test harness runs all scenarios automatically
-- [ ] Benchmark results published in docs
-- [ ] Comparison with "no protection" baseline
-- [ ] Results are reproducible (fixed seeds, documented environment)
+- [x] 5+ adversarial scenarios implemented and documented
+- [x] Test harness runs all scenarios automatically
+- [x] Benchmark results published in docs
+- [x] Comparison with "no protection" baseline
+- [x] Results are reproducible (fixed seeds, documented environment)
 
 ---
 
