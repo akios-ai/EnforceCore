@@ -46,19 +46,34 @@ from enforcecore.core.types import (
     ViolationAction,
     ViolationType,
 )
+from enforcecore.eval import (
+    BenchmarkRunner,
+    ScenarioRunner,
+    generate_report,
+)
+from enforcecore.eval.types import (
+    BenchmarkResult,
+    BenchmarkSuite,
+    Scenario,
+    ScenarioOutcome,
+    ScenarioResult,
+    Severity,
+    SuiteResult,
+    ThreatCategory,
+)
 from enforcecore.guard.engine import CostTracker, KillSwitch, ResourceGuard
 from enforcecore.integrations._base import require_package, wrap_with_policy
 from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
 
-__version__ = "1.0.4a1"
+__version__ = "1.0.5a1"
 
 __all__ = [
-    # Auditor
     "AuditEntry",
-    # Exceptions
     "AuditError",
     "Auditor",
-    # Types
+    "BenchmarkResult",
+    "BenchmarkRunner",
+    "BenchmarkSuite",
     "CallContext",
     "CostLimitError",
     "CostTracker",
@@ -70,9 +85,7 @@ __all__ = [
     "EnforcementViolation",
     "Enforcer",
     "GuardError",
-    # Guard
     "KillSwitch",
-    # Policy
     "Policy",
     "PolicyEngine",
     "PolicyError",
@@ -85,19 +98,23 @@ __all__ = [
     "Redactor",
     "ResourceGuard",
     "ResourceLimitError",
-    # Config
+    "Scenario",
+    "ScenarioOutcome",
+    "ScenarioResult",
+    "ScenarioRunner",
     "Settings",
+    "Severity",
+    "SuiteResult",
+    "ThreatCategory",
     "ToolDeniedError",
     "VerificationResult",
     "ViolationAction",
     "ViolationType",
-    # Version
     "__version__",
-    # Primary API
     "enforce",
+    "generate_report",
     "load_policy",
     "load_trail",
-    # Integrations
     "require_package",
     "settings",
     "verify_trail",

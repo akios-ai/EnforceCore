@@ -726,3 +726,262 @@ def my_framework_tool(func, policy):
     enforced = wrap_with_policy(func, policy=policy)
     return MyFramework.register_tool(enforced)
 ```
+
+---
+
+## Evaluation API (v1.0.5)
+
+The evaluation module provides adversarial testing, benchmarking, and report generation.
+
+### Imports
+
+```python
+from enforcecore.eval import (
+    # Types
+    ThreatCategory, Severity, ScenarioOutcome,
+    Scenario, ScenarioResult, SuiteResult,
+    BenchmarkResult, BenchmarkSuite,
+    # Runners
+    ScenarioRunner, BenchmarkRunner,
+    # Helpers
+    get_all_scenarios, get_scenarios_by_category,
+    # Reports
+    generate_suite_report, generate_benchmark_report, generate_report,
+)
+```
+
+### Enums
+
+#### `ThreatCategory(StrEnum)`
+
+Categories of adversarial threats:
+
+| Value | Description |
+|---|---|
+| `tool_abuse` | Calling denied or unauthorized tools |
+| `data_exfiltration` | Exfiltrating data via oversized or PII-containing outputs |
+| `resource_exhaustion` | Timeout abuse and cost overrun attacks |
+| `policy_evasion` | Bypassing policy via naming tricks or case variants |
+| `pii_leakage` | PII appearing in inputs |
+| `privilege_escalation` | Attempting access to multiple denied tools |
+| `prompt_injection` | Injecting malicious payloads via inputs or tool names |
+
+#### `Severity(StrEnum)`
+
+| Value | Description |
+|---|---|
+| `low` | Minor policy issues |
+| `medium` | Moderate security concern |
+| `high` | Significant threat |
+| `critical` | Must be blocked |
+
+#### `ScenarioOutcome(StrEnum)`
+
+| Value | Description |
+|---|---|
+| `contained` | Attack was blocked by EnforceCore |
+| `escaped` | Attack was not caught |
+| `error` | Scenario raised an unexpected exception |
+| `skipped` | Scenario was not run |
+
+### Data Classes
+
+#### `Scenario`
+
+Frozen dataclass describing an adversarial scenario.
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `str` | Unique scenario identifier |
+| `name` | `str` | Human-readable name |
+| `description` | `str` | What the scenario tests |
+| `category` | `ThreatCategory` | Threat category |
+| `severity` | `Severity` | Severity level |
+| `tags` | `frozenset[str]` | Tags for filtering |
+
+#### `ScenarioResult`
+
+Result from running a single scenario.
+
+| Field | Type | Description |
+|---|---|---|
+| `scenario_id` | `str` | Scenario identifier |
+| `scenario_name` | `str` | Scenario name |
+| `category` | `ThreatCategory` | Threat category |
+| `severity` | `Severity` | Severity level |
+| `outcome` | `ScenarioOutcome` | Result outcome |
+| `duration_ms` | `float` | Execution time in milliseconds |
+| `details` | `str` | Human-readable detail |
+| `exception_type` | `str \| None` | Exception class name if error |
+| `exception_message` | `str \| None` | Exception message if error |
+
+**Properties:**
+- `is_contained: bool` — True if the attack was blocked
+- `is_escaped: bool` — True if the attack was not caught
+
+#### `SuiteResult`
+
+Aggregated results from running multiple scenarios.
+
+| Field | Type | Description |
+|---|---|---|
+| `results` | `list[ScenarioResult]` | All individual results |
+| `total_duration_ms` | `float` | Total execution time |
+
+**Properties:**
+- `containment_rate: float` — Fraction of scenarios that were contained
+
+**Methods:**
+- `by_category() -> dict[ThreatCategory, list[ScenarioResult]]` — Group results by category
+- `by_severity() -> dict[Severity, list[ScenarioResult]]` — Group results by severity
+
+#### `BenchmarkResult`
+
+Timing result for a single benchmark.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `str` | Benchmark name |
+| `iterations` | `int` | Number of iterations |
+| `mean_ms` | `float` | Mean execution time |
+| `median_ms` | `float` | Median execution time |
+| `p95_ms` | `float` | 95th percentile |
+| `p99_ms` | `float` | 99th percentile |
+| `min_ms` | `float` | Minimum time |
+| `max_ms` | `float` | Maximum time |
+
+**Properties:**
+- `ops_per_second: float` — Operations per second (1000 / mean_ms)
+
+#### `BenchmarkSuite`
+
+Collection of benchmark results with platform info.
+
+| Field | Type | Description |
+|---|---|---|
+| `results` | `list[BenchmarkResult]` | All benchmark results |
+| `python_version` | `str` | Python version |
+| `platform` | `str` | OS platform |
+| `cpu_count` | `int` | Number of CPUs |
+| `timestamp` | `str` | ISO 8601 timestamp |
+
+### ScenarioRunner
+
+Orchestrates adversarial scenario execution.
+
+```python
+runner = ScenarioRunner(policy)
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `policy` | `Policy` | Policy to test against |
+
+#### `run_all`
+
+```python
+result: SuiteResult = runner.run_all(
+    category=ThreatCategory.tool_abuse,  # optional filter
+    severity=Severity.high,               # optional filter
+    tags={"pii"},                         # optional filter
+)
+```
+
+Runs all scenarios matching the given filters. Filters are AND-combined.
+
+#### `run_quick`
+
+```python
+result: SuiteResult = runner.run_quick()
+```
+
+Runs only HIGH and CRITICAL severity scenarios for a quick smoke test.
+
+#### `run_scenario`
+
+```python
+result: ScenarioResult = runner.run_scenario(scenario)
+```
+
+Runs a single `Scenario` object.
+
+#### `list_scenarios` (static)
+
+```python
+scenarios: list[Scenario] = ScenarioRunner.list_scenarios(
+    category=ThreatCategory.prompt_injection,
+    severity=Severity.critical,
+    tags={"sql"},
+)
+```
+
+Returns scenarios matching filters without executing them.
+
+### BenchmarkRunner
+
+Measures per-component performance.
+
+```python
+bench = BenchmarkRunner()
+suite: BenchmarkSuite = bench.run_all(iterations=1000)
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `iterations` | `int` | `1000` | Number of iterations per benchmark |
+
+**Built-in benchmarks:**
+
+| Name | What it measures |
+|---|---|
+| `policy_pre_call` | Pre-call policy enforcement |
+| `policy_post_call` | Post-call policy enforcement |
+| `pii_redaction` | PII redaction pipeline |
+| `audit_record` | Audit record creation |
+| `guard_overhead` | Resource guard overhead |
+| `enforcer_e2e` | Full enforcer end-to-end |
+| `enforcer_e2e_with_pii` | Full enforcer with PII redaction |
+
+### Report Generation
+
+#### `generate_suite_report`
+
+```python
+markdown: str = generate_suite_report(suite_result)
+```
+
+Generates a Markdown report for adversarial scenario results including summary, per-category breakdown, and detailed results table.
+
+#### `generate_benchmark_report`
+
+```python
+markdown: str = generate_benchmark_report(benchmark_suite)
+```
+
+Generates a Markdown report for benchmark results including platform info and performance stats.
+
+#### `generate_report`
+
+```python
+markdown: str = generate_report(suite_result, benchmark_suite)
+```
+
+Generates a combined Markdown report with both scenario and benchmark sections.
+
+### Helper Functions
+
+#### `get_all_scenarios`
+
+```python
+scenarios: list[Scenario] = get_all_scenarios()
+```
+
+Returns all 13 registered adversarial scenarios.
+
+#### `get_scenarios_by_category`
+
+```python
+scenarios: list[Scenario] = get_scenarios_by_category(ThreatCategory.tool_abuse)
+```
+
+Returns scenarios for a specific threat category.

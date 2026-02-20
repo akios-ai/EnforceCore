@@ -12,6 +12,7 @@ This directory contains working examples demonstrating how to use EnforceCore wi
 | `langgraph_example.py` | Enforce tools in a LangGraph agent | enforcecore, langgraph |
 | `crewai_example.py` | Enforce tools in a CrewAI agent | enforcecore, crewai |
 | `autogen_example.py` | Enforce tools in an AutoGen agent | enforcecore, autogen |
+| `evaluation_suite.py` | Adversarial scenarios, benchmarks, and report generation | enforcecore |
 
 ## Example Policies
 
