@@ -17,12 +17,17 @@
 ```python
 from enforcecore import (
     # Primary API
-    enforce,                    # Decorator + context manager
-    EnforceCore,               # Main class for programmatic configuration
+    enforce,                    # Decorator (sync + async)
+    Enforcer,                  # Main class for programmatic control
 
     # Policy
     Policy,                    # Policy model
+    PolicyEngine,              # Rule evaluation engine
     load_policy,               # Load policy from YAML file
+
+    # Config
+    Settings,                  # Global configuration
+    settings,                  # Module-level singleton
 
     # Exceptions
     EnforceCoreError,          # Base exception
@@ -32,8 +37,11 @@ from enforcecore import (
     ResourceLimitError,        # Specific: resource limit breached
 
     # Types
+    CallContext,               # Immutable per-call context
+    Decision,                  # Enum: allowed/blocked/redacted
     EnforcementResult,         # Result metadata from an enforced call
-    AuditEntry,                # Single audit trail entry
+    ViolationType,             # Enum: why a call was blocked
+    ViolationAction,           # Enum: block/log/redact
 )
 ```
 
@@ -97,36 +105,35 @@ async def run_agent_tool(tool_name: str, args: dict) -> dict:
     return result
 ```
 
-### 3. `EnforceCore` Class
+### 3. `Enforcer` Class
 
-For programmatic configuration when you need full control.
+For programmatic control when you need more than the decorator.
 
 ```python
-from enforcecore import EnforceCore, Policy
+from enforcecore import Enforcer, Policy
 
-# Create an instance with custom configuration
-ec = EnforceCore(
-    policy=Policy.from_file("policy.yaml"),
-    redaction_enabled=True,
-    audit_path="./audit_logs/",
-    cost_budget_usd=10.0,
-)
+# Create from a policy
+enforcer = Enforcer(Policy.from_file("policy.yaml"))
 
-# Use it to enforce calls
-result = await ec.enforce_call(
-    tool_name="search_web",
-    args={"query": "latest news"},
-    callable=search_web_fn,
-)
+# Or from a file directly
+enforcer = Enforcer.from_file("policy.yaml")
 
-# Access enforcement metadata
-print(result.decision)       # "allowed" | "blocked" | "redacted"
-print(result.overhead_ms)    # 12.3
-print(result.redactions)     # [RedactionEvent(...), ...]
-print(result.audit_entry)    # AuditEntry(...)
+# Sync enforcement
+result = enforcer.enforce_sync(search_fn, "query", tool_name="search_web")
 
-# Check cost budget
-print(ec.remaining_budget)   # 7.50
+# Async enforcement
+result = await enforcer.enforce_async(search_fn, "query", tool_name="search_web")
+
+# Context managers (pre-call check only)
+with enforcer.guard_sync("search_web") as ctx:
+    result = do_search(query)
+
+async with enforcer.guard_async("search_web") as ctx:
+    result = await do_search(query)
+
+# Properties
+print(enforcer.policy_name)  # "my-policy"
+print(enforcer.policy)       # Policy instance
 ```
 
 ---
