@@ -34,6 +34,13 @@ from enforcecore import (
     RedactionResult,           # Result of a redaction operation
     DetectedEntity,            # A PII entity found in text
 
+    # Auditor (v1.0.2)
+    Auditor,                   # Merkle-chained audit trail writer
+    AuditEntry,                # Single audit entry with SHA-256 hash
+    VerificationResult,        # Result of trail verification
+    verify_trail,              # Verify integrity of a JSONL trail file
+    load_trail,                # Load trail entries from a JSONL file
+
     # Exceptions
     EnforceCoreError,          # Base exception
     EnforcementViolation,      # Policy violation (call blocked)
@@ -293,31 +300,113 @@ def customer_lookup(query: str) -> str:
 
 ---
 
-## Auditor API
+## Auditor API (v1.0.2)
+
+The Merkle-chained auditor records every enforcement decision in a tamper-proof, cryptographically verifiable JSONL trail. Each entry is linked to the previous via SHA-256 hashes — any modification, deletion, or reordering is detectable.
+
+### AuditEntry Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `entry_id` | `str` | UUID v4, auto-generated |
+| `call_id` | `str` | UUID of the enforcement call |
+| `timestamp` | `str` | ISO 8601 UTC timestamp |
+| `tool_name` | `str` | Name of the tool that was called |
+| `policy_name` | `str` | Policy applied |
+| `policy_version` | `str` | Policy version |
+| `decision` | `str` | `"allowed"` or `"blocked"` |
+| `violation_type` | `str \| None` | Error class name (if blocked) |
+| `violation_reason` | `str \| None` | Human-readable reason (if blocked) |
+| `overhead_ms` | `float` | Enforcement overhead in ms |
+| `call_duration_ms` | `float` | Tool execution time in ms |
+| `input_redactions` | `int` | PII entities redacted from inputs |
+| `output_redactions` | `int` | PII entities redacted from outputs |
+| `previous_hash` | `str` | SHA-256 hash of the preceding entry |
+| `entry_hash` | `str` | SHA-256 hash of this entry (Merkle link) |
+
+### Standalone Usage
 
 ```python
-from enforcecore.auditor import Auditor, verify_trail
+from enforcecore import Auditor, AuditEntry, verify_trail, load_trail
 
-# Standalone usage
+# Create an auditor — writes to a JSONL file
 auditor = Auditor(output_path="audit.jsonl")
 
-entry = auditor.record(
+# Record entries (Merkle-chained automatically)
+e1 = auditor.record(
     tool_name="search_web",
-    args_hash="sha256:abc...",
-    result_hash="sha256:def...",
     policy_name="default",
     decision="allowed",
-    overhead_ms=12.3,
+    overhead_ms=1.2,
 )
-print(entry.merkle_hash)    # "sha256:ghi..."
+e2 = auditor.record(
+    tool_name="delete_file",
+    policy_name="default",
+    decision="blocked",
+    violation_type="ToolDeniedError",
+    violation_reason="Tool not in allowed list",
+)
+print(e2.previous_hash == e1.entry_hash)  # True — chain is linked
 
 # Verify trail integrity
 result = verify_trail("audit.jsonl")
-print(result.is_valid)           # True
-print(result.total_entries)      # 42
-print(result.chain_intact)       # True
-print(result.root_hash)          # "sha256:xyz..."
+print(result.is_valid)        # True
+print(result.total_entries)   # 2
+print(result.chain_intact)    # True
+print(result.root_hash)       # SHA-256 of the first entry
+print(result.head_hash)       # SHA-256 of the last entry
+print(result.error_count)     # 0
+
+# Load entries for analysis
+trail: list[AuditEntry] = load_trail("audit.jsonl")
+for entry in trail:
+    print(f"{entry.tool_name} → {entry.decision}")
 ```
+
+### Pipeline Integration
+
+When `settings.audit_enabled` is `True` (the default), the Enforcer automatically records an audit entry for every enforced call — both allowed and blocked:
+
+```python
+from enforcecore import Enforcer, Policy
+
+enforcer = Enforcer(Policy.from_file("policy.yaml"))
+result = enforcer.enforce_sync(my_tool, "arg", tool_name="my_tool")
+# → Audit entry written automatically to settings.audit_path / "trail.jsonl"
+```
+
+Configure via environment variables:
+```bash
+ENFORCECORE_AUDIT_ENABLED=true
+ENFORCECORE_AUDIT_PATH=./audit_logs/
+```
+
+### Cross-Session Continuity
+
+The Auditor resumes the Merkle chain from an existing trail file. Multiple processes or sessions can append to the same trail without breaking the chain:
+
+```python
+# Session 1
+a1 = Auditor(output_path="trail.jsonl")
+a1.record(tool_name="tool_a", policy_name="p")
+a1.record(tool_name="tool_b", policy_name="p")
+
+# Session 2 — chain resumes automatically
+a2 = Auditor(output_path="trail.jsonl")
+a2.record(tool_name="tool_c", policy_name="p")
+
+result = verify_trail("trail.jsonl")
+assert result.is_valid  # True — chain intact across sessions
+```
+
+### Tamper Detection
+
+Any modification to the JSONL file is detected by `verify_trail()`:
+
+- **Modified entry** → hash mismatch (computed ≠ stored)
+- **Deleted entry** → chain break (previous_hash doesn't match)
+- **Inserted entry** → chain break (next entry's previous_hash wrong)
+- **Reordered entries** → chain break (previous_hash sequence invalid)
 
 ---
 

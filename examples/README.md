@@ -7,6 +7,8 @@ This directory contains working examples demonstrating how to use EnforceCore wi
 | File | Description | Requires |
 |---|---|---|
 | `quickstart.py` | Minimal example — enforce a single tool call | enforcecore |
+| `pii_redaction.py` | PII detection, redaction strategies, pipeline integration | enforcecore |
+| `audit_trail.py` | Merkle-chained audit trail — verification & tamper detection | enforcecore |
 | `langgraph_example.py` | Enforce tools in a LangGraph agent | enforcecore, langgraph |
 | `crewai_example.py` | Enforce tools in a CrewAI agent | enforcecore, crewai |
 | `autogen_example.py` | Enforce tools in an AutoGen agent | enforcecore, autogen |

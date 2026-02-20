@@ -3,12 +3,32 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
+from enforcecore.core.config import settings
 from enforcecore.core.policy import Policy
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def _disable_audit_globally(tmp_path: Path) -> Iterator[None]:
+    """Disable audit by default so tests don't write trail files.
+
+    Audit integration tests explicitly re-enable it.
+    """
+    original_enabled = settings.audit_enabled
+    original_path = settings.audit_path
+    settings.audit_enabled = False
+    settings.audit_path = tmp_path / "audit_logs"
+    yield
+    settings.audit_enabled = original_enabled
+    settings.audit_path = original_path
 
 
 @pytest.fixture

@@ -15,6 +15,13 @@ Basic usage::
 See https://github.com/akios-ai/EnforceCore for documentation.
 """
 
+from enforcecore.auditor.engine import (
+    AuditEntry,
+    Auditor,
+    VerificationResult,
+    load_trail,
+    verify_trail,
+)
 from enforcecore.core.config import Settings, settings
 from enforcecore.core.enforcer import Enforcer, enforce
 from enforcecore.core.policy import Policy, PolicyEngine, load_policy
@@ -41,11 +48,14 @@ from enforcecore.core.types import (
 )
 from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
 
-__version__ = "1.0.1a1"
+__version__ = "1.0.2a1"
 
 __all__ = [
+    # Auditor
+    "AuditEntry",
     # Exceptions
     "AuditError",
+    "Auditor",
     # Types
     "CallContext",
     "CostLimitError",
@@ -72,6 +82,7 @@ __all__ = [
     # Config
     "Settings",
     "ToolDeniedError",
+    "VerificationResult",
     "ViolationAction",
     "ViolationType",
     # Version
@@ -79,5 +90,7 @@ __all__ = [
     # Primary API
     "enforce",
     "load_policy",
+    "load_trail",
     "settings",
+    "verify_trail",
 ]
