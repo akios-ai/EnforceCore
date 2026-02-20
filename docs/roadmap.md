@@ -45,11 +45,11 @@ async def search_web(query: str) -> str:
 ```
 
 ### Definition of Done:
-- [ ] `PolicyEngine` loads and validates YAML policies
-- [ ] `@enforce()` intercepts sync and async calls
-- [ ] Allowed calls pass through, denied calls raise `EnforcementViolation`
-- [ ] 90%+ test coverage on core module
-- [ ] README with quickstart guide
+- [x] `PolicyEngine` loads and validates YAML policies
+- [x] `@enforce()` intercepts sync and async calls
+- [x] Allowed calls pass through, denied calls raise `EnforcementViolation`
+- [x] 97% test coverage on core module (94 tests)
+- [x] README with quickstart guide
 - [ ] Published to PyPI as `enforcecore==1.0.0`
 
 ---

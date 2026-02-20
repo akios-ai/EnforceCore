@@ -1,38 +1,97 @@
-# EnforceCore
+<p align="center">
+  <img src="logo-enforcecore.svg" alt="EnforceCore" width="280" />
+</p>
 
-**The runtime enforcement layer for agentic AI systems.**
+<h1 align="center">EnforceCore</h1>
 
-EnforceCore provides mandatory, policy-driven enforcement at every external call boundary — tool calls, API calls, file access, network access — so that policy violations become structurally impossible, not just discouraged.
+<p align="center">
+  <strong>The runtime enforcement layer for agentic AI systems.</strong><br />
+  Policy-driven · Fail-closed · Tamper-proof audit trails
+</p>
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+<p align="center">
+  <a href="https://github.com/akios-ai/EnforceCore/actions"><img src="https://img.shields.io/github/actions/workflow/status/akios-ai/EnforceCore/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
+  <a href="https://pypi.org/project/enforcecore/"><img src="https://img.shields.io/pypi/v/enforcecore?style=flat-square&color=00B4D9" alt="PyPI" /></a>
+  <a href="https://pypi.org/project/enforcecore/"><img src="https://img.shields.io/pypi/pyversions/enforcecore?style=flat-square" alt="Python" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
+  <a href="https://codecov.io/gh/akios-ai/EnforceCore"><img src="https://img.shields.io/codecov/c/github/akios-ai/EnforceCore?style=flat-square&color=00B4D9" alt="Coverage" /></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="docs/architecture.md">Architecture</a> ·
+  <a href="docs/roadmap.md">Roadmap</a> ·
+  <a href="docs/api-design.md">API Reference</a> ·
+  <a href="docs/contributing.md">Contributing</a>
+</p>
 
 ---
 
-## Why EnforceCore?
+## The Problem
 
-Most agent safety solutions operate at the **prompt level** — they ask the LLM to be safe. This can be bypassed, jailbroken, or simply ignored.
+Most agent safety solutions operate at the **prompt level** — they *ask* the LLM to be safe. This is fundamentally broken: prompts can be bypassed, jailbroken, or ignored.
 
-EnforceCore operates at the **runtime boundary** — the moment before a tool or API is actually called. At this layer, enforcement is mandatory, not advisory. If a call violates policy, it doesn't execute. Period.
+**EnforceCore operates at the runtime boundary** — the moment before a tool or API is actually called. At this layer, enforcement is **mandatory**, not advisory. If a call violates policy, it never executes. Period.
 
 ```python
 from enforcecore import enforce
 
 @enforce(policy="policies/strict.yaml")
 async def search_web(query: str) -> str:
-    """This call is now policy-enforced, PII-redacted, and audit-logged."""
+    """This call is policy-enforced before execution."""
     return await api.search(query)
 ```
 
-## What It Does
+## Why EnforceCore?
 
-| Component | Purpose |
-|---|---|
-| **Policy Engine** | Declarative YAML policies — define what's allowed, denied, and how violations are handled |
-| **Enforcer** | Intercepts every external call and enforces policies before execution |
-| **Redactor** | Real-time PII detection and redaction on inputs and outputs |
-| **Auditor** | Tamper-proof Merkle-tree audit trail for every enforced call |
-| **Guard** | Resource limits (time, memory, cost) with hard kill switch |
+| | Prompt Guardrails | EnforceCore |
+|---|---|---|
+| **Layer** | Inside the LLM | Runtime call boundary |
+| **Bypassable?** | Yes (jailbreaks, prompt injection) | No (code-level enforcement) |
+| **Auditable?** | No | Yes (Merkle-chained trails) |
+| **Provable?** | No | Yes (structurally impossible violations) |
+| **EU AI Act ready?** | ❌ | ✅ |
+
+---
+
+## Architecture
+
+```
+        Agent (LangGraph / CrewAI / AutoGen / Python)
+                          │
+                    tool_call(args)
+                          │
+              ┌───────────▼───────────┐
+              │   @enforce(policy=…)   │
+              └───────────┬───────────┘
+                          │
+              ┌───────────▼───────────┐
+              │       Enforcer         │
+              │                        │
+              │  ┌─────┐ ┌─────────┐  │
+              │  │Policy│ │Redactor │  │
+              │  │Engine│ │ (PII)   │  │
+              │  └──┬──┘ └────┬────┘  │
+              │     │         │        │
+              │  ┌──▼──┐ ┌───▼─────┐  │
+              │  │Audit │ │ Guard   │  │
+              │  │Trail │ │(Limits) │  │
+              │  └──────┘ └─────────┘  │
+              └───────────┬───────────┘
+                          │
+                   ✅ allowed → execute
+                   ❌ blocked → raise
+```
+
+<table>
+<tr><td><strong>Policy Engine</strong></td><td>Declarative YAML policies — allowed tools, denied tools, violation handling</td></tr>
+<tr><td><strong>Enforcer</strong></td><td>Intercepts every call, evaluates policy, blocks or allows</td></tr>
+<tr><td><strong>Redactor</strong></td><td>Real-time PII detection and redaction on inputs &amp; outputs</td></tr>
+<tr><td><strong>Auditor</strong></td><td>Tamper-proof Merkle-tree audit trail for every enforced call</td></tr>
+<tr><td><strong>Guard</strong></td><td>Resource limits (time, memory, cost) with hard kill switch</td></tr>
+</table>
+
+---
 
 ## Quick Start
 
@@ -42,123 +101,171 @@ async def search_web(query: str) -> str:
 pip install enforcecore
 ```
 
-### Define a Policy
+### 1. Define a Policy
 
 ```yaml
-# policies/my_policy.yaml
+# policy.yaml
 name: "my-agent-policy"
 version: "1.0"
 
 rules:
   allowed_tools:
     - "search_web"
-    - "read_file"
     - "calculator"
-
-  pii_redaction:
-    enabled: true
-    categories: [email, phone, ssn, credit_card]
-
-  resource_limits:
-    max_call_duration_seconds: 30
-    max_cost_usd: 5.00
+    - "get_weather"
+  denied_tools:
+    - "execute_shell"
+  max_output_size_bytes: 524288   # 512KB
 
 on_violation: "block"
 ```
 
-### Protect a Tool Call
+### 2. Protect Your Tools
 
 ```python
 from enforcecore import enforce
 
-@enforce(policy="policies/my_policy.yaml")
+# Decorator — sync or async, just works
+@enforce(policy="policy.yaml")
 async def search_web(query: str) -> str:
-    return await external_api.search(query)
+    return await api.search(query)
 
-# ✅ Allowed tool + PII redacted from query + audit entry recorded
-result = await search_web("find info about john@example.com")
-
-# ❌ Blocked — tool not in allowed list
-@enforce(policy="policies/my_policy.yaml")
-async def send_email(to: str, body: str):
-    await smtp.send(to, body)  # Never executes
+@enforce(policy="policy.yaml")
+def calculator(expr: str) -> float:
+    return eval(expr)  # safe because policy-gated
 ```
 
-### Verify the Audit Trail
+### 3. See It Work
 
-```bash
-enforcecore verify audit.jsonl
-# ✅ Trail integrity verified: 42 entries, chain intact, root hash: sha256:abc...
+```python
+# ✅ Allowed — tool is in the allowed list
+result = await search_web("latest AI papers")
+
+# ❌ Blocked — tool not allowed, raises ToolDeniedError
+@enforce(policy="policy.yaml")
+async def execute_shell(cmd: str) -> str:
+    return subprocess.run(cmd, capture_output=True).stdout
 ```
+
+### 4. Programmatic Control
+
+```python
+from enforcecore import Enforcer, Policy
+
+policy = Policy.from_file("policy.yaml")
+enforcer = Enforcer(policy)
+
+# Direct invocation
+result = enforcer.enforce_sync(my_tool, arg1, arg2, tool_name="my_tool")
+
+# Context manager
+with enforcer.guard_sync("search_web") as ctx:
+    result = do_search(query)
+
+# Async too
+async with enforcer.guard_async("search_web") as ctx:
+    result = await do_search(query)
+```
+
+> 📖 See [examples/quickstart.py](examples/quickstart.py) for a complete runnable demo.
+
+---
 
 ## Framework Integrations
 
-EnforceCore works with any Python-based agent system:
+EnforceCore works with **any** Python-based agent system — no lock-in:
 
-- **LangGraph** — [example](examples/langgraph_example.py)
-- **CrewAI** — [example](examples/crewai_example.py)
-- **AutoGen** — [example](examples/autogen_example.py)
-- **Plain Python** — just use the `@enforce()` decorator
+| Framework | Status | Example |
+|---|---|---|
+| **Plain Python** | ✅ Available | `@enforce()` decorator |
+| **LangGraph** | 🔜 v1.0.4 | Custom tool wrapper |
+| **CrewAI** | 🔜 v1.0.4 | Decorator adapter |
+| **AutoGen** | 🔜 v1.0.4 | Function registration wrapper |
 
-## Key Design Decisions
+---
 
-- **Async-native** — supports both sync and async from day one
-- **Cross-platform** — core enforcement works on Linux, macOS, and Windows
-- **Fail closed** — if enforcement logic fails, the call is blocked (never fails open)
-- **Zero framework lock-in** — no hard dependencies on any agent framework
-- **Honest benchmarks** — real overhead numbers, not marketing claims
+## Key Design Principles
+
+- **🔒 Fail-closed** — if enforcement fails, the call is blocked. Never fails open.
+- **⚡ Async-native** — first-class support for both sync and async from day one.
+- **🌍 Cross-platform** — core works on Linux, macOS, and Windows. Advanced Linux hardening optional.
+- **📦 Zero lock-in** — no hard dependency on any agent framework.
+- **📊 Honest benchmarks** — real overhead numbers, not marketing claims.
 
 ## Performance
 
-| Component | Typical Overhead |
+| Component | Overhead |
 |---|---|
 | Policy evaluation | < 1ms |
-| PII redaction | 5-15ms |
-| Audit entry | < 1ms |
-| **Total (typical)** | **8-20ms** |
+| PII redaction (v1.0.1) | 5–15ms |
+| Audit entry (v1.0.2) | < 1ms |
+| **Typical total** | **< 1ms** (v1.0.0) / **8–20ms** (full stack) |
 
-This is negligible compared to tool call latency (100ms-10s for API calls).
+Negligible compared to tool call latency (100ms–10s for API calls).
 
-## Documentation
+---
 
-| Document | Description |
-|---|---|
-| [Vision](docs/vision.md) | Why EnforceCore exists and where it's going |
-| [Architecture](docs/architecture.md) | Technical architecture and design decisions |
-| [Roadmap](docs/roadmap.md) | v1.0.x incremental release plan |
-| [API Design](docs/api-design.md) | Public API surface and usage patterns |
-| [Tech Stack](docs/tech-stack.md) | Technology choices and rationale |
-| [Developer Guide](docs/dev-guide.md) | Setup, coding standards, and workflow |
-| [Contributing](docs/contributing.md) | How to contribute |
-
-## Roadmap (v1.0.x)
+## Roadmap
 
 | Release | Focus | Status |
 |---|---|---|
-| v1.0.0 | Core Enforcer + Policy Engine | 🔨 In Progress |
-| v1.0.1 | PII Redactor | Planned |
-| v1.0.2 | Merkle Auditor | Planned |
+| **v1.0.0** | Core Enforcer + Policy Engine | ✅ Shipped |
+| **v1.0.1** | PII Redactor | 🔨 Next |
+| v1.0.2 | Merkle Audit Trail | Planned |
 | v1.0.3 | Resource Guard + KillSwitch | Planned |
 | v1.0.4 | Framework Integrations | Planned |
 | v1.0.5 | Evaluation Suite | Planned |
 | v1.0.6 | Hardening + Polish | Planned |
 
-See [roadmap.md](docs/roadmap.md) for detailed scope of each release.
-
-## License
-
-[Apache 2.0](LICENSE) — use it freely in open-source and commercial projects.
-
-## Contributing
-
-We welcome contributions, especially:
-- New adversarial evaluation scenarios
-- Framework integration adapters
-- PII entity recognizers
-- Performance benchmarks
-
-See [contributing.md](docs/contributing.md) for guidelines.
+See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 
 ---
 
-**EnforceCore** is developed by [akios-ai](https://github.com/akios-ai) and was born from the enforcement engine inside [AKIOS](https://github.com/akios-ai), a production runtime for secure multi-agent systems.
+## Documentation
+
+| | |
+|---|---|
+| 📐 [Architecture](docs/architecture.md) | Technical design and component overview |
+| 🗺️ [Roadmap](docs/roadmap.md) | v1.0.x incremental release plan |
+| 🔧 [API Design](docs/api-design.md) | Public API surface and patterns |
+| 🛠️ [Developer Guide](docs/dev-guide.md) | Setup, standards, and workflow |
+| 🧪 [Tech Stack](docs/tech-stack.md) | Technology choices and rationale |
+| 🌍 [Vision](docs/vision.md) | Why EnforceCore exists |
+| 🤝 [Contributing](docs/contributing.md) | How to contribute |
+
+---
+
+## Development
+
+```bash
+# Clone
+git clone https://github.com/akios-ai/EnforceCore.git
+cd EnforceCore
+
+# Setup
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Test
+pytest --cov=enforcecore
+
+# Lint
+ruff check . && ruff format --check .
+```
+
+**Current stats:** 94 tests · 97% coverage · 0 lint errors
+
+---
+
+## Legal
+
+EnforceCore is provided **"as is"**, without warranty of any kind. See [DISCLAIMER.md](DISCLAIMER.md) for full legal terms.
+
+EnforceCore is a **technical tool**, not a compliance certification. Using EnforceCore does not guarantee regulatory compliance. Always consult qualified legal counsel for compliance requirements.
+
+## License
+
+[Apache 2.0](LICENSE) — free for open-source and commercial use.
+
+Copyright 2025–2026 akios-ai. See [LICENSE](LICENSE) for details.
+
