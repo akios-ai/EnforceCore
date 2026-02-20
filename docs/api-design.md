@@ -46,6 +46,10 @@ from enforcecore import (
     CostTracker,               # Thread-safe cumulative cost tracker
     KillSwitch,                # Hard termination on limit breach
 
+    # Integrations (v1.0.4)
+    require_package,           # Verify optional deps with install messages
+    wrap_with_policy,          # Wrap any callable with enforcement
+
     # Exceptions
     EnforceCoreError,          # Base exception
     EnforcementViolation,      # Policy violation (call blocked)
@@ -597,4 +601,128 @@ ENFORCECORE_REDACTION_ENABLED=true
 ENFORCECORE_LOG_LEVEL=INFO
 ENFORCECORE_COST_BUDGET_USD=100.0
 ENFORCECORE_FAIL_OPEN=false  # NEVER set to true in production
+```
+
+---
+
+## Integration Adapters API (v1.0.4)
+
+### Overview
+
+Framework integration adapters provide drop-in replacements for each framework's
+tool decorator, adding EnforceCore policy enforcement transparently.
+
+All adapters share these properties:
+- **No hard dependencies** — framework packages are only imported at call time
+- **Import always succeeds** — importing the adapter module never fails
+- **Consistent API** — `@enforced_tool(policy=...)` pattern across all frameworks
+- **Full enforcement** — policy, PII redaction, resource guards, cost tracking, audit
+
+### Shared Utilities
+
+```python
+from enforcecore.integrations import require_package, wrap_with_policy
+```
+
+| Function | Description |
+|---|---|
+| `require_package(pkg, pip_name=...)` | Verify optional dep is installed, raise clear `ImportError` if not |
+| `wrap_with_policy(func, policy=..., tool_name=...)` | Wrap any callable with enforcement (used by all adapters) |
+
+### LangGraph / LangChain Adapter
+
+```python
+from enforcecore.integrations.langgraph import enforced_tool
+
+# Drop-in replacement for @tool
+@enforced_tool(policy="policy.yaml")
+def search(query: str) -> str:
+    """Search the web for information."""
+    return web_search(query)
+
+# With all options
+@enforced_tool(
+    policy="policy.yaml",
+    tool_name="web_search",
+    description="Custom description for LLM",
+    args_schema=SearchInput,   # Pydantic model
+    return_direct=True,
+)
+def search(query: str) -> str: ...
+
+# Async support
+@enforced_tool(policy="policy.yaml")
+async def fetch(url: str) -> str: ...
+```
+
+**Returns:** `langchain_core.tools.StructuredTool`
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `func` | `Callable` | — | Function to wrap (when used without parens) |
+| `policy` | `str \| Path \| Policy \| None` | `None` | Policy to enforce |
+| `tool_name` | `str \| None` | `func.__name__` | Override tool name for policy evaluation |
+| `description` | `str \| None` | docstring | Override tool description shown to LLM |
+| `args_schema` | `type \| None` | `None` | Pydantic model for input validation |
+| `return_direct` | `bool` | `False` | Return output directly to user |
+
+### CrewAI Adapter
+
+```python
+from enforcecore.integrations.crewai import enforced_tool
+
+@enforced_tool(policy="policy.yaml")
+def calculator(expression: str) -> str:
+    """Evaluate a math expression."""
+    return str(eval(expression))
+
+# Custom name
+@enforced_tool(policy="policy.yaml", tool_name="math_calculator")
+def calc(expr: str) -> str: ...
+```
+
+**Returns:** CrewAI tool object
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `func` | `Callable` | — | Function to wrap (when used without parens) |
+| `policy` | `str \| Path \| Policy \| None` | `None` | Policy to enforce |
+| `tool_name` | `str \| None` | `func.__name__` | Override tool name |
+
+### AutoGen Adapter
+
+```python
+from enforcecore.integrations.autogen import enforced_tool
+
+@enforced_tool(policy="policy.yaml", description="Get the weather")
+async def get_weather(city: str) -> str:
+    return await weather_api.get(city)
+
+# Description from docstring
+@enforced_tool(policy="policy.yaml")
+def search(query: str) -> str:
+    """Search the web for information."""
+    return web_search(query)
+```
+
+**Returns:** `autogen_core.tools.FunctionTool`
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `func` | `Callable` | — | Function to wrap (when used without parens) |
+| `policy` | `str \| Path \| Policy \| None` | `None` | Policy to enforce |
+| `tool_name` | `str \| None` | `func.__name__` | Override tool name |
+| `description` | `str \| None` | docstring or name | Tool description shown to LLM |
+
+### Building Custom Adapters
+
+Use `wrap_with_policy` to build adapters for any framework:
+
+```python
+from enforcecore.integrations import wrap_with_policy
+
+def my_framework_tool(func, policy):
+    """Example custom adapter."""
+    enforced = wrap_with_policy(func, policy=policy)
+    return MyFramework.register_tool(enforced)
 ```

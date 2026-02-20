@@ -47,9 +47,10 @@ from enforcecore.core.types import (
     ViolationType,
 )
 from enforcecore.guard.engine import CostTracker, KillSwitch, ResourceGuard
+from enforcecore.integrations._base import require_package, wrap_with_policy
 from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
 
-__version__ = "1.0.3a1"
+__version__ = "1.0.4a1"
 
 __all__ = [
     # Auditor
@@ -96,6 +97,9 @@ __all__ = [
     "enforce",
     "load_policy",
     "load_trail",
+    # Integrations
+    "require_package",
     "settings",
     "verify_trail",
+    "wrap_with_policy",
 ]

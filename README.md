@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/coverage-96%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-284_passed-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-334_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -178,9 +178,36 @@ EnforceCore works with **any** Python-based agent system — no lock-in:
 | Framework | Status | Example |
 |---|---|---|
 | **Plain Python** | ✅ Available | `@enforce()` decorator |
-| **LangGraph** | 🔜 v1.0.4 | Custom tool wrapper |
-| **CrewAI** | 🔜 v1.0.4 | Decorator adapter |
-| **AutoGen** | 🔜 v1.0.4 | Function registration wrapper |
+| **LangGraph** | ✅ Available | `@enforced_tool(policy="...")` |
+| **CrewAI** | ✅ Available | `@enforced_tool(policy="...")` |
+| **AutoGen** | ✅ Available | `@enforced_tool(policy="...")` |
+
+```python
+# LangGraph — one-line enforcement
+from enforcecore.integrations.langgraph import enforced_tool
+
+@enforced_tool(policy="policy.yaml")
+def search(query: str) -> str:
+    """Search the web."""
+    return web_search(query)
+
+# CrewAI
+from enforcecore.integrations.crewai import enforced_tool
+
+@enforced_tool(policy="policy.yaml")
+def calculator(expr: str) -> str:
+    """Calculate."""
+    return str(eval(expr))
+
+# AutoGen
+from enforcecore.integrations.autogen import enforced_tool
+
+@enforced_tool(policy="policy.yaml", description="Search the web")
+async def search(query: str) -> str:
+    return await web_search(query)
+```
+
+> No hard dependencies on any framework — adapters use optional imports.
 
 ---
 
@@ -200,6 +227,7 @@ EnforceCore works with **any** Python-based agent system — no lock-in:
 | PII redaction (v1.0.1) | 5–15ms |
 | Audit entry (v1.0.2) | < 1ms |
 | Resource guard (v1.0.3) | < 1ms (no timeout) |
+| Integration adapter (v1.0.4) | ~0ms (thin shim) |
 | **Typical total** | **< 1ms** (v1.0.0) / **8–20ms** (full stack) |
 
 Negligible compared to tool call latency (100ms–10s for API calls).
@@ -214,7 +242,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.1** | PII Redactor | ✅ Shipped |
 | **v1.0.2** | Merkle Audit Trail | ✅ Shipped |
 | **v1.0.3** | Resource Guard + KillSwitch | ✅ Shipped |
-| v1.0.4 | Framework Integrations | Planned |
+| **v1.0.4** | Framework Integrations | ✅ Shipped |
 | v1.0.5 | Evaluation Suite | Planned |
 | v1.0.6 | Hardening + Polish | Planned |
 
@@ -255,7 +283,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 284 tests · 96% coverage · 0 lint errors
+**Current stats:** 334 tests · 96% coverage · 0 lint errors
 
 ---
 

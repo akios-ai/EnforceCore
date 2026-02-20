@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4a1] — 2025-02-20
+
+### Added
+
+#### Framework Integration Adapters (`enforcecore.integrations`)
+- **LangGraph / LangChain** adapter (`enforcecore.integrations.langgraph`)
+  - `enforced_tool` — drop-in replacement for `@langchain.tools.tool` with policy enforcement
+  - Creates `StructuredTool` instances with enforcement baked in
+  - Supports sync and async functions, custom names, descriptions, `args_schema`, `return_direct`
+  - Example: `@enforced_tool(policy="policy.yaml") def search(query: str) -> str: ...`
+
+- **CrewAI** adapter (`enforcecore.integrations.crewai`)
+  - `enforced_tool` — drop-in replacement for `@crewai.tools.tool` with policy enforcement
+  - Wraps functions with enforcement before passing to CrewAI's tool system
+  - Example: `@enforced_tool(policy="policy.yaml") def calculator(expr: str) -> str: ...`
+
+- **AutoGen** adapter (`enforcecore.integrations.autogen`)
+  - `enforced_tool` — creates AutoGen `FunctionTool` instances with policy enforcement
+  - Targets AutoGen v0.4+ (`autogen-core`)
+  - Supports custom descriptions (from argument, docstring, or function name)
+  - Example: `@enforced_tool(policy="p.yaml", description="Search") async def search(q: str) -> str: ...`
+
+#### Shared Adapter Utilities (`enforcecore.integrations._base`)
+- `require_package(package, pip_name=...)` — verify optional deps with clear install messages
+- `wrap_with_policy(func, policy=..., tool_name=...)` — wrap any callable with enforcement
+
+#### All Adapters Share These Properties
+- **No hard dependencies** — framework packages only imported at function call time
+- **Import always succeeds** — importing the adapter module never fails
+- **Consistent API** — `@enforced_tool(policy=...)` decorator pattern across all frameworks
+- **Full enforcement** — policy checks, PII redaction, resource guards, cost tracking, audit trails
+- **Sync + async** — both sync and async functions supported in all adapters
+
+#### New Public Exports
+- `wrap_with_policy`, `require_package` added to `enforcecore` top-level imports
+- `enforcecore.integrations` package exports shared utilities
+
+#### Testing
+- 50 new tests across 4 test files:
+  - `test_base.py` — 17 tests (require_package, wrap_with_policy sync/async, edge cases)
+  - `test_langgraph.py` — 12 tests (tool creation, enforcement, async, metadata)
+  - `test_crewai.py` — 9 tests (tool creation, enforcement, callable tools, policy filtering)
+  - `test_autogen.py` — 12 tests (tool creation, enforcement, descriptions, async)
+- Mock framework modules in conftest for CI testing without framework deps
+- Total: 334 tests, 96% coverage
+
+#### Examples & Documentation
+- `examples/framework_integrations.py` — complete demo of all adapters + plain Python + utilities
+- Integration guide with 5-minute onboarding for each framework
+
+### Changed
+- Version bumped from `1.0.3a1` to `1.0.4a1`
+- `enforcecore.integrations.__init__.py` updated with adapter documentation and shared exports
+
+### Fixed
+- Removed unused `cryptography` dependency from core deps
+- Commented out unbuilt CLI entry point in `pyproject.toml`
+
 ## [1.0.3a1] — 2025-02-20
 
 ### Added
