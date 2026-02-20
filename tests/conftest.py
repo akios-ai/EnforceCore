@@ -45,3 +45,15 @@ def log_only_policy() -> Policy:
 def output_limit_policy() -> Policy:
     """A policy with a 100-byte output size limit."""
     return Policy.from_file(FIXTURES_DIR / "output_limit.yaml")
+
+
+@pytest.fixture
+def pii_redaction_policy() -> Policy:
+    """A policy with PII redaction enabled (placeholder strategy)."""
+    return Policy.from_file(FIXTURES_DIR / "pii_redaction.yaml")
+
+
+@pytest.fixture
+def pii_mask_policy() -> Policy:
+    """A policy with PII redaction using mask strategy."""
+    return Policy.from_file(FIXTURES_DIR / "pii_mask.yaml")

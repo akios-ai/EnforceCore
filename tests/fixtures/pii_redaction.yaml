@@ -1,0 +1,19 @@
+# Policy with PII redaction enabled
+name: "pii-redaction"
+version: "1.0"
+
+rules:
+  allowed_tools: null  # all tools allowed
+  denied_tools: []
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+      - ssn
+      - credit_card
+      - ip_address
+    strategy: placeholder
+  resource_limits: {}
+
+on_violation: "block"

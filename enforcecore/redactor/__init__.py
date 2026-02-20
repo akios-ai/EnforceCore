@@ -1,1 +1,13 @@
 """PII detection and redaction engine."""
+
+from enforcecore.redactor.engine import (
+    DetectedEntity,
+    RedactionResult,
+    Redactor,
+)
+
+__all__ = [
+    "DetectedEntity",
+    "RedactionResult",
+    "Redactor",
+]
