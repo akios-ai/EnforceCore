@@ -4,6 +4,7 @@ version: "1.0"
 
 rules:
   allowed_tools:
+    - "search_web"
     - "calculator"
     - "get_weather"
 

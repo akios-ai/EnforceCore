@@ -1,0 +1,4 @@
+# This file is intentionally invalid YAML policy
+name: ""
+version: "1.0"
+rules: "this should be a mapping not a string"

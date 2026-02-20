@@ -1,0 +1,11 @@
+# Blocks everything — no tools are allowed
+name: "deny-all"
+version: "1.0"
+
+rules:
+  allowed_tools: []   # empty list = nothing allowed
+  denied_tools: []
+  pii_redaction:
+    enabled: false
+
+on_violation: "block"
