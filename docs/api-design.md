@@ -50,6 +50,23 @@ from enforcecore import (
     require_package,           # Verify optional deps with install messages
     wrap_with_policy,          # Wrap any callable with enforcement
 
+    # Hardening (v1.0.6)
+    validate_tool_name,        # Validate tool name charset/length
+    check_input_size,          # Reject oversized payloads
+    deep_redact,               # Recursive nested PII redaction
+    enter_enforcement,         # Enter enforcement scope (ContextVar)
+    exit_enforcement,          # Exit enforcement scope
+    get_enforcement_depth,     # Current nesting depth
+    get_enforcement_chain,     # List of tool names in scope
+    is_dev_mode,               # Check ENFORCECORE_DEV_MODE
+    warn_fail_open,            # Emit RuntimeWarning for fail_open
+
+    # Unicode hardening (v1.0.6)
+    normalize_unicode,         # NFC normalization + strip zero-width
+    normalize_homoglyphs,      # Confusable char replacement
+    decode_encoded_pii,        # URL/HTML entity decoding
+    prepare_for_detection,     # Full unicode pipeline
+
     # Exceptions
     EnforceCoreError,          # Base exception
     EnforcementViolation,      # Policy violation (call blocked)
@@ -57,6 +74,10 @@ from enforcecore import (
     CostLimitError,            # Specific: cost budget exceeded
     ResourceLimitError,        # Specific: resource limit breached
     RedactionError,            # PII redaction error (fails closed)
+    HardeningError,            # Base hardening error (v1.0.6)
+    InvalidToolNameError,      # Invalid tool name (v1.0.6)
+    InputTooLargeError,        # Payload exceeds limit (v1.0.6)
+    EnforcementDepthError,     # Recursive depth exceeded (v1.0.6)
 
     # Types
     CallContext,               # Immutable per-call context
@@ -567,6 +588,18 @@ class RedactionError(EnforceCoreError):
 
 class AuditError(EnforceCoreError):
     """Error writing audit entry (fails closed — call is blocked)."""
+
+class HardeningError(EnforceCoreError):
+    """Base exception for hardening validation failures (v1.0.6)."""
+
+class InvalidToolNameError(HardeningError):
+    """Tool name is empty, too long, or contains invalid characters."""
+
+class InputTooLargeError(HardeningError):
+    """Combined input payload exceeds MAX_INPUT_SIZE_BYTES."""
+
+class EnforcementDepthError(HardeningError):
+    """Recursive enforcement nesting exceeds MAX_ENFORCEMENT_DEPTH."""
 ```
 
 ---
@@ -601,6 +634,7 @@ ENFORCECORE_REDACTION_ENABLED=true
 ENFORCECORE_LOG_LEVEL=INFO
 ENFORCECORE_COST_BUDGET_USD=100.0
 ENFORCECORE_FAIL_OPEN=false  # NEVER set to true in production
+ENFORCECORE_DEV_MODE=false   # Set to true/1/yes to suppress fail_open warnings
 ```
 
 ---
@@ -797,7 +831,7 @@ Frozen dataclass describing an adversarial scenario.
 | `description` | `str` | What the scenario tests |
 | `category` | `ThreatCategory` | Threat category |
 | `severity` | `Severity` | Severity level |
-| `tags` | `frozenset[str]` | Tags for filtering |
+| `tags` | `tuple[str, ...]` | Tags for filtering |
 
 #### `ScenarioResult`
 
@@ -814,6 +848,7 @@ Result from running a single scenario.
 | `details` | `str` | Human-readable detail |
 | `exception_type` | `str \| None` | Exception class name if error |
 | `exception_message` | `str \| None` | Exception message if error |
+| `run_id` | `str` | Auto-generated UUID for this run |
 
 **Properties:**
 - `is_contained: bool` — True if the attack was blocked
@@ -827,9 +862,17 @@ Aggregated results from running multiple scenarios.
 |---|---|---|
 | `results` | `list[ScenarioResult]` | All individual results |
 | `total_duration_ms` | `float` | Total execution time |
+| `run_id` | `str` | Auto-generated UUID for this suite run |
+| `policy_name` | `str` | Name of the policy under test |
+| `timestamp` | `str` | Auto-generated ISO 8601 timestamp |
 
 **Properties:**
-- `containment_rate: float` — Fraction of scenarios that were contained
+- `total: int` — Total number of results
+- `contained: int` — Count of contained results
+- `escaped: int` — Count of escaped results
+- `errors: int` — Count of error results
+- `skipped: int` — Count of skipped results
+- `containment_rate: float` — Fraction of applicable scenarios contained (skipped and errored excluded from denominator)
 
 **Methods:**
 - `by_category() -> dict[ThreatCategory, list[ScenarioResult]]` — Group results by category
@@ -849,6 +892,8 @@ Timing result for a single benchmark.
 | `p99_ms` | `float` | 99th percentile |
 | `min_ms` | `float` | Minimum time |
 | `max_ms` | `float` | Maximum time |
+| `total_ms` | `float` | Total time across all iterations |
+| `details` | `dict[str, Any]` | Optional extra metadata |
 
 **Properties:**
 - `ops_per_second: float` — Operations per second (1000 / mean_ms)
@@ -860,10 +905,10 @@ Collection of benchmark results with platform info.
 | Field | Type | Description |
 |---|---|---|
 | `results` | `list[BenchmarkResult]` | All benchmark results |
+| `total_duration_ms` | `float` | Total benchmark suite duration |
 | `python_version` | `str` | Python version |
 | `platform` | `str` | OS platform |
-| `cpu_count` | `int` | Number of CPUs |
-| `timestamp` | `str` | ISO 8601 timestamp |
+| `timestamp` | `str` | Auto-generated ISO 8601 timestamp |
 
 ### ScenarioRunner
 
@@ -985,3 +1030,245 @@ scenarios: list[Scenario] = get_scenarios_by_category(ThreatCategory.tool_abuse)
 ```
 
 Returns scenarios for a specific threat category.
+
+---
+
+## Hardening API (v1.0.6)
+
+The hardening module provides input validation, scope tracking, recursive redaction,
+and unicode evasion protection for production-grade enforcement.
+
+### Imports
+
+```python
+from enforcecore import (
+    # Validation
+    validate_tool_name,
+    check_input_size,
+    deep_redact,
+    # Scope tracking
+    enter_enforcement,
+    exit_enforcement,
+    get_enforcement_depth,
+    get_enforcement_chain,
+    # Dev mode
+    is_dev_mode,
+    warn_fail_open,
+    # Unicode hardening
+    normalize_unicode,
+    normalize_homoglyphs,
+    decode_encoded_pii,
+    prepare_for_detection,
+    # Exceptions
+    HardeningError,
+    InvalidToolNameError,
+    InputTooLargeError,
+    EnforcementDepthError,
+)
+```
+
+### Constants
+
+| Constant | Value | Description |
+|---|---|---|
+| `MAX_TOOL_NAME_LENGTH` | `256` | Maximum allowed tool name length |
+| `MAX_INPUT_SIZE_BYTES` | `10_485_760` (10 MB) | Default maximum input payload size |
+| `MAX_ENFORCEMENT_DEPTH` | `10` | Maximum recursive enforcement nesting |
+
+### Input Validation
+
+#### `validate_tool_name`
+
+```python
+validate_tool_name(name: str) -> str
+```
+
+Validates and sanitizes a tool name. Strips leading/trailing whitespace, then checks:
+- Non-empty after stripping
+- Length ≤ `MAX_TOOL_NAME_LENGTH`
+- Characters match `[\w.\-:<>]+` (alphanumeric, underscore, dot, hyphen, colon, angle brackets)
+
+Returns the stripped name. Raises `InvalidToolNameError` on failure.
+
+#### `check_input_size`
+
+```python
+check_input_size(
+    args: tuple,
+    kwargs: dict,
+    max_bytes: int = MAX_INPUT_SIZE_BYTES,
+) -> None
+```
+
+Measures the total size of all `str` and `bytes` arguments. Raises `InputTooLargeError`
+if the combined size exceeds `max_bytes`.
+
+### Recursive Redaction
+
+#### `deep_redact`
+
+```python
+deep_redact(
+    value: Any,
+    redact_fn: Callable[[str], str],
+    max_depth: int = 10,
+) -> Any
+```
+
+Recursively traverses nested data structures (dict, list, tuple, set) and applies
+`redact_fn` to every string value found. Preserves container types (tuples stay tuples,
+sets stay frozensets of redacted values). Stops at `max_depth` to prevent stack overflow.
+
+**Example:**
+
+```python
+from enforcecore import deep_redact
+
+data = {
+    "user": {"name": "John Doe", "email": "john@example.com"},
+    "notes": ["Contact Jane at jane@test.com"],
+}
+
+redacted = deep_redact(data, redactor.redact_string)
+# {"user": {"name": "[REDACTED]", "email": "[REDACTED]"}, ...}
+```
+
+### Enforcement Scope Tracking
+
+Uses `contextvars.ContextVar` to track enforcement nesting depth and call chains.
+Thread-safe and async-safe.
+
+#### `enter_enforcement`
+
+```python
+enter_enforcement(tool_name: str) -> None
+```
+
+Enters an enforcement scope for the given tool. Increments depth and appends
+the tool name to the chain. Raises `EnforcementDepthError` if depth exceeds
+`MAX_ENFORCEMENT_DEPTH`.
+
+#### `exit_enforcement`
+
+```python
+exit_enforcement() -> None
+```
+
+Exits the current enforcement scope. Decrements depth and pops the last tool
+from the chain. Safe to call even at depth 0 (no-op).
+
+#### `get_enforcement_depth`
+
+```python
+get_enforcement_depth() -> int
+```
+
+Returns the current enforcement nesting depth (0 when not inside any enforcement).
+
+#### `get_enforcement_chain`
+
+```python
+get_enforcement_chain() -> list[str]
+```
+
+Returns a copy of the current enforcement call chain (list of tool names,
+outermost first).
+
+### Dev Mode & Fail-Open Gating
+
+#### `is_dev_mode`
+
+```python
+is_dev_mode() -> bool
+```
+
+Returns `True` if the `ENFORCECORE_DEV_MODE` environment variable is set to
+a truthy value (`1`, `true`, `yes`, case-insensitive).
+
+#### `warn_fail_open`
+
+```python
+warn_fail_open() -> None
+```
+
+Emits a `RuntimeWarning` if `fail_open=True` is configured but `ENFORCECORE_DEV_MODE`
+is not set. This ensures accidental fail-open in production is immediately visible.
+
+### Unicode Hardening
+
+Protects PII detection against Unicode evasion techniques including zero-width
+character insertion, homoglyph substitution, and URL/HTML encoding.
+
+#### `normalize_unicode`
+
+```python
+normalize_unicode(text: str) -> str
+```
+
+Applies NFC normalization and strips zero-width characters (zero-width space,
+zero-width non-joiner, zero-width joiner, soft hyphen, word joiner, BOM, and
+11 other invisible characters).
+
+#### `normalize_homoglyphs`
+
+```python
+normalize_homoglyphs(text: str) -> str
+```
+
+Replaces ~40 known confusable characters with their ASCII equivalents:
+- Cyrillic lookalikes (А→A, В→B, С→C, etc.)
+- Greek lookalikes (Α→A, Β→B, etc.)
+- Fullwidth ASCII (Ａ→A, ０→0, etc.)
+
+Includes a fast-path optimization: skips replacement if the text contains no
+characters from the confusable set.
+
+#### `decode_encoded_pii`
+
+```python
+decode_encoded_pii(text: str) -> str
+```
+
+Decodes URL-encoded (`%40` → `@`) and HTML-entity-encoded (`&#64;` → `@`)
+text that may be used to evade PII pattern matching.
+
+#### `prepare_for_detection`
+
+```python
+prepare_for_detection(text: str) -> str
+```
+
+Full unicode hardening pipeline. Chains all three normalizations in order:
+1. `normalize_unicode()` — NFC + strip zero-width
+2. `normalize_homoglyphs()` — replace confusables
+3. `decode_encoded_pii()` — URL/HTML decoding
+
+This is called automatically by `Redactor.detect()` before pattern matching.
+
+### Enforcer Hardening (Automatic)
+
+The `enforce` decorator and `Enforcer` class automatically apply hardening
+in both sync and async paths:
+
+1. **Tool name validation** — `validate_tool_name()` on every call
+2. **Scope entry** — `enter_enforcement()` tracks depth/chain
+3. **Input size check** — `check_input_size()` rejects oversized payloads
+4. **Recursive redaction** — `deep_redact()` handles nested PII in args
+5. **Scope exit** — `exit_enforcement()` in `finally` block
+6. **Fail-open warning** — `warn_fail_open()` if error handling uses fail_open
+
+### Auditor Improvements (v1.0.6)
+
+#### `load_trail` — new `max_entries` parameter
+
+```python
+entries = load_trail(path, max_entries=100)  # Returns last 100 entries
+```
+
+When `max_entries` is specified, only the most recent N entries are returned.
+Useful for dashboards and quick inspections of large trail files.
+
+#### Optimized resume for large files
+
+For files larger than 8 KB, the auditor seeks near the end of the file to
+find the last entry for chain resumption, instead of reading the entire file.

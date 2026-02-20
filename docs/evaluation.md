@@ -210,6 +210,7 @@ Each benchmark result includes:
 - `p95_ms` — 95th percentile
 - `p99_ms` — 99th percentile
 - `min_ms` / `max_ms` — Range
+- `total_ms` — Total time across all iterations
 - `ops_per_second` — Throughput
 
 ## Report Generation

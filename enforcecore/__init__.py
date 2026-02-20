@@ -24,6 +24,20 @@ from enforcecore.auditor.engine import (
 )
 from enforcecore.core.config import Settings, settings
 from enforcecore.core.enforcer import Enforcer, enforce
+from enforcecore.core.hardening import (
+    EnforcementDepthError,
+    HardeningError,
+    InputTooLargeError,
+    InvalidToolNameError,
+    check_input_size,
+    deep_redact,
+    enter_enforcement,
+    exit_enforcement,
+    get_enforcement_chain,
+    get_enforcement_depth,
+    is_dev_mode,
+    validate_tool_name,
+)
 from enforcecore.core.policy import Policy, PolicyEngine, load_policy
 from enforcecore.core.types import (
     AuditError,
@@ -64,8 +78,14 @@ from enforcecore.eval.types import (
 from enforcecore.guard.engine import CostTracker, KillSwitch, ResourceGuard
 from enforcecore.integrations._base import require_package, wrap_with_policy
 from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
+from enforcecore.redactor.unicode import (
+    decode_encoded_pii,
+    normalize_homoglyphs,
+    normalize_unicode,
+    prepare_for_detection,
+)
 
-__version__ = "1.0.5a1"
+__version__ = "1.0.6a1"
 
 __all__ = [
     "AuditEntry",
@@ -81,10 +101,14 @@ __all__ = [
     "DetectedEntity",
     "DomainDeniedError",
     "EnforceCoreError",
+    "EnforcementDepthError",
     "EnforcementResult",
     "EnforcementViolation",
     "Enforcer",
     "GuardError",
+    "HardeningError",
+    "InputTooLargeError",
+    "InvalidToolNameError",
     "KillSwitch",
     "Policy",
     "PolicyEngine",
@@ -111,12 +135,24 @@ __all__ = [
     "ViolationAction",
     "ViolationType",
     "__version__",
+    "check_input_size",
+    "decode_encoded_pii",
+    "deep_redact",
     "enforce",
+    "enter_enforcement",
+    "exit_enforcement",
     "generate_report",
+    "get_enforcement_chain",
+    "get_enforcement_depth",
+    "is_dev_mode",
     "load_policy",
     "load_trail",
+    "normalize_homoglyphs",
+    "normalize_unicode",
+    "prepare_for_detection",
     "require_package",
     "settings",
+    "validate_tool_name",
     "verify_trail",
     "wrap_with_policy",
 ]

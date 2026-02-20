@@ -20,7 +20,9 @@ from __future__ import annotations
 
 import functools
 import inspect
+import threading
 import time
+import warnings
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar, overload
@@ -28,6 +30,14 @@ from typing import TYPE_CHECKING, Any, TypeVar, overload
 import structlog
 
 from enforcecore.core.config import settings
+from enforcecore.core.hardening import (
+    check_input_size,
+    deep_redact,
+    enter_enforcement,
+    exit_enforcement,
+    validate_tool_name,
+    warn_fail_open,
+)
 from enforcecore.core.policy import Policy, PolicyEngine
 from enforcecore.core.types import (
     CallContext,
@@ -132,28 +142,25 @@ class Enforcer:
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
     ) -> tuple[tuple[Any, ...], dict[str, Any], int]:
-        """Redact string args and kwargs. Returns (new_args, new_kwargs, count)."""
+        """Redact string args and kwargs, including nested structures.
+
+        Returns (new_args, new_kwargs, total_redaction_count).
+        """
         if self._redactor is None:
             return args, kwargs, 0
 
         total = 0
         new_args = []
         for a in args:
-            if isinstance(a, str):
-                res = self._redactor.redact(a)
-                new_args.append(res.text)
-                total += res.count
-            else:
-                new_args.append(a)
+            redacted, count = deep_redact(a, self._redactor.redact)
+            new_args.append(redacted)
+            total += count
 
-        new_kwargs = {}
+        new_kwargs: dict[str, Any] = {}
         for k, v in kwargs.items():
-            if isinstance(v, str):
-                res = self._redactor.redact(v)
-                new_kwargs[k] = res.text
-                total += res.count
-            else:
-                new_kwargs[k] = v
+            redacted, count = deep_redact(v, self._redactor.redact)
+            new_kwargs[k] = redacted
+            total += count
 
         return tuple(new_args), new_kwargs, total
 
@@ -232,11 +239,17 @@ class Enforcer:
             EnforcementViolation: If the call is blocked by policy.
         """
         resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
+        resolved_name = validate_tool_name(resolved_name)
         ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
 
         t0 = time.perf_counter()
 
+        # Track enforcement nesting
+        enter_enforcement(resolved_name)
         try:
+            # Check input size before processing
+            check_input_size(args, kwargs)
+
             # Pre-call
             pre = self._engine.evaluate_pre_call(ctx)
             self._engine.raise_if_blocked(pre, ctx)
@@ -313,8 +326,9 @@ class Enforcer:
             )
             raise
         except EnforceCoreError:
-            # Internal error — fail closed
+            # Internal error — fail closed by default
             if settings.fail_open:
+                warn_fail_open()
                 logger.error(
                     "enforcement_error_fail_open",
                     tool=resolved_name,
@@ -322,6 +336,8 @@ class Enforcer:
                 )
                 return func(*args, **kwargs)
             raise
+        finally:
+            exit_enforcement()
 
     # -- Async enforcement --------------------------------------------------
 
@@ -337,11 +353,17 @@ class Enforcer:
         Same semantics as :meth:`enforce_sync` but awaits *func*.
         """
         resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
+        resolved_name = validate_tool_name(resolved_name)
         ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
 
         t0 = time.perf_counter()
 
+        # Track enforcement nesting
+        enter_enforcement(resolved_name)
         try:
+            # Check input size before processing
+            check_input_size(args, kwargs)
+
             # Pre-call
             pre = self._engine.evaluate_pre_call(ctx)
             self._engine.raise_if_blocked(pre, ctx)
@@ -418,6 +440,7 @@ class Enforcer:
             raise
         except EnforceCoreError:
             if settings.fail_open:
+                warn_fail_open()
                 logger.error(
                     "enforcement_error_fail_open",
                     tool=resolved_name,
@@ -425,6 +448,8 @@ class Enforcer:
                 )
                 return await func(*args, **kwargs)
             raise
+        finally:
+            exit_enforcement()
 
     # -- Context managers ---------------------------------------------------
 
@@ -438,11 +463,23 @@ class Enforcer:
     ) -> Iterator[CallContext]:
         """Synchronous context manager for enforcement.
 
+        .. warning::
+
+           This context manager only performs pre-call policy evaluation.
+           It does **not** redact inputs/outputs, check resource limits,
+           or record audit entries.  Prefer :meth:`enforce_sync` for full
+           protection.
+
         Usage::
 
             with enforcer.guard_sync("my_tool") as ctx:
                 result = do_something()
         """
+        warnings.warn(
+            "guard_sync() only performs pre-call policy checks. "
+            "Use enforce_sync() for full protection (redaction, audit, resource guards).",
+            stacklevel=2,
+        )
         ctx = CallContext(
             tool_name=tool_name,
             args=args,
@@ -462,11 +499,23 @@ class Enforcer:
     ) -> AsyncIterator[CallContext]:
         """Asynchronous context manager for enforcement.
 
+        .. warning::
+
+           This context manager only performs pre-call policy evaluation.
+           It does **not** redact inputs/outputs, check resource limits,
+           or record audit entries.  Prefer :meth:`enforce_async` for full
+           protection.
+
         Usage::
 
             async with enforcer.guard_async("my_tool") as ctx:
                 result = await do_something()
         """
+        warnings.warn(
+            "guard_async() only performs pre-call policy checks. "
+            "Use enforce_async() for full protection (redaction, audit, resource guards).",
+            stacklevel=2,
+        )
         ctx = CallContext(
             tool_name=tool_name,
             args=args,
@@ -483,6 +532,7 @@ class Enforcer:
 
 # Cache of loaded policies to avoid re-parsing YAML on every call.
 _policy_cache: dict[str, Policy] = {}
+_policy_cache_lock = threading.Lock()
 
 
 def _resolve_policy(
@@ -494,16 +544,18 @@ def _resolve_policy(
 
     if isinstance(policy, (str, Path)):
         key = str(policy)
-        if key not in _policy_cache:
-            _policy_cache[key] = Policy.from_file(key)
-        return _policy_cache[key]
+        with _policy_cache_lock:
+            if key not in _policy_cache:
+                _policy_cache[key] = Policy.from_file(key)
+            return _policy_cache[key]
 
     # Fall back to default from settings
     if settings.default_policy is not None:
         key = str(settings.default_policy)
-        if key not in _policy_cache:
-            _policy_cache[key] = Policy.from_file(key)
-        return _policy_cache[key]
+        with _policy_cache_lock:
+            if key not in _policy_cache:
+                _policy_cache[key] = Policy.from_file(key)
+            return _policy_cache[key]
 
     from enforcecore.core.types import PolicyLoadError
 
