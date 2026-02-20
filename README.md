@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/coverage-96%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-431_passed-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-544_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -244,7 +244,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.3** | Resource Guard + KillSwitch | ✅ Shipped |
 | **v1.0.4** | Framework Integrations | ✅ Shipped |
 | **v1.0.5** | Evaluation Suite | ✅ Shipped |
-| v1.0.6 | Hardening + Polish | Planned |
+| **v1.0.6** | Hardening + Polish | ✅ Shipped |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 
@@ -259,8 +259,10 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 | 🔧 [API Design](docs/api-design.md) | Public API surface and patterns |
 | 🛠️ [Developer Guide](docs/dev-guide.md) | Setup, standards, and workflow |
 | 🧪 [Tech Stack](docs/tech-stack.md) | Technology choices and rationale |
-| � [Evaluation](docs/evaluation.md) | Adversarial scenarios, benchmarks, and reports |
-| �🌍 [Vision](docs/vision.md) | Why EnforceCore exists |
+| 📊 [Evaluation](docs/evaluation.md) | Adversarial scenarios, benchmarks, and reports |
+| ❓ [FAQ](docs/faq.md) | Frequently asked questions |
+| 🔍 [Troubleshooting](docs/troubleshooting.md) | Common errors and debugging tips |
+| 🌍 [Vision](docs/vision.md) | Why EnforceCore exists |
 | 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
 | 🔒 [Security](SECURITY.md) | Vulnerability reporting policy |
 
@@ -284,7 +286,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 431 tests · 96% coverage · 0 lint errors
+**Current stats:** 544 tests · 96% coverage · 0 lint errors
 
 ---
 

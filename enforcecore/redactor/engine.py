@@ -29,6 +29,7 @@ from enforcecore.core.types import (
     RedactionEvent,
     RedactionStrategy,
 )
+from enforcecore.redactor.unicode import prepare_for_detection
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -177,18 +178,25 @@ class Redactor:
         Returns entities sorted by start position (descending) for safe
         replacement from right to left.
         """
+        # Apply unicode normalization to defeat evasion techniques
+        normalized = prepare_for_detection(text)
         entities: list[DetectedEntity] = []
 
         for cat in self._categories:
             if cat == "person_name":
                 # Skip person_name detection (too noisy with pure regex)
+                logger.debug(
+                    "person_name_detection_skipped",
+                    reason="pure regex detection is too noisy; "
+                    "consider using an NLP pipeline for name detection",
+                )
                 continue
 
             pattern = _PII_PATTERNS.get(cat)
             if pattern is None:
                 continue
 
-            for match in pattern.finditer(text):
+            for match in pattern.finditer(normalized):
                 entities.append(
                     DetectedEntity(
                         category=cat,

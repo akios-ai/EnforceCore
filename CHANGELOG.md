@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6a1] — 2025-02-20
+
+### Added
+
+#### Security Hardening (`enforcecore.core.hardening`)
+- **Tool name validation** (`validate_tool_name()`)
+  - Rejects empty, overly long, or invalid-character tool names
+  - Allowed characters: word chars, dots, hyphens, colons, angle brackets
+  - `InvalidToolNameError` exception for validation failures
+- **Input size checking** (`check_input_size()`)
+  - Measures combined size of string/bytes arguments
+  - Default limit: 10 MB, configurable via `max_bytes` parameter
+  - `InputTooLargeError` exception when exceeded
+- **Deep recursive redaction** (`deep_redact()`)
+  - Traverses `dict`, `list`, `tuple`, `set` containers recursively
+  - Applies PII redaction to all string leaves
+  - Configurable max depth (default: 10) as safety limit
+- **Enforcement scope tracking** (via `contextvars`)
+  - `enter_enforcement()` / `exit_enforcement()` — track nesting depth
+  - `get_enforcement_depth()` / `get_enforcement_chain()` — inspect state
+  - `EnforcementDepthError` raised when nesting exceeds max (default: 10)
+- **Dev-mode gating**
+  - `is_dev_mode()` — checks `ENFORCECORE_DEV_MODE` env var
+  - `warn_fail_open()` — emits `RuntimeWarning` if `fail_open` is used without dev mode
+- **Exception hierarchy**: `HardeningError` base, `InvalidToolNameError`, `InputTooLargeError`, `EnforcementDepthError`
+
+#### Unicode Hardening (`enforcecore.redactor.unicode`)
+- **NFC normalization** (`normalize_unicode()`) — canonical form + zero-width character stripping
+  - Strips 17 zero-width/invisible characters (ZWS, ZWNJ, ZWJ, BOM, directional marks, etc.)
+- **Homoglyph normalization** (`normalize_homoglyphs()`) — defeats confusable character evasion
+  - ~40 Cyrillic-to-Latin, Greek-to-Latin, and Fullwidth-to-ASCII mappings
+  - Fast path when no confusables found
+- **Encoded PII decoding** (`decode_encoded_pii()`) — URL percent-encoding and HTML entity decoding
+- **Combined pipeline** (`prepare_for_detection()`) — chains all three normalizations in order
+- Wired into `Redactor.detect()` — all PII detection now uses normalized text
+
+#### Enforcer Hardening
+- `enforce_sync()` and `enforce_async()` now call:
+  - `validate_tool_name()` — rejects invalid tool names before processing
+  - `enter_enforcement()` / `exit_enforcement()` — tracks nesting depth
+  - `check_input_size()` — rejects oversized inputs before processing
+- `_redact_args()` now uses `deep_redact()` for recursive nested structure redaction
+- `_policy_cache_lock` (`threading.Lock`) — thread-safe policy cache access
+- `guard_sync()` / `guard_async()` emit deprecation `UserWarning` recommending `enforce_sync()` / `enforce_async()`
+- `fail_open` error paths now call `warn_fail_open()` for production safety
+
+#### Auditor Improvements
+- `load_trail()` gains `max_entries` parameter — returns only the most recent N entries
+- `_resume_chain()` optimized with reverse seeking for large files (>8KB)
+
+#### New Public Exports (16 new, 68 total)
+- Hardening: `HardeningError`, `InvalidToolNameError`, `InputTooLargeError`, `EnforcementDepthError`, `validate_tool_name`, `check_input_size`, `deep_redact`, `enter_enforcement`, `exit_enforcement`, `get_enforcement_chain`, `get_enforcement_depth`, `is_dev_mode`
+- Unicode: `normalize_unicode`, `normalize_homoglyphs`, `decode_encoded_pii`, `prepare_for_detection`
+
+#### New Documentation
+- `docs/faq.md` — Frequently Asked Questions (security, PII, performance, config)
+- `docs/troubleshooting.md` — Common errors and debugging tips
+- Updated `docs/api-design.md` — Hardening API section
+
+#### Testing
+- 113 new tests across 3 test files:
+  - `test_hardening.py` — 47 tests (tool name validation, input size, deep redact, enforcement scope, dev mode)
+  - `test_unicode.py` — 35 tests (normalization, homoglyphs, encoded PII, combined pipeline)
+  - `test_hardening_integration.py` — 31 tests (enforcer wiring, unicode-hardened detection, auditor edge cases)
+- Total: **544 tests, 96% coverage**
+
+### Changed
+- Version bumped from `1.0.5a1` to `1.0.6a1`
+- `enforcecore.__init__.py` updated with 16 new exports (68 total)
+- `enforcecore.redactor.engine` uses `prepare_for_detection()` before regex matching
+- `enforcecore.core.enforcer` uses `threading.Lock` for policy cache
+- `person_name` category now emits `logger.debug()` instead of silent skip
+
 ## [1.0.5a1] — 2025-02-20
 
 ### Added

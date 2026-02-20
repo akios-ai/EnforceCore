@@ -183,16 +183,37 @@ class Auditor:
             self._resume_chain()
 
     def _resume_chain(self) -> None:
-        """Read the last entry from an existing file to resume the chain."""
+        """Read the last entry from an existing file to resume the chain.
+
+        Uses reverse seeking for efficiency on large files.
+        """
         try:
+            # Count entries and find last line by seeking from end
             last_line = ""
+            count = 0
+            file_size = self._output_path.stat().st_size
+
             with self._output_path.open("r", encoding="utf-8") as f:
-                count = 0
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        last_line = line
-                        count += 1
+                if file_size > 8192:
+                    # For large files, seek near the end to find the last line
+                    f.seek(max(0, file_size - 8192))
+                    f.readline()  # Discard partial line
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            last_line = line
+
+                    # Count entries separately (still need total count)
+                    f.seek(0)
+                    count = sum(1 for ln in f if ln.strip())
+                else:
+                    # Small file — read all lines
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            last_line = line
+                            count += 1
+
             if last_line:
                 data = json.loads(last_line)
                 self._last_hash = data.get("entry_hash", "")
@@ -407,14 +428,17 @@ def verify_trail(path: str | Path) -> VerificationResult:
 # ---------------------------------------------------------------------------
 
 
-def load_trail(path: str | Path) -> list[AuditEntry]:
-    """Load all entries from an audit trail file.
+def load_trail(path: str | Path, *, max_entries: int | None = None) -> list[AuditEntry]:
+    """Load entries from an audit trail file.
 
     Args:
         path: Path to the JSONL audit file.
+        max_entries: Maximum number of entries to load.  ``None`` loads all.
+            When set, returns the *most recent* entries (from the end of
+            the file).
 
     Returns:
-        A list of ``AuditEntry`` objects in order.
+        A list of ``AuditEntry`` objects in chronological order.
 
     Raises:
         AuditError: If the file cannot be read or parsed.
@@ -440,5 +464,8 @@ def load_trail(path: str | Path) -> list[AuditEntry]:
     except OSError as exc:
         msg = f"Failed to read audit file {filepath}: {exc}"
         raise AuditError(msg) from exc
+
+    if max_entries is not None and len(entries) > max_entries:
+        entries = entries[-max_entries:]
 
     return entries
