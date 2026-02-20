@@ -39,6 +39,8 @@ from enforcecore.redactor.engine import Redactor
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
 
+    from enforcecore.auditor.engine import Auditor
+
 logger = structlog.get_logger("enforcecore.enforcer")
 
 T = TypeVar("T")
@@ -65,11 +67,12 @@ class Enforcer:
         result = await enforcer.enforce_async(my_tool, "arg1", key="val")
     """
 
-    __slots__ = ("_engine", "_redactor")
+    __slots__ = ("_auditor", "_engine", "_redactor")
 
     def __init__(self, policy: Policy) -> None:
         self._engine = PolicyEngine(policy)
         self._redactor = self._build_redactor(policy)
+        self._auditor = self._build_auditor()
 
     @classmethod
     def from_file(cls, path: str | Path) -> Enforcer:
@@ -132,6 +135,50 @@ class Enforcer:
         res = self._redactor.redact(result)
         return res.text, res.count
 
+    @staticmethod
+    def _build_auditor() -> Auditor | None:
+        """Create an Auditor from global settings, if audit is enabled."""
+        if not settings.audit_enabled:
+            return None
+        from enforcecore.auditor.engine import Auditor as _Auditor
+
+        return _Auditor(output_path=settings.audit_path / "trail.jsonl")
+
+    def _record_audit(
+        self,
+        *,
+        tool_name: str,
+        call_id: str,
+        decision: str,
+        overhead_ms: float,
+        call_duration_ms: float,
+        input_redactions: int,
+        output_redactions: int,
+        violation_type: str | None = None,
+        violation_reason: str | None = None,
+    ) -> None:
+        """Record an audit entry if the auditor is active."""
+        if self._auditor is None:
+            return
+        try:
+            self._auditor.record(
+                tool_name=tool_name,
+                policy_name=self._engine.policy.name,
+                policy_version=self._engine.policy.version,
+                decision=decision,
+                call_id=call_id,
+                violation_type=violation_type,
+                violation_reason=violation_reason,
+                overhead_ms=overhead_ms,
+                call_duration_ms=call_duration_ms,
+                input_redactions=input_redactions,
+                output_redactions=output_redactions,
+            )
+        except Exception:
+            logger.error("audit_record_failed", tool=tool_name, exc_info=True)
+            if not settings.fail_open:
+                raise
+
     # -- Sync enforcement ---------------------------------------------------
 
     def enforce_sync(
@@ -192,9 +239,33 @@ class Enforcer:
                 output_redactions=output_redactions,
             )
 
+            # Audit
+            self._record_audit(
+                tool_name=resolved_name,
+                call_id=ctx.call_id,
+                decision="allowed",
+                overhead_ms=round(overhead, 2),
+                call_duration_ms=round(call_duration, 2),
+                input_redactions=input_redactions,
+                output_redactions=output_redactions,
+            )
+
             return result
 
-        except EnforcementViolation:
+        except EnforcementViolation as exc:
+            # Record blocked calls too
+            elapsed = (time.perf_counter() - t0) * 1000
+            self._record_audit(
+                tool_name=resolved_name,
+                call_id=ctx.call_id,
+                decision="blocked",
+                overhead_ms=round(elapsed, 2),
+                call_duration_ms=0.0,
+                input_redactions=0,
+                output_redactions=0,
+                violation_type=exc.violation_type if hasattr(exc, "violation_type") else None,
+                violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
+            )
             raise
         except EnforceCoreError:
             # Internal error — fail closed
@@ -257,9 +328,32 @@ class Enforcer:
                 output_redactions=output_redactions,
             )
 
+            # Audit
+            self._record_audit(
+                tool_name=resolved_name,
+                call_id=ctx.call_id,
+                decision="allowed",
+                overhead_ms=round(overhead, 2),
+                call_duration_ms=round(call_duration, 2),
+                input_redactions=input_redactions,
+                output_redactions=output_redactions,
+            )
+
             return result
 
-        except EnforcementViolation:
+        except EnforcementViolation as exc:
+            elapsed = (time.perf_counter() - t0) * 1000
+            self._record_audit(
+                tool_name=resolved_name,
+                call_id=ctx.call_id,
+                decision="blocked",
+                overhead_ms=round(elapsed, 2),
+                call_duration_ms=0.0,
+                input_redactions=0,
+                output_redactions=0,
+                violation_type=exc.violation_type if hasattr(exc, "violation_type") else None,
+                violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
+            )
             raise
         except EnforceCoreError:
             if settings.fail_open:

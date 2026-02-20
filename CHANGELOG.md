@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2a1] — 2025-02-20
+
+### Added
+
+#### Merkle-Chained Audit Trail (`enforcecore.auditor`)
+- `AuditEntry` dataclass — 14-field audit record with SHA-256 Merkle hash
+  - Fields: entry_id, call_id, timestamp, tool_name, policy_name, policy_version, decision, violation_type, violation_reason, overhead_ms, call_duration_ms, input_redactions, output_redactions, previous_hash, entry_hash
+  - `compute_hash()` — deterministic SHA-256 of canonical JSON (sorted keys, excludes entry_hash)
+  - `seal()` — compute hash and set it on the entry, returns self for chaining
+  - `to_dict()`, `from_dict()`, `to_json()` serialization methods
+- `Auditor` class — thread-safe JSONL audit trail writer
+  - Append-only JSONL file format
+  - Automatic Merkle chain linking (each entry's `previous_hash` = prior entry's `entry_hash`)
+  - Chain resumption from existing trail files (cross-session continuity)
+  - `threading.Lock` for thread-safe concurrent writes
+  - Parent directory auto-creation
+- `verify_trail()` — full chain integrity verification
+  - Recomputes every hash and checks chain linkage
+  - Detects: modified entries, deleted entries, inserted entries, reordered entries
+  - Returns `VerificationResult` with error details
+- `VerificationResult` dataclass — verification outcome with `is_valid`, `chain_intact`, `root_hash`, `head_hash`, `errors` list, `entries_checked`, `error_count`
+- `load_trail()` — load all entries from a JSONL file as `AuditEntry` objects
+
+#### Enforcer Pipeline Integration
+- Automatic audit recording in `enforce_sync()` and `enforce_async()`
+- Both allowed and blocked calls generate audit entries
+- Blocked entries include `violation_type` (exception class name) and `violation_reason`
+- `_build_auditor()` creates Auditor from `settings.audit_path` when `settings.audit_enabled` is True
+- Deferred import pattern to avoid circular dependency (`enforcer` ↔ `auditor` ↔ `types`)
+
+#### New Public Exports
+- `Auditor`, `AuditEntry`, `VerificationResult`, `verify_trail`, `load_trail` added to `enforcecore` top-level imports
+
+#### Testing
+- 52 new tests (32 auditor engine unit tests + 20 enforcer integration tests)
+- Total: 213 tests, 96% coverage
+- Autouse `_disable_audit_globally` fixture in conftest.py to prevent audit side effects in non-audit tests
+- Tamper detection tests: modified, deleted, inserted, reordered entries
+- Cross-session chain continuity tests
+
+#### Examples & Documentation
+- `examples/audit_trail.py` — 7 demo patterns (standalone auditor, entry anatomy, trail verification, tamper detection, enforcer pipeline, cross-session continuity, decorator)
+- Updated `docs/api-design.md` — Auditor API section with field tables, usage examples, tamper detection docs
+- Updated `docs/roadmap.md` — v1.0.2 marked as shipped with Definition of Done
+
+### Changed
+- Version bumped from `1.0.1a1` to `1.0.2a1`
+- `Enforcer.__slots__` extended: `("_engine", "_redactor")` → `("_auditor", "_engine", "_redactor")`
+
+### Design Decisions
+- **JSONL over SQLite:** JSONL is append-only, human-readable, easily verifiable, and works with standard Unix tools. SQLite would add complexity and a binary format. JSONL can always be imported into a database later.
+- **Deferred import pattern:** The auditor imports types from `enforcecore.core.types`, which re-exports from `enforcecore.core` (which imports `enforcer`). To break this cycle, the Auditor import in `enforcer.py` is deferred to runtime inside `_build_auditor()`, with a `TYPE_CHECKING`-only import for type annotations.
+
 ## [1.0.1a1] — 2025-02-20
 
 ### Added
