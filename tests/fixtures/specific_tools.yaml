@@ -1,0 +1,18 @@
+# Only allows specific tools
+name: "specific-tools"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "search_web"
+    - "calculator"
+    - "get_weather"
+  denied_tools:
+    - "execute_shell"
+  pii_redaction:
+    enabled: false
+  resource_limits:
+    max_call_duration_seconds: 10
+    max_cost_usd: 5.00
+
+on_violation: "block"

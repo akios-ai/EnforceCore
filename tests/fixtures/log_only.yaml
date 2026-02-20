@@ -1,0 +1,11 @@
+# Logs violations instead of blocking
+name: "log-only"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "search_web"
+  denied_tools:
+    - "execute_shell"
+
+on_violation: "log"

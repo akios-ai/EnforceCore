@@ -1,0 +1,10 @@
+# Policy with output size limits
+name: "output-limit"
+version: "1.0"
+
+rules:
+  allowed_tools: null
+  max_output_size_bytes: 100
+  redact_output: true
+
+on_violation: "block"
