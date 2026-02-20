@@ -1,0 +1,38 @@
+# Default agent policy — balanced restrictions
+name: "default"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "search_web"
+    - "read_file"
+    - "calculator"
+    - "get_weather"
+
+  denied_tools:
+    - "execute_shell"
+    - "send_email"
+    - "delete_file"
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+      - ssn
+      - credit_card
+    strategy: "placeholder"
+
+  resource_limits:
+    max_call_duration_seconds: 30
+    max_memory_mb: 256
+    max_cost_usd: 5.00
+
+  network:
+    allowed_domains:
+      - "api.openai.com"
+      - "api.anthropic.com"
+      - "*.wikipedia.org"
+    deny_all_other: true
+
+on_violation: "block"

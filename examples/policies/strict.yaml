@@ -1,0 +1,35 @@
+# Strict agent policy — minimal permissions, full protection
+name: "strict"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "calculator"
+    - "get_weather"
+
+  denied_tools: []  # Everything not in allowed_tools is implicitly denied
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+      - ssn
+      - credit_card
+      - ip_address
+      - person_name
+    strategy: "placeholder"
+
+  resource_limits:
+    max_call_duration_seconds: 10
+    max_memory_mb: 128
+    max_cost_usd: 1.00
+
+  network:
+    allowed_domains: []
+    deny_all_other: true
+
+  max_output_size_bytes: 524288  # 512KB
+  redact_output: true
+
+on_violation: "block"

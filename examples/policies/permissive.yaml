@@ -1,0 +1,27 @@
+# Permissive agent policy — broad access, logging only
+name: "permissive"
+version: "1.0"
+
+rules:
+  allowed_tools: null  # null = all tools allowed
+
+  denied_tools:
+    - "execute_shell"  # Still deny shell access even in permissive mode
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - ssn
+      - credit_card
+    strategy: "mask"
+
+  resource_limits:
+    max_call_duration_seconds: 120
+    max_memory_mb: 1024
+    max_cost_usd: 50.00
+
+  network:
+    allowed_domains: []
+    deny_all_other: false  # Allow all domains
+
+on_violation: "log"  # Log violations but don't block
