@@ -1,0 +1,15 @@
+# Full resource limits — time, memory, and cost
+name: "resource-limits"
+version: "1.0"
+
+rules:
+  allowed_tools: null
+  denied_tools: []
+  pii_redaction:
+    enabled: false
+  resource_limits:
+    max_call_duration_seconds: 10.0
+    max_memory_mb: 256
+    max_cost_usd: 10.00
+
+on_violation: "block"

@@ -1,0 +1,13 @@
+# Time-limited policy — calls blocked after 5 seconds
+name: "time-limit"
+version: "1.0"
+
+rules:
+  allowed_tools: null
+  denied_tools: []
+  pii_redaction:
+    enabled: false
+  resource_limits:
+    max_call_duration_seconds: 5.0
+
+on_violation: "block"

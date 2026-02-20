@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3a1] — 2025-02-20
+
+### Added
+
+#### Resource Guard (`enforcecore.guard`)
+- `ResourceGuard` class — wraps function execution with time and memory limits
+  - `execute_sync()` — sync execution with `concurrent.futures.ThreadPoolExecutor` timeout
+  - `execute_async()` — async execution with `asyncio.wait_for` timeout
+  - POSIX memory limits via `setrlimit` (Linux: `RLIMIT_AS`, macOS: `RLIMIT_RSS`)
+  - `platform_info()` — returns dict of supported features per platform
+- `CostTracker` class — thread-safe cumulative cost tracking
+  - `record(cost)` — record a cost, returns new cumulative total
+  - `check_budget()` — raises `CostLimitError` if budget exceeded
+  - Supports both global budget (from `Settings`) and per-policy budget (from `ResourceLimits`)
+  - Thread-safe via `threading.Lock`
+  - `budget` property setter, `reset()` method
+- `KillSwitch` class — coordinated hard termination on limit breach
+  - `trip(reason)` — trip the switch, blocking all subsequent calls
+  - `check()` — raises `ResourceLimitError` if tripped
+  - `reset()` — re-enable calls after investigation
+  - Thread-safe via `threading.Lock`
+- `_MemoryLimiter` (internal) — best-effort POSIX memory limiting with apply/restore
+
+#### Enforcer Pipeline Integration
+- Guard wired into `enforce_sync()` and `enforce_async()` pipeline
+- Pre-call cost budget check (global + per-policy)
+- Time and memory limits applied during function execution
+- `Enforcer.guard` property — access the `ResourceGuard` instance
+- `Enforcer.record_cost(cost_usd)` — convenience method for cost tracking
+- Guard violations (`ResourceLimitError`, `CostLimitError`) recorded in audit trail
+- KillSwitch auto-trips on any resource limit breach
+
+#### Platform Support
+| Feature | Linux | macOS | Windows |
+|---|---|---|---|
+| Time limits | ✓ | ✓ | ✓ |
+| Memory limits | ✓ | ~ (advisory) | ✗ |
+| Cost tracking | ✓ | ✓ | ✓ |
+| KillSwitch | ✓ | ✓ | ✓ |
+
+#### New Public Exports
+- `CostTracker`, `KillSwitch`, `ResourceGuard` added to `enforcecore` top-level imports
+
+#### Testing
+- 71 new tests (51 guard engine unit tests + 20 enforcer integration tests)
+- Total: 284 tests, 96% coverage
+- Thread-safety tests for CostTracker and KillSwitch
+- Memory limiter tests with platform-aware assertions
+- Timeout tests for both sync and async execution
+- KillSwitch cascade tests (timeout → subsequent calls blocked)
+
+#### Examples & Documentation
+- `examples/resource_guard.py` — complete demo of all guard features
+- New test fixtures: `time_limit.yaml`, `cost_limit.yaml`, `resource_limits.yaml`
+
 ## [1.0.2a1] — 2025-02-20
 
 ### Added

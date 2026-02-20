@@ -46,9 +46,10 @@ from enforcecore.core.types import (
     ViolationAction,
     ViolationType,
 )
+from enforcecore.guard.engine import CostTracker, KillSwitch, ResourceGuard
 from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
 
-__version__ = "1.0.2a1"
+__version__ = "1.0.3a1"
 
 __all__ = [
     # Auditor
@@ -59,6 +60,7 @@ __all__ = [
     # Types
     "CallContext",
     "CostLimitError",
+    "CostTracker",
     "Decision",
     "DetectedEntity",
     "DomainDeniedError",
@@ -67,6 +69,8 @@ __all__ = [
     "EnforcementViolation",
     "Enforcer",
     "GuardError",
+    # Guard
+    "KillSwitch",
     # Policy
     "Policy",
     "PolicyEngine",
@@ -78,6 +82,7 @@ __all__ = [
     "RedactionResult",
     "RedactionStrategy",
     "Redactor",
+    "ResourceGuard",
     "ResourceLimitError",
     # Config
     "Settings",
