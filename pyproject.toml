@@ -44,7 +44,6 @@ dependencies = [
     "pydantic-settings>=2.0",
     "pyyaml>=6.0",
     "structlog>=24.1",
-    "cryptography>=42.0",
 ]
 
 [project.optional-dependencies]
@@ -79,8 +78,9 @@ Repository = "https://github.com/akios-ai/EnforceCore"
 Documentation = "https://github.com/akios-ai/EnforceCore/tree/main/docs"
 Issues = "https://github.com/akios-ai/EnforceCore/issues"
 
-[project.scripts]
-enforcecore = "enforcecore.cli.main:app"
+# CLI entry point — uncomment when enforcecore.cli.main is implemented
+# [project.scripts]
+# enforcecore = "enforcecore.cli.main:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["enforcecore"]
