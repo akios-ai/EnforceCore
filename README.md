@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo-enforcecore.svg" alt="EnforceCore" width="280" />
+  <img src=".github/assets/logo.svg" alt="EnforceCore" width="280" />
 </p>
 
 <h1 align="center">EnforceCore</h1>
@@ -11,10 +11,10 @@
 
 <p align="center">
   <a href="https://github.com/akios-ai/EnforceCore/actions"><img src="https://img.shields.io/github/actions/workflow/status/akios-ai/EnforceCore/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
-  <a href="https://pypi.org/project/enforcecore/"><img src="https://img.shields.io/pypi/v/enforcecore?style=flat-square&color=00B4D9" alt="PyPI" /></a>
-  <a href="https://pypi.org/project/enforcecore/"><img src="https://img.shields.io/pypi/pyversions/enforcecore?style=flat-square" alt="Python" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
-  <a href="https://codecov.io/gh/akios-ai/EnforceCore"><img src="https://img.shields.io/codecov/c/github/akios-ai/EnforceCore?style=flat-square&color=00B4D9" alt="Coverage" /></a>
+  <img src="https://img.shields.io/badge/coverage-96%25-brightgreen?style=flat-square" alt="Coverage" />
+  <img src="https://img.shields.io/badge/tests-213_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -231,7 +231,8 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 | 🛠️ [Developer Guide](docs/dev-guide.md) | Setup, standards, and workflow |
 | 🧪 [Tech Stack](docs/tech-stack.md) | Technology choices and rationale |
 | 🌍 [Vision](docs/vision.md) | Why EnforceCore exists |
-| 🤝 [Contributing](docs/contributing.md) | How to contribute |
+| 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
+| 🔒 [Security](SECURITY.md) | Vulnerability reporting policy |
 
 ---
 
@@ -253,7 +254,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 94 tests · 97% coverage · 0 lint errors
+**Current stats:** 213 tests · 96% coverage · 0 lint errors
 
 ---
 

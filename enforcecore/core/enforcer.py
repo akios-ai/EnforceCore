@@ -202,7 +202,7 @@ class Enforcer:
         Raises:
             EnforcementViolation: If the call is blocked by policy.
         """
-        resolved_name = tool_name or getattr(func, "__name__", str(func))
+        resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
         ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
 
         t0 = time.perf_counter()
@@ -291,7 +291,7 @@ class Enforcer:
 
         Same semantics as :meth:`enforce_sync` but awaits *func*.
         """
-        resolved_name = tool_name or getattr(func, "__name__", str(func))
+        resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
         ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
 
         t0 = time.perf_counter()
@@ -504,7 +504,7 @@ def enforce(
 
             @functools.wraps(fn)
             async def async_wrapper(*args: Any, **kwargs: Any) -> T:
-                return await enforcer.enforce_async(  # type: ignore[return-value]
+                return await enforcer.enforce_async(  # type: ignore[no-any-return]
                     fn, *args, tool_name=name, **kwargs
                 )
 
