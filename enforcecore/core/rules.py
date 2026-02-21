@@ -34,6 +34,8 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 
+from enforcecore.utils import extract_strings
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -225,6 +227,15 @@ class RuleEngine:
         if rule.pattern:
             self._compiled[rule.name] = re.compile(rule.pattern, re.IGNORECASE)
 
+    def remove_rule(self, name: str) -> bool:
+        """Remove a rule by name.  Returns True if found and removed."""
+        for i, rule in enumerate(self._rules):
+            if rule.name == name:
+                self._rules.pop(i)
+                self._compiled.pop(name, None)
+                return True
+        return False
+
     @property
     def rules(self) -> list[ContentRule]:
         """All registered rules (read-only copy)."""
@@ -293,7 +304,7 @@ class RuleEngine:
         Recursively inspects nested structures (dicts, lists, tuples).
         """
         violations: list[RuleViolation] = []
-        texts = _extract_strings(args) + _extract_strings(tuple(kwargs.values()))
+        texts = extract_strings(args) + extract_strings(tuple(kwargs.values()))
         for text in texts:
             violations.extend(self.check(text))
         return violations
@@ -307,19 +318,10 @@ class RuleEngine:
 # ---------------------------------------------------------------------------
 
 
-def _extract_strings(values: tuple[Any, ...]) -> list[str]:
-    """Recursively extract string values from nested structures."""
-    result: list[str] = []
-    for v in values:
-        if isinstance(v, str):
-            result.append(v)
-        elif isinstance(v, dict):
-            result.extend(_extract_strings(tuple(v.values())))
-        elif isinstance(v, (list, tuple)):
-            result.extend(_extract_strings(tuple(v)))
-    return result
-
-
 def get_builtin_rules() -> dict[str, ContentRule]:
     """Return a copy of all built-in content rules."""
     return dict(_BUILTIN_RULES)
+
+
+# Backward-compatible alias
+_extract_strings = extract_strings

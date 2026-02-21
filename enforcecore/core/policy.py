@@ -23,6 +23,7 @@ import structlog
 import yaml
 from pydantic import BaseModel, field_validator
 
+from enforcecore.core.rules import ContentRuleConfig
 from enforcecore.core.types import (
     CallContext,
     Decision,
@@ -136,10 +137,13 @@ class Policy(BaseModel):
 
     Policies are normally loaded from YAML files using :meth:`from_file`
     or :func:`load_policy`, but can also be constructed programmatically.
+
+    Use :meth:`merge` to compose policies (org base + project override).
     """
 
     name: str
     version: str = "1.0"
+    extends: str | None = None
     rules: PolicyRules = PolicyRules()
     on_violation: ViolationAction = ViolationAction.BLOCK
 
@@ -156,6 +160,11 @@ class Policy(BaseModel):
     @classmethod
     def from_file(cls, path: str | Path) -> Policy:
         """Load and validate a policy from a YAML file.
+
+        If the YAML contains an ``extends`` key pointing to another file,
+        the base policy is loaded first and the current file is merged on
+        top of it.  Relative paths in ``extends`` are resolved against
+        the directory of the current file.
 
         Raises:
             PolicyLoadError: If the file cannot be found or parsed.
@@ -177,6 +186,14 @@ class Policy(BaseModel):
             raise PolicyLoadError(
                 f"Policy file must contain a YAML mapping, got {type(data).__name__}"
             )
+
+        # Handle ``extends`` directive
+        extends_path = data.pop("extends", None)
+        if extends_path is not None:
+            base_path = (filepath.parent / extends_path).resolve()
+            base = cls.from_file(base_path)
+            override = cls.from_dict(data, source=str(filepath))
+            return cls.merge(base, override)
 
         return cls.from_dict(data, source=str(filepath))
 
@@ -205,6 +222,127 @@ class Policy(BaseModel):
         except (PolicyLoadError, PolicyValidationError) as exc:
             errors.append(str(exc))
         return errors
+
+    @classmethod
+    def merge(cls, base: Policy, override: Policy) -> Policy:
+        """Merge two policies.  *override* wins for scalars, union for lists,
+        deep merge for nested models.
+
+        This enables layered policies: an org-wide base + a project-specific
+        override::
+
+            base = Policy.from_file("org_base.yaml")
+            project = Policy.from_file("project.yaml")
+            merged = Policy.merge(base, project)
+
+        Merge semantics:
+        - ``name`` and ``version``: override wins
+        - ``on_violation``: override wins
+        - ``rules.allowed_tools``: override wins if set, else base
+        - ``rules.denied_tools``: union of both lists (deduplicated)
+        - ``rules.pii_redaction``: override wins if ``enabled`` is True
+        - ``rules.resource_limits``: override wins for each non-None field
+        - ``rules.network``: denied_domains merged (union), override for rest
+        - ``rules.content_rules``: block_patterns merged
+        - ``rules.rate_limits``: per_tool merged (override wins per tool)
+        """
+        base_dict = base.model_dump()
+        over_dict = override.model_dump()
+
+        merged = _deep_merge(base_dict, over_dict)
+
+        # Special list semantics: denied_tools is union
+        base_denied = {t.lower() for t in base.rules.denied_tools}
+        over_denied = {t.lower() for t in override.rules.denied_tools}
+        all_denied = sorted(base_denied | over_denied)
+        merged.setdefault("rules", {})["denied_tools"] = all_denied
+
+        # Network denied_domains: union
+        base_net_denied = set(base.rules.network.denied_domains)
+        over_net_denied = set(override.rules.network.denied_domains)
+        merged["rules"].setdefault("network", {})["denied_domains"] = sorted(
+            base_net_denied | over_net_denied
+        )
+
+        # Content rules block_patterns: union
+        base_patterns = base.rules.content_rules.block_patterns
+        over_patterns = override.rules.content_rules.block_patterns
+        seen_names: set[str] = set()
+        merged_patterns: list[dict[str, str]] = []
+        for p in over_patterns + base_patterns:
+            name = p.get("name", "")
+            if name not in seen_names:
+                seen_names.add(name)
+                merged_patterns.append(p)
+        merged["rules"].setdefault("content_rules", {})["block_patterns"] = merged_patterns
+
+        # Rate limits per_tool: override wins per tool
+        base_per_tool = base.rules.rate_limits.per_tool
+        over_per_tool = override.rules.rate_limits.per_tool
+        merged_per_tool = {**base_per_tool, **over_per_tool}
+        merged["rules"].setdefault("rate_limits", {})["per_tool"] = merged_per_tool
+
+        return cls.from_dict(merged, source="<merge>")
+
+    def dry_run(self, tool_name: str, **kwargs: Any) -> dict[str, Any]:
+        """Preview what the policy would decide for a given tool call.
+
+        Returns a dict with the decision details without executing anything::
+
+            result = policy.dry_run("search_web")
+            # {"tool": "search_web", "decision": "allowed", ...}
+        """
+        from enforcecore.core.rules import RuleEngine
+
+        ctx = CallContext(tool_name=tool_name, args=(), kwargs=kwargs)
+        engine = PolicyEngine(self)
+        pre = engine.evaluate_pre_call(ctx)
+
+        result: dict[str, Any] = {
+            "tool": tool_name,
+            "policy": self.name,
+            "decision": pre.decision.value,
+            "reason": pre.reason,
+            "violation_type": pre.violation_type.value if pre.violation_type else None,
+        }
+
+        # Check content rules
+        if self.rules.content_rules.enabled and kwargs:
+            rule_cfg = ContentRuleConfig(
+                enabled=self.rules.content_rules.enabled,
+                block_patterns=self.rules.content_rules.block_patterns,
+            )
+            rule_engine = RuleEngine.from_config(rule_cfg)
+            violations = rule_engine.check_args((), kwargs) if rule_engine else []
+            result["content_violations"] = [
+                {"rule": v.rule_name, "matched": v.matched_text} for v in violations
+            ]
+
+        # Check network
+        if self.rules.network.enabled:
+            result["network_policy"] = {
+                "allowed_domains": self.rules.network.allowed_domains,
+                "denied_domains": self.rules.network.denied_domains,
+                "deny_all_other": self.rules.network.deny_all_other,
+            }
+
+        # Check rate limits
+        if self.rules.rate_limits.enabled:
+            tool_lower = tool_name.lower()
+            per_tool = self.rules.rate_limits.per_tool.get(tool_lower, {})
+            result["rate_limit"] = {
+                "per_tool": per_tool or None,
+                "global": self.rules.rate_limits.global_limit,
+            }
+
+        # PII redaction
+        if self.rules.pii_redaction.enabled:
+            result["pii_redaction"] = {
+                "categories": self.rules.pii_redaction.categories,
+                "strategy": self.rules.pii_redaction.strategy.value,
+            }
+
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -416,3 +554,24 @@ def load_policy(path: str | Path) -> Policy:
     Equivalent to ``Policy.from_file(path)``.
     """
     return Policy.from_file(path)
+
+
+# ---------------------------------------------------------------------------
+# Merge helpers
+# ---------------------------------------------------------------------------
+
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Deep-merge two dicts.  *override* values win for non-dict scalars;
+    dict values are merged recursively.  ``None`` values in override are
+    treated as "not set" and do not overwrite base.
+    """
+    merged: dict[str, Any] = dict(base)
+    for key, value in override.items():
+        if value is None:
+            continue
+        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged

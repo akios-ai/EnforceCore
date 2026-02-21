@@ -301,7 +301,7 @@ enforcecore eval --compare baseline,enforcecore --output comparison.md
   - Auto-integrated into the existing `Redactor.detect()` pipeline
   - Built-in patterns preserved; custom patterns additive
 - **Secret detection** (`enforcecore.redactor.secrets`)
-  - 6 built-in secret categories: AWS access keys, GitHub tokens, generic API keys,
+  - 7 built-in secret categories: AWS access keys, AWS secret keys, GitHub tokens, generic API keys,
     Bearer/JWT tokens, private keys (PEM), passwords in URLs
   - Integrated as redaction categories alongside PII
   - Configurable via policy YAML (`secret_detection.enabled`, `secret_detection.categories`)
@@ -337,7 +337,7 @@ auditor = Auditor(backend=backend)
 ### Definition of Done:
 - [x] Hook lifecycle works for all 4 events (pre, post, violation, redaction)
 - [x] Custom patterns detected and redacted in enforcer pipeline
-- [x] 6 secret categories detected with low false-positive rate
+- [x] 7 secret categories detected with low false-positive rate
 - [x] Audit backend interface works with custom implementations
 - [x] Backward compatible — existing code works without changes
 - [x] Tests passing, 96%+ coverage
@@ -397,11 +397,11 @@ async def agent_tool(command: str) -> str:
 - [x] Rate limiting works per-tool and globally with sliding window
 - [x] Output content filtering blocks secrets in responses
 - [x] All rules configurable via policy YAML
-- [x] Tests passing, 96%+ coverage (858 tests, 149 new)
+- [x] Tests passing, 96%+ coverage (940 tests, 82 new)
 
 ---
 
-## v1.0.9 — CLI & Policy Tooling
+## v1.0.9 — CLI & Policy Tooling  ✅ Shipped
 **Focus:** Operator-facing tools. Full CLI, policy composition, dry-run mode, schema validation.
 
 ### What ships:
@@ -561,7 +561,7 @@ Each release makes the framework meaningfully more capable. By v1.0.10, EnforceC
 | v1.0.6 | Hardening + Polish | 544 | ✅ Shipped |
 | v1.0.7 | Plugin & Extensibility | 709 | ✅ Shipped |
 | v1.0.8 | Deep Inspection & Network | 858 | ✅ Shipped |
-| v1.0.9 | CLI & Policy Tooling | — | 📋 Planned |
+| v1.0.9 | CLI & Policy Tooling | 940 | ✅ Shipped |
 | v1.0.10 | Observability + PyPI v1.0.0 | — | 📋 Planned |
 
 ---

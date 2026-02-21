@@ -30,7 +30,7 @@ from enforcecore.auditor.engine import (
     verify_trail,
 )
 from enforcecore.core.config import Settings, settings
-from enforcecore.core.enforcer import Enforcer, enforce
+from enforcecore.core.enforcer import Enforcer, clear_policy_cache, enforce
 from enforcecore.core.hardening import (
     EnforcementDepthError,
     HardeningError,
@@ -45,7 +45,17 @@ from enforcecore.core.hardening import (
     is_dev_mode,
     validate_tool_name,
 )
-from enforcecore.core.policy import Policy, PolicyEngine, load_policy
+from enforcecore.core.policy import (
+    ContentRulesPolicyConfig,
+    NetworkPolicy,
+    PIIRedactionConfig,
+    Policy,
+    PolicyEngine,
+    PolicyRules,
+    RateLimitPolicyConfig,
+    ResourceLimits,
+    load_policy,
+)
 from enforcecore.core.rules import (
     ContentRule,
     ContentRuleConfig,
@@ -78,7 +88,11 @@ from enforcecore.core.types import (
 from enforcecore.eval import (
     BenchmarkRunner,
     ScenarioRunner,
+    generate_benchmark_report,
     generate_report,
+    generate_suite_report,
+    get_all_scenarios,
+    get_scenarios_by_category,
 )
 from enforcecore.eval.types import (
     BenchmarkResult,
@@ -114,7 +128,7 @@ from enforcecore.redactor.unicode import (
     prepare_for_detection,
 )
 
-__version__ = "1.0.8a1"
+__version__ = "1.0.9a1"
 
 __all__ = [
     "AuditBackend",
@@ -128,6 +142,7 @@ __all__ = [
     "CallbackBackend",
     "ContentRule",
     "ContentRuleConfig",
+    "ContentRulesPolicyConfig",
     "ContentViolationError",
     "CostLimitError",
     "CostTracker",
@@ -151,15 +166,19 @@ __all__ = [
     "JsonlBackend",
     "KillSwitch",
     "MultiBackend",
+    "NetworkPolicy",
     "NullBackend",
+    "PIIRedactionConfig",
     "PatternRegistry",
     "Policy",
     "PolicyEngine",
     "PolicyError",
     "PolicyLoadError",
+    "PolicyRules",
     "PolicyValidationError",
     "RateLimit",
     "RateLimitError",
+    "RateLimitPolicyConfig",
     "RateLimiter",
     "RedactionError",
     "RedactionEvent",
@@ -169,6 +188,7 @@ __all__ = [
     "Redactor",
     "ResourceGuard",
     "ResourceLimitError",
+    "ResourceLimits",
     "RuleEngine",
     "RuleViolation",
     "Scenario",
@@ -187,15 +207,20 @@ __all__ = [
     "ViolationType",
     "__version__",
     "check_input_size",
+    "clear_policy_cache",
     "decode_encoded_pii",
     "deep_redact",
     "enforce",
     "enter_enforcement",
     "exit_enforcement",
+    "generate_benchmark_report",
     "generate_report",
+    "generate_suite_report",
+    "get_all_scenarios",
     "get_builtin_rules",
     "get_enforcement_chain",
     "get_enforcement_depth",
+    "get_scenarios_by_category",
     "is_dev_mode",
     "load_policy",
     "load_trail",
