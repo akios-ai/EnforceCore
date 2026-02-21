@@ -229,6 +229,140 @@ collaboration on:
 
 ---
 
+## 6. OS-Level Enforcement: Complementary, Not Competing
+
+EnforceCore operates at the **application semantic layer** — it understands
+"tool calls", "PII", and "agent intent." OS-level enforcement mechanisms
+operate at the **kernel/syscall layer** — they understand file descriptors,
+network sockets, and process capabilities. These are fundamentally different
+enforcement points, and both are necessary for defense-in-depth.
+
+### 6.1 SELinux (Type Enforcement)
+
+- **Layer:** Kernel (Linux Security Module)
+- **Model:** Mandatory Access Control (MAC) via type labels. Every process,
+  file, socket, and port is assigned a security context (type). Policy rules
+  define which types can interact.
+- **Strengths:** Extremely fine-grained. Can prevent a compromised process
+  from accessing files it shouldn't touch, even if running as root.
+- **Limitations:** Operates on syscalls and kernel objects — has no concept of
+  "this is a tool call from an AI agent" or "this output contains PII."
+  Policy complexity is notoriously high (hundreds of thousands of rules in
+  reference policy).
+- **Relationship to EnforceCore:** SELinux constrains the Python process
+  running the agent. EnforceCore constrains what the agent does within that
+  process. A compromised agent that EnforceCore blocks at the tool level
+  would also be blocked by SELinux at the syscall level — defense-in-depth.
+
+**References:**
+
+- Smalley, S., Vance, C., & Salamon, W. (2001). Implementing SELinux as a
+  Linux Security Module. *NSA Technical Report*.
+- Spencer, R., Smalley, S., Loscocco, P., Hibler, M., Andersen, D., &
+  Lepreau, J. (2000). The Flask Security Architecture: System Support for
+  Diverse Security Policies. *USENIX Security Symposium*.
+
+### 6.2 AppArmor (Path-Based MAC)
+
+- **Layer:** Kernel (Linux Security Module)
+- **Model:** Path-based MAC. Profiles restrict which file paths, network
+  operations, and capabilities a program can use.
+- **Strengths:** Simpler than SELinux. Profile per application, human-readable
+  rules. Widely deployed (Ubuntu default).
+- **Limitations:** Path-based enforcement can be bypassed via hard links or
+  mount manipulation. No semantic understanding of application-level actions.
+- **Relationship to EnforceCore:** AppArmor restricts the agent process's
+  file and network access at the OS level. EnforceCore restricts which
+  *logical tools* the agent can invoke. An agent denied network access by
+  AppArmor cannot exfiltrate data regardless of EnforceCore's policy, and
+  vice versa.
+
+**References:**
+
+- Bauer, M. (2006). Paranoid Penguin: AppArmor in Ubuntu. *Linux Journal*,
+  2006(148).
+
+### 6.3 seccomp-bpf (Syscall Filtering)
+
+- **Layer:** Kernel (syscall boundary)
+- **Model:** BPF programs that filter syscalls by number and argument values.
+  Used heavily in container runtimes (Docker, gVisor).
+- **Strengths:** Very low overhead. Deterministic. Reduces kernel attack surface.
+- **Limitations:** Operates on raw syscall numbers — cannot distinguish between
+  a file write that encrypts user data (ransomware) and a file write that
+  saves a report (legitimate). No application-level semantics.
+- **Relationship to EnforceCore:** seccomp blocks dangerous syscalls
+  (e.g., `ptrace`, `mount`). EnforceCore blocks dangerous tool invocations
+  (e.g., `execute_shell`, `delete_file`). Both are deterministic, both are
+  low-overhead, but they enforce at different abstraction levels.
+
+**References:**
+
+- Edge, J. (2015). A seccomp overview. *LWN.net*.
+- Drewry, W. (2012). SECure COMPuting with filters. *Linux Kernel
+  Documentation*.
+
+### 6.4 Linux Capabilities
+
+- **Layer:** Kernel (process privilege decomposition)
+- **Model:** Decomposes root privilege into ~40 individual capabilities
+  (e.g., `CAP_NET_RAW`, `CAP_SYS_ADMIN`). Processes run with minimal
+  capability sets.
+- **Strengths:** Fine-grained privilege control without full root.
+- **Limitations:** Binary per-capability — cannot express "allow network
+  access to api.example.com but not to evil.com." No semantic awareness.
+- **Relationship to EnforceCore:** Capabilities restrict what the process
+  *can* do at the OS level. EnforceCore restricts what the agent *is allowed*
+  to do at the application level. Dropping `CAP_NET_RAW` prevents all raw
+  sockets; EnforceCore's network rules can allow `api.openai.com` while
+  blocking `evil.com`.
+
+### 6.5 Comparison Table
+
+| Dimension | SELinux | AppArmor | seccomp-bpf | Capabilities | **EnforceCore** |
+|---|---|---|---|---|---|
+| **Layer** | Kernel (LSM) | Kernel (LSM) | Kernel (syscall) | Kernel (process) | **Application (Python)** |
+| **Enforcement target** | Kernel objects | File paths | Syscall numbers | Privilege bits | **Tool calls** |
+| **Granularity** | Type labels | Path patterns | Syscall + args | 40 capabilities | **Per-tool, per-agent** |
+| **Semantic awareness** | None | None | None | None | **PII, cost, content** |
+| **Policy model** | Type Enforcement | Path profiles | BPF programs | Capability sets | **YAML + Pydantic** |
+| **Overhead** | ~2-5% | ~1-3% | < 1% | Negligible | **< 1ms per call** |
+| **Agent-aware** | No | No | No | No | **Yes** |
+| **Audit trail** | AVC denials | Audit log | Kill/ERRNO | No | **Merkle-chained** |
+| **PII detection** | No | No | No | No | **Yes** |
+| **Cost/rate limits** | No | No | No | No | **Yes** |
+
+### 6.6 The Complementary Model
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Prompt Layer    │ NeMo Guardrails / LlamaGuard     │  Content safety
+├──────────────────┼──────────────────────────────────-┤
+│  Runtime Layer   │ EnforceCore                       │  Tool enforcement, PII, audit
+├──────────────────┼──────────────────────────────────-┤
+│  Container Layer │ Docker / Kubernetes / gVisor       │  Process isolation
+├──────────────────┼──────────────────────────────────-┤
+│  OS Layer        │ SELinux / AppArmor / seccomp       │  Kernel-level MAC
+├──────────────────┼──────────────────────────────────-┤
+│  Hardware Layer  │ TPM / SGX / TrustZone              │  Hardware root of trust
+└─────────────────────────────────────────────────────┘
+```
+
+Each layer catches threats that others miss:
+
+- **Hardware** catches physical tampering and firmware attacks
+- **OS/Kernel** catches syscall-level exploitation and privilege escalation
+- **Container** catches process escape and resource abuse
+- **Runtime (EnforceCore)** catches agent-level policy violations, PII leakage,
+  tool abuse, and cost overruns
+- **Prompt** catches unsafe LLM outputs and prompt injection
+
+**No single layer is sufficient.** EnforceCore is designed to be deployed
+alongside OS-level enforcement, not instead of it. See
+[Defense-in-Depth Architecture](defense-in-depth.md) for deployment guidance.
+
+---
+
 ## Citation
 
 If you use EnforceCore in your research, please cite:
