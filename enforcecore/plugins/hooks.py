@@ -434,7 +434,12 @@ def on_redaction(func: HookCallable) -> HookCallable:
 
 
 def _run_async_hook(hook: HookCallable, ctx: Any) -> None:
-    """Run an async hook from a sync context (best-effort)."""
+    """Run an async hook from a sync context (best-effort).
+
+    When called from within a running event loop (e.g. nested sync-in-async),
+    the coroutine is scheduled as a task. The task reference is stored to
+    prevent garbage collection, and a done-callback logs any exceptions.
+    """
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -442,8 +447,14 @@ def _run_async_hook(hook: HookCallable, ctx: Any) -> None:
 
     if loop is not None and loop.is_running():
         # We are inside a running event loop but in sync code.
-        # Schedule the coroutine but cannot await it here.
-        loop.create_task(hook(ctx))
+        # Schedule the coroutine — store reference so it isn't GC'd.
+        task = loop.create_task(hook(ctx))
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
     else:
         # No running loop: create one and run to completion.
         asyncio.run(hook(ctx))
+
+
+# Set of strong references to prevent fire-and-forget tasks from being GC'd.
+_background_tasks: set[asyncio.Task[Any]] = set()

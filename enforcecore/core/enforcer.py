@@ -766,7 +766,7 @@ class Enforcer:
 # ---------------------------------------------------------------------------
 
 # Cache of loaded policies to avoid re-parsing YAML on every call.
-# LRU-style: bounded to prevent unbounded memory growth.
+# FIFO-bounded: oldest entry evicted when cache exceeds max size.
 _POLICY_CACHE_MAX_SIZE = 64
 _policy_cache: dict[str, Policy] = {}
 _policy_cache_lock = threading.Lock()

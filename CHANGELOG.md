@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9a1] — 2025-02-20
+
+### Added
+
+#### CLI (`enforcecore.cli`)
+- **Full CLI** via `enforcecore` entry point (requires `pip install enforcecore[cli]`)
+- **`enforcecore info`** — show version, Python, platform, installed extras, export count
+- **`enforcecore validate <policy.yaml>`** — schema validation with rich summary table
+- **`enforcecore verify <audit.jsonl>`** — Merkle chain integrity verification
+- **`enforcecore eval --policy <file>`** — adversarial evaluation suite with optional `--verbose`
+- **`enforcecore dry-run <policy.yaml> --tool <name>`** — preview policy decision without execution
+- **`enforcecore inspect <audit.jsonl>`** — explore/filter audit trail entries with `--tail`, `--tool`, `--decision`
+
+#### Policy Composition (`enforcecore.core.policy`)
+- **`Policy.merge(base, override)`** classmethod — deep merge with special semantics:
+  - Scalar fields: override wins
+  - `denied_tools`: union of both lists
+  - `network.denied_domains`: union of both lists
+  - `content_rules.block_patterns`: union (override wins on same name)
+  - `rate_limits.per_tool`: merged (override wins per tool)
+- **`extends` directive** — YAML `extends: base.yaml` loads base policy and merges child on top; supports chained inheritance
+- **`Policy.dry_run(tool_name, **kwargs)`** — preview decisions (allowed/blocked), content violations, PII info, rate limits, network policy without executing
+
+#### Shared Utilities (`enforcecore.utils`)
+- **`extract_strings(values)`** — recursively extracts strings from nested structures (dicts, lists, tuples, sets) with max depth 20 protection
+- Replaces duplicated `_extract_strings` in `rules.py` and `network.py`
+
+#### New Exports
+- `clear_policy_cache` — clear the FIFO-bounded policy cache
+- `ContentRulesPolicyConfig`, `NetworkPolicy`, `PIIRedactionConfig`, `PolicyRules`, `RateLimitPolicyConfig`, `ResourceLimits` — policy model classes
+- `generate_benchmark_report`, `generate_suite_report`, `get_all_scenarios`, `get_scenarios_by_category` — eval utilities
+- Total public API: **105 exports** (was 100)
+
+### Fixed
+
+#### Audit Fixes (from deep audit of v1.0.8a1)
+- **H-1**: `RateLimitError` now uses `ViolationType.RATE_LIMIT` (was incorrectly `RESOURCE_LIMIT`)
+- **H-2**: Async hook `create_task` references now stored in `_background_tasks` set to prevent GC
+- **M-1**: `RuleEngine.remove_rule(name)` method added (was documented but missing)
+- **M-4**: Policy cache comment corrected from "LRU-style" to "FIFO-bounded"
+- **M-5/L-6**: `person_name` PII category warns once at init, silently skips per-call (no spam)
+- **L-1**: Deduplicated `_extract_strings` into shared `enforcecore/utils.py`
+- **L-2**: Unreachable fallback in redactor replaced with `AssertionError`
+- **L-3**: Roadmap secret categories count corrected from 6 → 7
+
+### Changed
+- Version bumped from `1.0.8a1` to `1.0.9a1`
+- CLI entry point uncommented in `pyproject.toml`
+- **940 tests** (82 new), 1 skipped, 4 warnings — all passing
+- Quality gates: ruff ✓, ruff format ✓, mypy strict ✓
+
 ## [1.0.8a1] — 2025-02-20
 
 ### Added

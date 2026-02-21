@@ -51,7 +51,7 @@ class RateLimitError(EnforcementViolation):
             f"Rate limit exceeded for '{tool_name}': max {max_calls} calls per {window_seconds}s",
             tool_name=tool_name,
             policy_name=policy_name,
-            violation_type=ViolationType.RESOURCE_LIMIT,
+            violation_type=ViolationType.RATE_LIMIT,
             reason=f"rate limit exceeded: {max_calls} calls per {window_seconds}s",
         )
         self.max_calls = max_calls

@@ -180,8 +180,16 @@ class Redactor:
 
         # Validate categories
         for cat in self._categories:
-            if cat not in _PII_PATTERNS and cat != "person_name":
-                msg = f"Unknown PII category: '{cat}'. Supported: {[*list(_PII_PATTERNS.keys()), 'person_name']}"
+            if cat == "person_name":
+                logger.warning(
+                    "person_name_category_unsupported",
+                    reason="pure regex detection is too noisy; "
+                    "consider using an NLP pipeline for name detection. "
+                    "Category will be ignored.",
+                )
+                continue
+            if cat not in _PII_PATTERNS:
+                msg = f"Unknown PII category: '{cat}'. Supported: {list(_PII_PATTERNS.keys())}"
                 raise RedactionError(msg)
 
     @property
@@ -220,12 +228,7 @@ class Redactor:
         # Built-in PII patterns
         for cat in self._categories:
             if cat == "person_name":
-                # Skip person_name detection (too noisy with pure regex)
-                logger.warning(
-                    "person_name_detection_skipped",
-                    reason="pure regex detection is too noisy; "
-                    "consider using an NLP pipeline for name detection",
-                )
+                # Skipped — warning emitted once at construction time
                 continue
 
             pattern = _PII_PATTERNS.get(cat)
@@ -346,9 +349,8 @@ class Redactor:
         if self._strategy == RedactionStrategy.REMOVE:
             return ""
 
-        if custom is not None:
-            return custom.placeholder
-        return _PLACEHOLDERS.get(entity.category, f"<{entity.category.upper()}>")
+        msg = f"Unknown redaction strategy: {self._strategy!r}"  # pragma: no cover
+        raise AssertionError(msg)  # pragma: no cover
 
     # -- Helpers --------------------------------------------------------------
 

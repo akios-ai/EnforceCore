@@ -25,6 +25,7 @@ from typing import Any
 import structlog
 
 from enforcecore.core.types import DomainDeniedError
+from enforcecore.utils import extract_strings
 
 logger = structlog.get_logger("enforcecore.network")
 
@@ -135,7 +136,7 @@ class DomainChecker:
         Raises:
             DomainDeniedError: If a denied domain is found.
         """
-        texts = _extract_strings(args) + _extract_strings(tuple(kwargs.values()))
+        texts = extract_strings(args) + extract_strings(tuple(kwargs.values()))
         for text in texts:
             self.check_text(
                 text,
@@ -150,14 +151,5 @@ class DomainChecker:
         )
 
 
-def _extract_strings(values: tuple[Any, ...]) -> list[str]:
-    """Recursively extract string values from nested structures."""
-    result: list[str] = []
-    for v in values:
-        if isinstance(v, str):
-            result.append(v)
-        elif isinstance(v, dict):
-            result.extend(_extract_strings(tuple(v.values())))
-        elif isinstance(v, (list, tuple)):
-            result.extend(_extract_strings(tuple(v)))
-    return result
+# Backward-compatible alias
+_extract_strings = extract_strings
