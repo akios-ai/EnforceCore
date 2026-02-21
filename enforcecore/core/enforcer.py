@@ -44,6 +44,12 @@ from enforcecore.core.types import (
     EnforceCoreError,
     EnforcementViolation,
 )
+from enforcecore.plugins.hooks import (
+    HookContext,
+    HookRegistry,
+    RedactionHookContext,
+    ViolationHookContext,
+)
 from enforcecore.redactor.engine import Redactor
 
 if TYPE_CHECKING:
@@ -243,10 +249,27 @@ class Enforcer:
         ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
 
         t0 = time.perf_counter()
+        hooks = HookRegistry.global_registry()
 
         # Track enforcement nesting
         enter_enforcement(resolved_name)
         try:
+            # Fire pre-call hooks
+            hook_ctx = HookContext(
+                call_id=ctx.call_id,
+                tool_name=resolved_name,
+                policy_name=self.policy_name,
+                args=args,
+                kwargs=kwargs,
+            )
+            hooks.fire_pre_call(hook_ctx)
+            if hook_ctx.abort:
+                raise EnforcementViolation(
+                    hook_ctx.abort_reason or "Aborted by pre-call hook",
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
+
             # Check input size before processing
             check_input_size(args, kwargs)
 
@@ -256,6 +279,17 @@ class Enforcer:
 
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+
+            # Fire redaction hooks if redactions occurred
+            if input_redactions > 0:
+                hooks.fire_redaction(
+                    RedactionHookContext(
+                        call_id=ctx.call_id,
+                        tool_name=resolved_name,
+                        direction="input",
+                        redaction_count=input_redactions,
+                    )
+                )
 
             # Check cost budget before execution
             limits = self._engine.policy.rules.resource_limits
@@ -281,11 +315,27 @@ class Enforcer:
             # Redact outputs
             result, output_redactions = self._redact_output(result)
 
+            # Fire redaction hooks for output redactions
+            if output_redactions > 0:
+                hooks.fire_redaction(
+                    RedactionHookContext(
+                        call_id=ctx.call_id,
+                        tool_name=resolved_name,
+                        direction="output",
+                        redaction_count=output_redactions,
+                    )
+                )
+
             # Post-call
             post = self._engine.evaluate_post_call(ctx, result)
             self._engine.raise_if_blocked(post, ctx)
 
             overhead = (time.perf_counter() - t0) * 1000 - call_duration
+
+            # Fire post-call hooks
+            hook_ctx.result = result
+            hook_ctx.duration_ms = round(call_duration, 2)
+            hooks.fire_post_call(hook_ctx)
 
             logger.info(
                 "call_enforced",
@@ -311,6 +361,16 @@ class Enforcer:
             return result
 
         except EnforcementViolation as exc:
+            # Fire violation hooks
+            hooks.fire_violation(
+                ViolationHookContext(
+                    call_id=ctx.call_id,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                    violation_type=exc.violation_type if hasattr(exc, "violation_type") else "",
+                    violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
+                )
+            )
             # Record blocked calls too
             elapsed = (time.perf_counter() - t0) * 1000
             self._record_audit(
@@ -357,10 +417,27 @@ class Enforcer:
         ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
 
         t0 = time.perf_counter()
+        hooks = HookRegistry.global_registry()
 
         # Track enforcement nesting
         enter_enforcement(resolved_name)
         try:
+            # Fire pre-call hooks (async)
+            hook_ctx = HookContext(
+                call_id=ctx.call_id,
+                tool_name=resolved_name,
+                policy_name=self.policy_name,
+                args=args,
+                kwargs=kwargs,
+            )
+            await hooks.fire_pre_call_async(hook_ctx)
+            if hook_ctx.abort:
+                raise EnforcementViolation(
+                    hook_ctx.abort_reason or "Aborted by pre-call hook",
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
+
             # Check input size before processing
             check_input_size(args, kwargs)
 
@@ -370,6 +447,17 @@ class Enforcer:
 
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+
+            # Fire redaction hooks for input redactions
+            if input_redactions > 0:
+                await hooks.fire_redaction_async(
+                    RedactionHookContext(
+                        call_id=ctx.call_id,
+                        tool_name=resolved_name,
+                        direction="input",
+                        redaction_count=input_redactions,
+                    )
+                )
 
             # Check cost budget before execution
             limits = self._engine.policy.rules.resource_limits
@@ -395,11 +483,27 @@ class Enforcer:
             # Redact outputs
             result, output_redactions = self._redact_output(result)
 
+            # Fire redaction hooks for output redactions
+            if output_redactions > 0:
+                await hooks.fire_redaction_async(
+                    RedactionHookContext(
+                        call_id=ctx.call_id,
+                        tool_name=resolved_name,
+                        direction="output",
+                        redaction_count=output_redactions,
+                    )
+                )
+
             # Post-call
             post = self._engine.evaluate_post_call(ctx, result)
             self._engine.raise_if_blocked(post, ctx)
 
             overhead = (time.perf_counter() - t0) * 1000 - call_duration
+
+            # Fire post-call hooks (async)
+            hook_ctx.result = result
+            hook_ctx.duration_ms = round(call_duration, 2)
+            await hooks.fire_post_call_async(hook_ctx)
 
             logger.info(
                 "call_enforced",
@@ -425,6 +529,16 @@ class Enforcer:
             return result
 
         except EnforcementViolation as exc:
+            # Fire violation hooks (async)
+            await hooks.fire_violation_async(
+                ViolationHookContext(
+                    call_id=ctx.call_id,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                    violation_type=exc.violation_type if hasattr(exc, "violation_type") else "",
+                    violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
+                )
+            )
             elapsed = (time.perf_counter() - t0) * 1000
             self._record_audit(
                 tool_name=resolved_name,

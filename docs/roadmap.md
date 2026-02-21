@@ -12,7 +12,7 @@ This is not a "dump everything and tag v1.0" approach. Each release is usable on
 
 ---
 
-## v1.0.0 — Core Enforcer + Policy Engine
+## v1.0.0 — Core Enforcer + Policy Engine ✅ Shipped
 **Focus:** The absolute minimum viable enforcement framework.
 
 ### What ships:
@@ -135,7 +135,7 @@ assert result.is_valid
 
 ---
 
-## v1.0.3 — Resource Guard
+## v1.0.3 — Resource Guard ✅ Shipped
 **Focus:** Cross-platform resource limits and hard termination.
 
 ### What ships:
@@ -176,7 +176,7 @@ async def expensive_tool(args):
 
 ---
 
-## v1.0.4 — Framework Integrations
+## v1.0.4 — Framework Integrations ✅ Shipped
 **Focus:** First-class adapters for popular agent frameworks.
 
 ### What ships:
@@ -211,7 +211,7 @@ def search(query: str) -> str:
 
 ---
 
-## v1.0.5 — Evaluation Suite
+## v1.0.5 — Evaluation Suite ✅ Shipped
 **Focus:** Reproducible adversarial testing framework for agent containment.
 
 ### What ships:
@@ -283,30 +283,295 @@ enforcecore eval --compare baseline,enforcecore --output comparison.md
 
 ---
 
-## Timeline (Realistic)
+## v1.0.7 — Plugin & Extensibility System ✅ Shipped
+**Focus:** Make EnforceCore extensible. Hooks, custom patterns, secret detection, pluggable audit backends.
 
-| Release | Estimated Duration | Cumulative |
-|---|---|---|
-| v1.0.0 | 1-2 weeks | Week 2 |
-| v1.0.1 | 1 week | Week 3 |
-| v1.0.2 | 1 week | Week 4 |
-| v1.0.3 | 1-2 weeks | Week 6 |
-| v1.0.4 | 1 week | Week 7 |
-| v1.0.5 | 2 weeks | Week 9 |
-| v1.0.6 | 1-2 weeks | Week 11 |
+### What ships:
+- **Hook system** (`enforcecore.plugins.hooks`)
+  - Pre-call, post-call, on-violation, on-redaction lifecycle hooks
+  - `@on_pre_call`, `@on_post_call`, `@on_violation`, `@on_redaction` decorators
+  - `HookRegistry` class for programmatic hook registration
+  - Both sync and async hooks supported (async hooks auto-awaited)
+  - Hooks receive typed context objects with full call metadata
+  - Hooks can modify context, add metadata, or abort calls
+  - Global and per-policy hook scoping
+- **Custom PII patterns** (`enforcecore.redactor.patterns`)
+  - `PatternRegistry` — register domain-specific regex patterns at runtime
+  - Each pattern: category name, compiled regex, optional validator callable
+  - Auto-integrated into the existing `Redactor.detect()` pipeline
+  - Built-in patterns preserved; custom patterns additive
+- **Secret detection** (`enforcecore.redactor.secrets`)
+  - 6 built-in secret categories: AWS access keys, GitHub tokens, generic API keys,
+    Bearer/JWT tokens, private keys (PEM), passwords in URLs
+  - Integrated as redaction categories alongside PII
+  - Configurable via policy YAML (`secret_detection.enabled`, `secret_detection.categories`)
+- **Pluggable audit backends** (`enforcecore.auditor.backends`)
+  - `AuditBackend` abstract base class with `write()` and `close()`
+  - `JsonlBackend` — refactored from existing `Auditor` (default)
+  - `NullBackend` — discard writes (for testing)
+  - `CallbackBackend` — send entries to user-provided callable (for custom pipelines)
+  - `Auditor` accepts `backend=` parameter for custom destinations
+- **Examples:** Plugin patterns, custom redaction, secret scanning, audit to callback
 
-**Total: ~10-12 weeks to a complete, polished v1.0.6**
+### What a user can do after v1.0.7:
+```python
+from enforcecore.plugins.hooks import on_violation, HookRegistry
 
-This is a realistic timeline for one developer working part-time alongside AKIOS. Adjust if there are contributors.
+@on_violation
+def alert_on_block(ctx):
+    slack.post(f"BLOCKED: {ctx.tool_name} by {ctx.policy_name}")
+
+# Custom PII pattern
+from enforcecore.redactor.patterns import PatternRegistry
+PatternRegistry.register("employee_id", r"EMP-\d{6}", category="internal_id")
+
+# Secret detection is automatic
+# AWS keys, GitHub tokens, etc. redacted alongside PII
+
+# Custom audit backend
+from enforcecore.auditor.backends import CallbackBackend
+backend = CallbackBackend(lambda entry: send_to_siem(entry))
+auditor = Auditor(backend=backend)
+```
+
+### Definition of Done:
+- [x] Hook lifecycle works for all 4 events (pre, post, violation, redaction)
+- [x] Custom patterns detected and redacted in enforcer pipeline
+- [x] 6 secret categories detected with low false-positive rate
+- [x] Audit backend interface works with custom implementations
+- [x] Backward compatible — existing code works without changes
+- [x] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.8 — Deep Inspection & Network Enforcement
+**Focus:** Move beyond tool-name gating. Inspect arguments, filter content, enforce network boundaries, rate-limit calls.
+
+### What ships:
+- **Argument-level rules** (`enforcecore.core.rules`)
+  - Content rules: block calls where arguments match dangerous patterns
+  - Built-in rules: shell injection (`rm -rf`, `; sudo`), path traversal (`../`),
+    SQL injection fragments, code execution patterns (`exec()`, `eval()`)
+  - Custom rules via regex or callable predicates
+  - Policy YAML `content_rules` section with named rule sets
+- **Network enforcement**
+  - `DomainPolicy` (already modeled) finally enforced at runtime
+  - Domain allow/deny lists checked against URL arguments
+  - Optional outbound request interception (requires `httpx` or `requests` hook)
+- **Rate limiting** (`enforcecore.guard.ratelimit`)
+  - Per-tool call rate limits (e.g., max 10 calls/minute to `search_web`)
+  - Global call rate limits across all tools
+  - Sliding window algorithm (thread-safe)
+  - Policy YAML `rate_limits` section
+- **Output content filtering**
+  - Block responses containing secrets or sensitive patterns (beyond PII)
+  - Configurable content blocklist for output inspection
+- **Example:** Defense-in-depth policy with content rules + network + rate limits
+
+### What a user can do after v1.0.8:
+```python
+# policy.yaml:
+# content_rules:
+#   block_patterns:
+#     - name: shell_injection
+#       pattern: "rm\\s+-rf|;\\s*sudo|&&\\s*curl"
+#       action: block
+# network:
+#   allowed_domains: ["api.openai.com", "*.internal.corp"]
+#   denied_domains: ["*.malware.xyz"]
+# rate_limits:
+#   search_web: { max_calls: 10, window_seconds: 60 }
+#   global: { max_calls: 100, window_seconds: 60 }
+
+@enforce(policy="defense_in_depth.yaml")
+async def agent_tool(command: str) -> str:
+    # Blocked if command contains "rm -rf" (content rule)
+    # Blocked if URL targets denied domain (network enforcement)
+    # Blocked if called more than 10x/minute (rate limit)
+    return await execute(command)
+```
+
+### Definition of Done:
+- [ ] Content rules block shell injection, path traversal, SQL injection
+- [ ] Domain allow/deny lists enforced on URL arguments
+- [ ] Rate limiting works per-tool and globally with sliding window
+- [ ] Output content filtering blocks secrets in responses
+- [ ] All rules configurable via policy YAML
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.9 — CLI & Policy Tooling
+**Focus:** Operator-facing tools. Full CLI, policy composition, dry-run mode, schema validation.
+
+### What ships:
+- **Full CLI** (`enforcecore.cli`)
+  - `enforcecore validate <policy.yaml>` — validate policy schema
+  - `enforcecore verify <audit.jsonl>` — verify Merkle chain integrity
+  - `enforcecore eval [--scenarios ...] [--policy ...]` — run evaluation suite
+  - `enforcecore info` — show version, platform, Python, installed extras
+  - `enforcecore dry-run <policy.yaml> --calls <calls.jsonl>` — preview decisions
+  - `enforcecore inspect <audit.jsonl> [--tail N] [--filter ...]` — explore audit trails
+  - Rich terminal output with colors and tables (via `rich` + `typer`)
+- **Policy composition**
+  - `Policy.merge(base, override)` — layer policies (org base + project override)
+  - `extends:` directive in policy YAML for inheritance
+  - Merge semantics: override wins for scalars, union for lists, deep merge for dicts
+- **Dry-run mode**
+  - Replay a corpus of tool calls against a policy without executing
+  - Shows allow/block/redact decisions for each call
+  - Outputs summary statistics (block rate, redaction count, etc.)
+  - Useful for policy tuning before deployment
+- **Policy schema export**
+  - `enforcecore schema` — export JSON Schema for policy YAML
+  - Enables IDE autocompletion in policy files
+- **Example:** Policy composition and dry-run workflow
+
+### What a user can do after v1.0.9:
+```bash
+# Compose policies
+# project_policy.yaml:
+#   extends: org_base.yaml
+#   allowed_tools: [search_web, write_file]
+
+# Dry-run to preview enforcement
+enforcecore dry-run project_policy.yaml --calls recorded_calls.jsonl
+# Output: 142 allowed, 23 blocked, 7 redacted
+
+# Inspect recent audit entries
+enforcecore inspect audit.jsonl --tail 20 --filter decision=blocked
+
+# Export JSON schema for IDE support
+enforcecore schema > enforcecore-policy.schema.json
+```
+
+### Definition of Done:
+- [ ] All 6 CLI commands working with rich output
+- [ ] Policy composition with `extends:` and `merge()` works correctly
+- [ ] Dry-run replays calls and shows accurate decisions
+- [ ] Schema export enables IDE autocompletion
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.10 — Observability & Production Release
+**Focus:** Enterprise observability, operational maturity, and the stable v1.0.0 release to PyPI.
+
+### What ships:
+- **OpenTelemetry integration** (`enforcecore.telemetry`)
+  - Traces: span per enforcement call with tool name, decision, duration
+  - Metrics: counters (calls, blocks, redactions), histograms (latency), gauges (cost)
+  - Auto-instrumentation: opt-in via `enforcecore[telemetry]` extra
+  - Works with any OTel-compatible backend (Jaeger, Datadog, Grafana, etc.)
+- **Audit trail operations**
+  - Rotation: size-based and time-based log rotation
+  - Retention: configurable max age / max size with automatic cleanup
+  - Compression: gzip completed trail files
+  - Async writes: non-blocking audit for high-throughput systems
+- **Event webhooks**
+  - Configurable HTTP callbacks on violation, cost threshold, audit errors
+  - Built-in retry with exponential backoff
+  - Policy YAML `webhooks` section
+- **Enhanced secret detection**
+  - Cloud provider credentials (GCP, Azure service principal)
+  - Database connection strings
+  - SSH keys and certificates
+- **Stable API declaration**
+  - Remove all alpha (`a1`) suffixes
+  - Semantic versioning commitment: no breaking changes until v2.0
+  - Full API compatibility tests
+- **PyPI publication**
+  - `pip install enforcecore` — the official v1.0.0 stable release
+  - Package signing and provenance attestation
+  - Complete documentation on ReadTheDocs or GitHub Pages
+- **Example:** Full production deployment with telemetry + webhooks + audit rotation
+
+### What a user can do after v1.0.10:
+```bash
+pip install enforcecore
+# OR with all extras:
+pip install enforcecore[all]
+```
+
+```python
+# Full production setup
+from enforcecore import enforce, Settings
+
+# Telemetry auto-instruments when installed
+# pip install enforcecore[telemetry]
+
+# Audit rotation is automatic
+# ENFORCECORE_AUDIT_ROTATE_MB=100
+# ENFORCECORE_AUDIT_RETAIN_DAYS=90
+
+@enforce(policy="production.yaml")
+async def agent_tool(query: str) -> str:
+    return await execute(query)
+
+# Violations trigger webhooks automatically
+# production.yaml:
+#   webhooks:
+#     on_violation: https://hooks.slack.com/...
+#     on_cost_threshold: https://pagerduty.com/...
+```
+
+### Definition of Done:
+- [ ] OpenTelemetry traces and metrics working with Jaeger/Datadog
+- [ ] Audit rotation, retention, and compression working
+- [ ] Webhook delivery with retry logic
+- [ ] All alpha suffixes removed — v1.0.0 stable
+- [ ] Published to PyPI with package signing
+- [ ] Full documentation published
+- [ ] Tests passing, 96%+ coverage
+- [ ] Zero known security issues
+
+---
+
+## Release Arc
+
+```
+Foundation                          Extensibility    Deep Security    Operations       Production
+v1.0.0  v1.0.1  v1.0.2  v1.0.3    v1.0.7           v1.0.8           v1.0.9           v1.0.10
+ Core    PII    Audit   Guard       Plugins          Content Rules    CLI              Telemetry
+        Redact  Trail   Cost        Hooks            Network          Policy Compose   Audit Ops
+                        Kill        Secrets          Rate Limit       Dry-Run          Webhooks
+                                    Backends         Arg Inspection   Schema           PyPI v1.0.0
+
+v1.0.4  v1.0.5  v1.0.6
+ Frame   Eval    Harden
+ Integ   Suite   Unicode
+                 Polish
+```
+
+Each release makes the framework meaningfully more capable. By v1.0.10, EnforceCore is the
+**complete, production-grade runtime enforcement layer** for any Python-based agentic AI system.
+
+---
+
+## Timeline
+
+| Release | Focus | Tests (cumulative) | Status |
+|---|---|---|---|
+| v1.0.0 | Core Enforcer + Policy Engine | 94 | ✅ Shipped |
+| v1.0.1 | PII Redactor | 161 | ✅ Shipped |
+| v1.0.2 | Merkle Audit Trail | 213 | ✅ Shipped |
+| v1.0.3 | Resource Guard + KillSwitch | 284 | ✅ Shipped |
+| v1.0.4 | Framework Integrations | 334 | ✅ Shipped |
+| v1.0.5 | Evaluation Suite | 431 | ✅ Shipped |
+| v1.0.6 | Hardening + Polish | 544 | ✅ Shipped |
+| v1.0.7 | Plugin & Extensibility | — | ✅ Shipped |
+| v1.0.8 | Deep Inspection & Network | — | 📋 Planned |
+| v1.0.9 | CLI & Policy Tooling | — | 📋 Planned |
+| v1.0.10 | Observability + PyPI v1.0.0 | — | 📋 Planned |
 
 ---
 
 ## Beyond v1.0 (Future Directions)
 
-These are **not committed** — they represent potential future work based on community interest and adoption:
+These are **not committed** — they represent potential future work based on adoption:
 
-- **v1.1** — Network-level enforcement (domain filtering, request inspection)
-- **v1.2** — Policy Hub (community repository of reusable policies)
-- **v1.3** — Formal verification integration (model checking of policies)
-- **v1.4** — Multi-language support (TypeScript/Go bindings)
+- **v1.1** — Multi-tenant enforcement (per-agent/per-tenant policy isolation)
+- **v1.2** — Policy Hub (community repository of reusable policies + rule packs)
+- **v1.3** — Formal verification integration (model checking of policy correctness)
+- **v1.4** — Multi-language SDKs (TypeScript, Go, Rust bindings via FFI)
 - **v2.0** — Distributed enforcement for multi-agent systems across processes/machines

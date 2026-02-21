@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7a1] — 2025-02-20
+
+### Added
+
+#### Plugin & Hook System (`enforcecore.plugins.hooks`)
+- **Lifecycle hook registry** (`HookRegistry`)
+  - 4 hook categories: pre-call, post-call, violation, redaction
+  - Thread-safe registration, removal, and execution
+  - Sync and async hooks supported — async hooks auto-awaited in async paths
+  - Hooks are best-effort: exceptions are logged but never break enforcement
+  - Global singleton via `HookRegistry.global_registry()`, per-instance isolation available
+  - `reset_global()` for clean test teardown
+- **Typed context objects** for each hook category:
+  - `HookContext` — pre/post call context with `abort` flag, `metadata` dict, `result`, `duration_ms`
+  - `ViolationHookContext` — violation type, reason, tool/policy info
+  - `RedactionHookContext` — direction (input/output), category, count
+- **Decorator registration** — `@on_pre_call`, `@on_post_call`, `@on_violation`, `@on_redaction`
+- **Enforcer wiring** — hooks fire at every lifecycle point in both `enforce_sync()` and `enforce_async()`
+  - Pre-call hooks can abort execution by setting `ctx.abort = True`
+  - Metadata set by pre-call hooks is available to post-call hooks
+
+#### Custom PII Patterns (`enforcecore.redactor.patterns`)
+- **PatternRegistry** with dual API:
+  - Class-level (global): `register()`, `unregister()`, `get()`, `get_all()`, `categories()`, `clear()`, `count()`
+  - Instance-level (isolated): `add()`, `remove()`, `get_patterns()`, `list_categories()`, `clear_all()`, `pattern_count`
+- **CustomPattern** frozen dataclass — category, compiled regex, placeholder, mask, optional validator callable
+- Thread-safe via locks; validates category (non-empty) and regex (compilable)
+- Default placeholder auto-generated as `<CATEGORY_UPPER>`, default mask as `********`
+- Wired into `Redactor.detect()` — custom patterns scanned alongside built-in PII categories
+
+#### Secret Detection (`enforcecore.redactor.secrets`)
+- **SecretScanner** class with 7 built-in categories:
+  - `aws_access_key` — AKIA/ABIA/ACCA/ASIA prefixed 20-char keys
+  - `aws_secret_key` — 40-char base64 secrets after key=/: separators
+  - `github_token` — ghp_/gho_/ghs_/ghr_ prefixed tokens
+  - `generic_api_key` — api_key/apikey/api-key followed by 16-128 chars
+  - `bearer_token` — Bearer/JWT tokens in Authorization headers
+  - `private_key` — PEM-encoded private keys (RSA, EC, DSA, OPENSSH)
+  - `password_in_url` — passwords in connection strings (http, postgres, mongodb, etc.)
+- **DetectedSecret** frozen dataclass — category, start, end, text
+- Category-limiting: `SecretScanner(categories=["aws_access_key", "github_token"])`
+- Overlap removal keeps the longer match
+- Results sorted descending by position for safe right-to-left replacement
+- `scan_and_report()` returns count-per-category dict for quick auditing
+- Helper functions: `get_secret_placeholder()`, `get_secret_mask()`, `get_all_secret_categories()`
+- Wired into `Redactor` via `secret_detection=True` parameter
+
+#### Pluggable Audit Backends (`enforcecore.auditor.backends`)
+- **AuditBackend** abstract base class — `write(entry_dict)`, `close()`, context manager support
+- **JsonlBackend** — append-only JSONL files, thread-safe, creates parent dirs
+- **NullBackend** — discards entries with counter (testing/benchmarking)
+- **CallbackBackend** — sends to user callable, optional `on_error` handler, entry counter
+- **MultiBackend** — fan-out to multiple backends, logs errors but continues
+- `Auditor` now accepts optional `backend=` parameter (backward compatible)
+- `output_path` now optional when backend is provided
+
+#### New Public Exports (22 new, 90 total)
+- Backends: `AuditBackend`, `CallbackBackend`, `JsonlBackend`, `MultiBackend`, `NullBackend`
+- Hooks: `HookContext`, `HookRegistry`, `RedactionHookContext`, `ViolationHookContext`,
+  `on_pre_call`, `on_post_call`, `on_violation`, `on_redaction`
+- Patterns: `CustomPattern`, `PatternRegistry`
+- Secrets: `DetectedSecret`, `SecretScanner`
+
+#### Testing
+- 165 new tests across 5 test files:
+  - `test_hooks.py` — hook registry, sync/async firing, abort, decorators, error resilience
+  - `test_patterns.py` — global/instance registry, validation, regex matching
+  - `test_secrets.py` — all 7 categories, scan_and_report, helpers, overlap removal
+  - `test_backends.py` — all 4 backends, ABC validation, Auditor integration, chain integrity
+  - `test_plugin_integration.py` — hooks in enforcer pipeline, async hooks, redaction hooks,
+    abort via hook, metadata passing, combined features
+- Total: **709 tests**
+
+### Changed
+- Version bumped from `1.0.6a1` to `1.0.7a1`
+- `enforcecore.__init__.py` updated with 22 new exports (90 total)
+- `enforcecore.core.enforcer` — both sync/async paths now fire hooks at all lifecycle points
+- `enforcecore.redactor.engine` — detects custom patterns and secrets alongside built-in PII
+- `enforcecore.auditor.engine` — supports pluggable backends via `backend=` parameter
+
 ## [1.0.6a1] — 2025-02-20
 
 ### Added
