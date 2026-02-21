@@ -79,6 +79,31 @@ from enforcecore import (
     InputTooLargeError,        # Payload exceeds limit (v1.0.6)
     EnforcementDepthError,     # Recursive depth exceeded (v1.0.6)
 
+    # Plugin hooks (v1.0.7)
+    HookContext,               # Pre/post call hook context
+    HookRegistry,              # Hook registration and firing
+    ViolationHookContext,      # Violation hook context
+    RedactionHookContext,      # Redaction hook context
+    on_pre_call,               # Decorator: register pre-call hook
+    on_post_call,              # Decorator: register post-call hook
+    on_violation,              # Decorator: register violation hook
+    on_redaction,              # Decorator: register redaction hook
+
+    # Custom patterns (v1.0.7)
+    CustomPattern,             # User-defined PII pattern
+    PatternRegistry,           # Pattern registration and lookup
+
+    # Secret detection (v1.0.7)
+    DetectedSecret,            # A secret found in text
+    SecretScanner,             # Scans text for API keys, tokens, etc.
+
+    # Audit backends (v1.0.7)
+    AuditBackend,              # ABC for custom audit backends
+    JsonlBackend,              # Default JSONL file backend
+    NullBackend,               # Discard backend (testing)
+    CallbackBackend,           # Send entries to a callable
+    MultiBackend,              # Fan-out to multiple backends
+
     # Types
     CallContext,               # Immutable per-call context
     Decision,                  # Enum: allowed/blocked/redacted
@@ -1272,3 +1297,179 @@ Useful for dashboards and quick inspections of large trail files.
 
 For files larger than 8 KB, the auditor seeks near the end of the file to
 find the last entry for chain resumption, instead of reading the entire file.
+
+---
+
+## Plugin & Extensibility API (v1.0.7)
+
+### Hook System (`enforcecore.plugins.hooks`)
+
+#### Lifecycle Events
+
+| Event | When | Context | Can abort? |
+|---|---|---|---|
+| `pre_call` | Before policy evaluation | `HookContext` | ✅ Yes |
+| `post_call` | After successful execution | `HookContext` (with result) | No |
+| `violation` | When a call is blocked | `ViolationHookContext` | No |
+| `redaction` | When PII is redacted | `RedactionHookContext` | No |
+
+#### Decorator API
+
+```python
+from enforcecore import on_pre_call, on_post_call, on_violation, on_redaction
+
+@on_pre_call
+def log_calls(ctx: HookContext):
+    print(f"Calling {ctx.tool_name}")
+
+@on_post_call
+def measure_latency(ctx: HookContext):
+    metrics.record(ctx.tool_name, ctx.duration_ms)
+
+@on_violation
+def alert_on_block(ctx: ViolationHookContext):
+    slack.post(f"BLOCKED: {ctx.tool_name} — {ctx.violation_reason}")
+
+@on_redaction
+def track_redactions(ctx: RedactionHookContext):
+    counter.increment(f"pii.{ctx.direction}.{ctx.category}", ctx.redaction_count)
+```
+
+#### Programmatic API
+
+```python
+from enforcecore import HookRegistry
+
+registry = HookRegistry.global_registry()
+registry.add_pre_call(my_hook_fn)
+registry.add_violation(my_alert_fn)
+
+# Instance isolation (for testing)
+isolated = HookRegistry()
+isolated.add_pre_call(test_hook)
+
+# Count & clear
+print(registry.total_count)
+registry.clear()
+```
+
+#### Pre-call Abort
+
+```python
+@on_pre_call
+def rate_limiter(ctx: HookContext):
+    if is_rate_limited(ctx.tool_name):
+        ctx.abort = True
+        ctx.abort_reason = "Rate limit exceeded"
+```
+
+#### Async Hooks
+
+```python
+@on_pre_call
+async def async_audit(ctx: HookContext):
+    await audit_service.log(ctx.tool_name)
+```
+
+Async hooks are awaited in `enforce_async()` and run via `asyncio.run()` in `enforce_sync()`.
+
+---
+
+### Custom PII Patterns (`enforcecore.redactor.patterns`)
+
+```python
+from enforcecore import PatternRegistry
+
+# Register a domain-specific pattern
+PatternRegistry.register(
+    "employee_id",
+    r"EMP-\d{6}",
+    placeholder="<EMPLOYEE_ID>",
+    mask="EMP-******",
+)
+
+# With validation to reduce false positives
+PatternRegistry.register(
+    "medical_record",
+    r"MRN-\d{8}",
+    validator=lambda match: match.startswith("MRN-"),
+)
+
+# Query
+PatternRegistry.categories()   # ["employee_id", "medical_record"]
+PatternRegistry.count()        # 2
+
+# Unregister
+PatternRegistry.unregister("employee_id")
+
+# Instance isolation (for testing)
+isolated = PatternRegistry()
+isolated.add("test_pattern", r"TEST-\d+")
+```
+
+Custom patterns are automatically scanned alongside built-in PII categories during redaction.
+
+---
+
+### Secret Detection (`enforcecore.redactor.secrets`)
+
+```python
+from enforcecore import SecretScanner, DetectedSecret
+
+scanner = SecretScanner()
+secrets = scanner.detect("My key is AKIAIOSFODNN7EXAMPLE")
+# [DetectedSecret(category="aws_access_key", start=10, end=30, text="AKIA...")]
+
+# Limit to specific categories
+scanner = SecretScanner(categories=["github_token", "private_key"])
+
+# Quick audit
+counts = scanner.scan_and_report(text)
+# {"aws_access_key": 1, "github_token": 2}
+```
+
+Built-in categories: `aws_access_key`, `aws_secret_key`, `github_token`, `generic_api_key`, `bearer_token`, `private_key`, `password_in_url`.
+
+---
+
+### Pluggable Audit Backends (`enforcecore.auditor.backends`)
+
+```python
+from enforcecore import (
+    AuditBackend, JsonlBackend, NullBackend,
+    CallbackBackend, MultiBackend, Auditor,
+)
+
+# Default JSONL backend
+backend = JsonlBackend("audit/trail.jsonl")
+
+# Null backend (testing)
+backend = NullBackend()
+
+# Callback backend (send to custom pipeline)
+entries = []
+backend = CallbackBackend(entries.append)
+
+# Error handling
+backend = CallbackBackend(
+    send_to_siem,
+    on_error=lambda exc, entry: logger.error(f"SIEM error: {exc}"),
+)
+
+# Fan-out to multiple backends
+backend = MultiBackend([
+    JsonlBackend("audit.jsonl"),
+    CallbackBackend(send_to_siem),
+])
+
+# Use with Auditor
+auditor = Auditor(backend=backend)
+
+# Custom backend
+class S3Backend(AuditBackend):
+    def write(self, entry_dict: dict) -> None:
+        s3.put_object(Body=json.dumps(entry_dict), ...)
+
+    def close(self) -> None:
+        pass  # flush buffers if any
+```

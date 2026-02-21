@@ -15,6 +15,13 @@ Basic usage::
 See https://github.com/akios-ai/EnforceCore for documentation.
 """
 
+from enforcecore.auditor.backends import (
+    AuditBackend,
+    CallbackBackend,
+    JsonlBackend,
+    MultiBackend,
+    NullBackend,
+)
 from enforcecore.auditor.engine import (
     AuditEntry,
     Auditor,
@@ -77,7 +84,19 @@ from enforcecore.eval.types import (
 )
 from enforcecore.guard.engine import CostTracker, KillSwitch, ResourceGuard
 from enforcecore.integrations._base import require_package, wrap_with_policy
+from enforcecore.plugins.hooks import (
+    HookContext,
+    HookRegistry,
+    RedactionHookContext,
+    ViolationHookContext,
+    on_post_call,
+    on_pre_call,
+    on_redaction,
+    on_violation,
+)
 from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
+from enforcecore.redactor.patterns import CustomPattern, PatternRegistry
+from enforcecore.redactor.secrets import DetectedSecret, SecretScanner
 from enforcecore.redactor.unicode import (
     decode_encoded_pii,
     normalize_homoglyphs,
@@ -85,9 +104,10 @@ from enforcecore.redactor.unicode import (
     prepare_for_detection,
 )
 
-__version__ = "1.0.6a1"
+__version__ = "1.0.7a1"
 
 __all__ = [
+    "AuditBackend",
     "AuditEntry",
     "AuditError",
     "Auditor",
@@ -95,10 +115,13 @@ __all__ = [
     "BenchmarkRunner",
     "BenchmarkSuite",
     "CallContext",
+    "CallbackBackend",
     "CostLimitError",
     "CostTracker",
+    "CustomPattern",
     "Decision",
     "DetectedEntity",
+    "DetectedSecret",
     "DomainDeniedError",
     "EnforceCoreError",
     "EnforcementDepthError",
@@ -107,9 +130,15 @@ __all__ = [
     "Enforcer",
     "GuardError",
     "HardeningError",
+    "HookContext",
+    "HookRegistry",
     "InputTooLargeError",
     "InvalidToolNameError",
+    "JsonlBackend",
     "KillSwitch",
+    "MultiBackend",
+    "NullBackend",
+    "PatternRegistry",
     "Policy",
     "PolicyEngine",
     "PolicyError",
@@ -117,6 +146,7 @@ __all__ = [
     "PolicyValidationError",
     "RedactionError",
     "RedactionEvent",
+    "RedactionHookContext",
     "RedactionResult",
     "RedactionStrategy",
     "Redactor",
@@ -126,6 +156,7 @@ __all__ = [
     "ScenarioOutcome",
     "ScenarioResult",
     "ScenarioRunner",
+    "SecretScanner",
     "Settings",
     "Severity",
     "SuiteResult",
@@ -133,6 +164,7 @@ __all__ = [
     "ToolDeniedError",
     "VerificationResult",
     "ViolationAction",
+    "ViolationHookContext",
     "ViolationType",
     "__version__",
     "check_input_size",
@@ -149,6 +181,10 @@ __all__ = [
     "load_trail",
     "normalize_homoglyphs",
     "normalize_unicode",
+    "on_post_call",
+    "on_pre_call",
+    "on_redaction",
+    "on_violation",
     "prepare_for_detection",
     "require_package",
     "settings",

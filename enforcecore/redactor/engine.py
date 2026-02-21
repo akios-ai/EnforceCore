@@ -29,6 +29,12 @@ from enforcecore.core.types import (
     RedactionEvent,
     RedactionStrategy,
 )
+from enforcecore.redactor.patterns import PatternRegistry
+from enforcecore.redactor.secrets import (
+    SecretScanner,
+    get_secret_mask,
+    get_secret_placeholder,
+)
 from enforcecore.redactor.unicode import prepare_for_detection
 
 if TYPE_CHECKING:
@@ -137,12 +143,15 @@ class Redactor:
         print(result.count)  # 2
     """
 
-    __slots__ = ("_categories", "_strategy")
+    __slots__ = ("_categories", "_secret_scanner", "_strategy")
 
     def __init__(
         self,
         categories: Sequence[str] | None = None,
         strategy: RedactionStrategy = RedactionStrategy.PLACEHOLDER,
+        *,
+        secret_detection: bool = False,
+        secret_categories: tuple[str, ...] | list[str] | None = None,
     ) -> None:
         """Initialize the redactor.
 
@@ -151,10 +160,17 @@ class Redactor:
                 Supported: ``email``, ``phone``, ``ssn``, ``credit_card``,
                 ``ip_address``.
             strategy: How to redact detected PII. Default: ``placeholder``.
+            secret_detection: Enable secret detection (API keys, tokens, etc.).
+            secret_categories: Secret categories to detect. Defaults to all.
         """
         default_cats = ["email", "phone", "ssn", "credit_card", "ip_address"]
         self._categories = list(categories) if categories else default_cats
         self._strategy = strategy
+        self._secret_scanner: SecretScanner | None = None
+
+        if secret_detection:
+            cats = tuple(secret_categories) if secret_categories else None
+            self._secret_scanner = SecretScanner(categories=cats)
 
         # Validate categories
         for cat in self._categories:
@@ -177,11 +193,15 @@ class Redactor:
 
         Returns entities sorted by start position (descending) for safe
         replacement from right to left.
+
+        Includes built-in PII patterns, custom patterns from the
+        PatternRegistry, and secret patterns if enabled.
         """
         # Apply unicode normalization to defeat evasion techniques
         normalized = prepare_for_detection(text)
         entities: list[DetectedEntity] = []
 
+        # Built-in PII patterns
         for cat in self._categories:
             if cat == "person_name":
                 # Skip person_name detection (too noisy with pure regex)
@@ -203,6 +223,34 @@ class Redactor:
                         start=match.start(),
                         end=match.end(),
                         text=match.group(),
+                    )
+                )
+
+        # Custom patterns from the global registry
+        for cat, custom in PatternRegistry.get_all().items():
+            for match in custom.regex.finditer(normalized):
+                matched_text = match.group()
+                # Apply optional validator
+                if custom.validator is not None and not custom.validator(matched_text):
+                    continue
+                entities.append(
+                    DetectedEntity(
+                        category=cat,
+                        start=match.start(),
+                        end=match.end(),
+                        text=matched_text,
+                    )
+                )
+
+        # Secret detection
+        if self._secret_scanner is not None:
+            for secret in self._secret_scanner.detect(normalized):
+                entities.append(
+                    DetectedEntity(
+                        category=secret.category,
+                        start=secret.start,
+                        end=secret.end,
+                        text=secret.text,
                     )
                 )
 
@@ -262,11 +310,18 @@ class Redactor:
 
     def _get_replacement(self, entity: DetectedEntity) -> str:
         """Generate the replacement string for a detected entity."""
+        # Check if it's a custom pattern category
+        custom = PatternRegistry.get(entity.category)
+
         if self._strategy == RedactionStrategy.PLACEHOLDER:
-            return _PLACEHOLDERS.get(entity.category, f"<{entity.category.upper()}>")
+            if custom is not None:
+                return custom.placeholder
+            return _PLACEHOLDERS.get(entity.category) or get_secret_placeholder(entity.category)
 
         if self._strategy == RedactionStrategy.MASK:
-            return _MASKS.get(entity.category, "*" * len(entity.text))
+            if custom is not None:
+                return custom.mask
+            return _MASKS.get(entity.category) or get_secret_mask(entity.category)
 
         if self._strategy == RedactionStrategy.HASH:
             h = hashlib.sha256(entity.text.encode()).hexdigest()[:16]
@@ -275,6 +330,8 @@ class Redactor:
         if self._strategy == RedactionStrategy.REMOVE:
             return ""
 
+        if custom is not None:
+            return custom.placeholder
         return _PLACEHOLDERS.get(entity.category, f"<{entity.category.upper()}>")
 
     # -- Helpers --------------------------------------------------------------

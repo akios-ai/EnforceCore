@@ -164,22 +164,46 @@ class Auditor:
         print(entry.entry_hash)  # "a1b2c3..."
     """
 
-    __slots__ = ("_entry_count", "_last_hash", "_lock", "_output_path")
+    __slots__ = ("_backend", "_entry_count", "_last_hash", "_lock", "_output_path")
 
-    def __init__(self, output_path: str | Path) -> None:
+    def __init__(
+        self,
+        output_path: str | Path | None = None,
+        *,
+        backend: Any | None = None,
+    ) -> None:
         """Initialize the auditor.
 
         Args:
             output_path: Path to the JSONL file. Created if it doesn't exist.
-                Parent directories are created automatically.
+                Parent directories are created automatically. Ignored if
+                ``backend`` is provided.
+            backend: Optional pluggable audit backend (v1.0.7+). Must
+                implement ``write(entry_dict)`` and ``close()``. If not
+                provided, defaults to a ``JsonlBackend`` writing to
+                ``output_path``.
         """
-        self._output_path = Path(output_path)
         self._lock = threading.Lock()
         self._last_hash = ""
         self._entry_count = 0
 
+        # Set up backend
+        if backend is not None:
+            self._backend = backend
+            self._output_path = Path(output_path) if output_path else None
+        else:
+            if output_path is None:
+                msg = "Either output_path or backend must be provided"
+                raise AuditError(msg)
+            self._output_path = Path(output_path)
+            self._backend = None  # Use legacy direct file writes
+
         # Resume chain from existing file
-        if self._output_path.exists() and self._output_path.stat().st_size > 0:
+        if (
+            self._output_path is not None
+            and self._output_path.exists()
+            and self._output_path.stat().st_size > 0
+        ):
             self._resume_chain()
 
     def _resume_chain(self) -> None:
@@ -187,6 +211,7 @@ class Auditor:
 
         Uses reverse seeking for efficiency on large files.
         """
+        assert self._output_path is not None  # Guarded by caller
         try:
             # Count entries and find last line by seeking from end
             last_line = ""
@@ -228,8 +253,13 @@ class Auditor:
             raise AuditError(msg) from exc
 
     @property
-    def output_path(self) -> Path:
+    def output_path(self) -> Path | None:
         return self._output_path
+
+    @property
+    def backend(self) -> Any | None:
+        """The audit backend, if using pluggable backends."""
+        return self._backend
 
     @property
     def last_hash(self) -> str:
@@ -307,14 +337,19 @@ class Auditor:
             return entry
 
     def _write_entry(self, entry: AuditEntry) -> None:
-        """Append an entry to the JSONL file."""
+        """Append an entry to the backend or JSONL file."""
         try:
-            self._output_path.parent.mkdir(parents=True, exist_ok=True)
-            with self._output_path.open("a", encoding="utf-8") as f:
-                f.write(entry.to_json() + "\n")
-                f.flush()
+            if self._backend is not None:
+                # Use pluggable backend
+                self._backend.write(entry.to_dict())
+            elif self._output_path is not None:
+                # Legacy direct file write
+                self._output_path.parent.mkdir(parents=True, exist_ok=True)
+                with self._output_path.open("a", encoding="utf-8") as f:
+                    f.write(entry.to_json() + "\n")
+                    f.flush()
         except OSError as exc:
-            msg = f"Failed to write audit entry to {self._output_path}: {exc}"
+            msg = f"Failed to write audit entry: {exc}"
             raise AuditError(msg) from exc
 
 
