@@ -52,6 +52,12 @@ async def search_web(query: str) -> str:
 | **Provable?** | No | Yes (structurally impossible violations) |
 | **EU AI Act ready?** | ❌ | ✅ |
 
+> **EnforceCore vs. OS-level security:** EnforceCore operates at the
+> *application semantic layer* — it understands tool calls, PII, and cost
+> budgets. It does not replace SELinux, AppArmor, seccomp, or container
+> sandboxing. These are complementary — use both for
+> [defense-in-depth](docs/defense-in-depth.md).
+
 ---
 
 ## Architecture
@@ -258,7 +264,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.15a1** | End-to-End Examples & Integration | ✅ Shipped |
 | **v1.0.16a1** | API Freeze & Stability Audit | ✅ Shipped |
 | **v1.0.17a1** | Adversarial Scenario Expansion | ✅ Shipped |
-| **v1.0.18a1** | Security Landscape & Positioning | 📋 Planned |
+| **v1.0.18a1** | Security Landscape & Positioning | ✅ Shipped |
 | **v1.0.19a1** | Pre-Release Polish & Community | 📋 Planned |
 | **v1.0.20a1** | Packaging & Publication | 📋 Planned |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
@@ -279,6 +285,8 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 | 🧪 [Tech Stack](docs/tech-stack.md) | Technology choices and rationale |
 | 📊 [Evaluation](docs/evaluation.md) | Adversarial scenarios, benchmarks, and reports |
 | 📄 [Related Work](docs/related-work.md) | Survey and academic positioning |
+| 🛡️ [Defense-in-Depth](docs/defense-in-depth.md) | Security layer architecture and deployment stacks |
+| 🧭 [Tool Selection](docs/security/tool-selection.md) | When to use EnforceCore vs. OS-level security |
 | ❓ [FAQ](docs/faq.md) | Frequently asked questions |
 | 🔍 [Troubleshooting](docs/troubleshooting.md) | Common errors and debugging tips |
 | 🌍 [Vision](docs/vision.md) | Why EnforceCore exists |

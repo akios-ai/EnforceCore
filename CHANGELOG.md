@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.18a1] — 2026-02-21
+
+### Added
+
+#### Security Landscape & Positioning
+- `docs/related-work.md` Section 6: OS-Level Enforcement comparison —
+  SELinux, AppArmor, seccomp-bpf, Linux capabilities with detailed
+  comparison table, references, and complementary model diagram
+- `docs/defense-in-depth.md` — five-layer security architecture document
+  with Mermaid diagrams, threat coverage matrix, recommended deployment
+  stacks (minimal, standard, high-security, multi-agent), Docker example,
+  and gap analysis (side-channel, semantic evasion, transitive deps, model
+  manipulation)
+- `docs/security/tool-selection.md` — "When to Use What" decision tree,
+  4 deployment patterns (simple, customer-facing, untrusted, multi-agent),
+  4 anti-patterns with explanations
+- `docs/architecture.md` — Security-Layer Context section with Mermaid
+  defense-in-depth diagram, scope boundary statement, and layer comparison
+  table
+- README positioning note: "EnforceCore vs. OS-level security" callout in
+  the Why section, links to defense-in-depth and tool-selection docs
+- README documentation table: added Defense-in-Depth and Tool Selection
+  guide links
+
 ## [1.0.17a1] — 2026-02-21
 
 ### Added

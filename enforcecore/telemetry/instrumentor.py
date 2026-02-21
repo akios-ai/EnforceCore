@@ -31,7 +31,7 @@ from enforcecore.telemetry.metrics import EnforceCoreMetrics
 logger = structlog.get_logger("enforcecore.telemetry")
 
 _SCOPE_NAME = "enforcecore"
-_SCOPE_VERSION = "1.0.17a1"
+_SCOPE_VERSION = "1.0.18a1"
 
 
 class EnforceCoreInstrumentor:

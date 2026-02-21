@@ -973,13 +973,13 @@ container sandboxing? Without clear positioning, users either overestimate the s
   - Link to defense-in-depth document
 
 ### Definition of Done:
-- [ ] Related work document includes SELinux, AppArmor, seccomp comparison
-- [ ] Defense-in-depth document with layer diagram published
-- [ ] Architecture docs updated with security-layer context
-- [ ] Tool selection guide with decision tree
-- [ ] README updated with positioning note
-- [ ] No false claims — clearly state what EnforceCore does and does not replace
-- [ ] Tests passing, 96%+ coverage
+- [x] Related work document includes SELinux, AppArmor, seccomp comparison
+- [x] Defense-in-depth document with layer diagram published
+- [x] Architecture docs updated with security-layer context
+- [x] Tool selection guide with decision tree
+- [x] README updated with positioning note
+- [x] No false claims — clearly state what EnforceCore does and does not replace
+- [x] Tests passing, 96%+ coverage
 
 ---
 
@@ -1198,7 +1198,7 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.15a1 | End-to-End Examples & Integration | 1138 | ✅ Shipped |
 | v1.0.16a1 | API Freeze & Stability Audit | 1416 | ✅ Shipped |
 | v1.0.17a1 | Adversarial Scenario Expansion | — | ✅ Shipped |
-| v1.0.18a1 | Security Landscape & Positioning | — | 📋 Planned |
+| v1.0.18a1 | Security Landscape & Positioning | — | ✅ Shipped |
 | v1.0.19a1 | Pre-Release Polish & Community | — | 📋 Planned |
 | v1.0.20a1 | Packaging & Publication | — | 📋 Planned |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |

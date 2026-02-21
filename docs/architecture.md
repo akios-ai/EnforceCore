@@ -476,3 +476,44 @@ graph TB
     style BOUNDARY fill:#fff8e1,stroke:#f57f17
     style TRUSTED fill:#e8f5e9,stroke:#2e7d32
 ```
+
+---
+
+## Security-Layer Context
+
+EnforceCore operates at the **application semantic layer** — it understands
+tool calls, PII, cost budgets, and content rules. It does not replace
+kernel-level MAC (SELinux, AppArmor), syscall filtering (seccomp), or
+container isolation (Docker, gVisor). These are complementary layers in a
+defense-in-depth stack.
+
+```mermaid
+graph TB
+    subgraph "Defense-in-Depth Stack"
+        HW["🔒 Hardware — TPM · SGX"]
+        OS["🐧 OS/Kernel — SELinux · AppArmor · seccomp"]
+        CT["📦 Container — Docker · gVisor · Firecracker"]
+        RT["⚙️ Runtime — EnforceCore"]
+        PR["💬 Prompt — NeMo Guardrails · LlamaGuard"]
+    end
+
+    HW --> OS --> CT --> RT --> PR
+
+    style RT fill:#2d7d46,stroke:#1a5c30,color:#fff
+```
+
+**Scope boundary:** EnforceCore enforces at the Python runtime boundary.
+It does not replace kernel-level MAC or container sandboxing. For production
+deployments, use EnforceCore inside a hardened container with OS-level
+enforcement enabled.
+
+| Layer | Catches | Cannot Catch |
+|---|---|---|
+| OS/Kernel | Unauthorized syscalls, file access | Agent-level tool abuse, PII |
+| Container | Process escape, resource exhaustion | Tool-call semantics |
+| **EnforceCore** | **Tool abuse, PII, cost, rate limits** | **Kernel exploits, container escape** |
+| Prompt | Injection, toxic output | Agent actions after LLM output |
+
+See [Defense-in-Depth Architecture](defense-in-depth.md) for full deployment
+guidance and [Tool Selection Guide](security/tool-selection.md) for when to
+use each layer.
