@@ -322,7 +322,7 @@ def inspect(
     for i, entry in enumerate(shown, 1):
         dec = entry.get("decision", "?")
         dec_color = "green" if dec == "allowed" else "red"
-        duration = entry.get("duration_ms")
+        duration = entry.get("call_duration_ms") or entry.get("duration_ms")
         dur_str = f"{duration:.1f}ms" if isinstance(duration, (int, float)) else "?"
         redactions = entry.get("input_redactions", 0)
         out_redactions = entry.get("output_redactions", 0)

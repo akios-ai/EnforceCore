@@ -321,7 +321,3 @@ class RuleEngine:
 def get_builtin_rules() -> dict[str, ContentRule]:
     """Return a copy of all built-in content rules."""
     return dict(_BUILTIN_RULES)
-
-
-# Backward-compatible alias
-_extract_strings = extract_strings

@@ -247,7 +247,7 @@ class Policy(BaseModel):
         - ``rules.rate_limits``: per_tool merged (override wins per tool)
         """
         base_dict = base.model_dump()
-        over_dict = override.model_dump()
+        over_dict = override.model_dump(exclude_none=True)
 
         merged = _deep_merge(base_dict, over_dict)
 

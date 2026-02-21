@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.10a1] — 2025-02-21
+
+### Added
+
+#### Telemetry (`enforcecore.telemetry`)
+- **`EnforceCoreMetrics`** — thread-safe counters (calls, blocks, redactions, violations, cost) with optional OpenTelemetry binding via `bind_otel(meter)`
+- **`EnforceCoreInstrumentor`** — auto-instruments all enforcement calls via HookRegistry; creates OTel spans per call with tool name, decision, duration, and violation details
+- OTel is optional: `pip install enforcecore[telemetry]` for OpenTelemetry support; in-process metrics work without it
+- Metric constants: `CALLS_TOTAL`, `BLOCKS_TOTAL`, `REDACTIONS_TOTAL`, `VIOLATIONS_TOTAL`, `LATENCY_HISTOGRAM`, `OVERHEAD_HISTOGRAM`, `COST_GAUGE`
+
+#### Audit Rotation (`enforcecore.auditor.rotation`)
+- **`AuditRotator`** — manages audit trail file lifecycle
+  - Size-based rotation: auto-rotate JSONL files when they exceed configurable MB threshold
+  - Time-based retention: auto-delete audit files older than configurable days
+  - Gzip compression: compress rotated files to save disk space
+  - `get_stats()`: file count, total size, compressed count
+- New settings: `audit_rotate_mb` (100), `audit_retain_days` (90), `audit_compress` (True)
+
+#### Event Webhooks (`enforcecore.plugins.webhooks`)
+- **`WebhookDispatcher`** — HTTP POST callbacks for enforcement events
+  - Event types: `violation`, `cost_threshold`, `audit_error`
+  - Retry with exponential backoff (configurable attempts, timeout, backoff)
+  - Auto-registers via HookRegistry `install()`/`uninstall()`
+- **`WebhookEvent`** — frozen dataclass for typed event dispatch
+- New settings: `webhook_on_violation`, `webhook_on_cost_threshold`, `webhook_retry_attempts` (3), `webhook_timeout_seconds` (10)
+
+#### Enhanced Secret Detection
+- 4 new secret categories (11 total, was 7):
+  - `gcp_service_account` — Google Cloud service account key JSON
+  - `azure_connection_string` — Azure storage/service bus connection strings
+  - `database_connection_string` — Database URIs with credentials (postgres, mysql, mongodb, redis)
+  - `ssh_private_key` — OpenSSH private key blocks
+
+### Fixed
+- **H-1**: CLI `inspect` now reads `call_duration_ms` with fallback to `duration_ms` for backward compatibility
+- **H-2**: `Policy.merge()` uses `model_dump(exclude_none=True)` so default `None` values don't overwrite base
+- **M-1**: Core `__init__` now exports `ContentRulesPolicyConfig`, `RateLimitPolicyConfig`, `clear_policy_cache`
+- **M-2**: Fail-open code path now uses redacted args (`r_args`/`r_kwargs`) instead of original arguments
+- **M-4**: CLI test fixture updated to use real `AuditEntry` field names
+- **L-1**: Removed dead `_extract_strings` backward-compat aliases
+- **Bound method identity bug**: Instrumentor and WebhookDispatcher now store bound method references for reliable hook add/remove
+
+### Changed
+- Top-level exports: 110 (was 105)
+- `pyproject.toml`: added `telemetry` optional extra (`opentelemetry-api>=1.20`, `opentelemetry-sdk>=1.20`); `all` extra now includes `telemetry`
+- `mypy` overrides: added `opentelemetry.*` to ignore-missing-imports
+- Version bumped from `1.0.9a1` to `1.0.10a1`
+- Tests: 1038 passing (was 940)
+
 ## [1.0.9a1] — 2025-02-20
 
 ### Added

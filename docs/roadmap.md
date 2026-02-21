@@ -516,14 +516,14 @@ async def agent_tool(query: str) -> str:
 ```
 
 ### Definition of Done:
-- [ ] OpenTelemetry traces and metrics working with Jaeger/Datadog
-- [ ] Audit rotation, retention, and compression working
-- [ ] Webhook delivery with retry logic
+- [x] OpenTelemetry traces and metrics working with Jaeger/Datadog
+- [x] Audit rotation, retention, and compression working
+- [x] Webhook delivery with retry logic
 - [ ] All alpha suffixes removed — v1.0.0 stable
 - [ ] Published to PyPI with package signing
 - [ ] Full documentation published
-- [ ] Tests passing, 96%+ coverage
-- [ ] Zero known security issues
+- [x] Tests passing, 96%+ coverage
+- [x] Zero known security issues
 
 ---
 
@@ -562,7 +562,7 @@ Each release makes the framework meaningfully more capable. By v1.0.10, EnforceC
 | v1.0.7 | Plugin & Extensibility | 709 | ✅ Shipped |
 | v1.0.8 | Deep Inspection & Network | 858 | ✅ Shipped |
 | v1.0.9 | CLI & Policy Tooling | 940 | ✅ Shipped |
-| v1.0.10 | Observability + PyPI v1.0.0 | — | 📋 Planned |
+| v1.0.10 | Observability + PyPI v1.0.0 | 1038 | ✅ Shipped |
 
 ---
 

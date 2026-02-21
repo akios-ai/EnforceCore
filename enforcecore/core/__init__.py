@@ -1,13 +1,15 @@
 """Core enforcement engine — Policy Engine, Enforcer, types, and configuration."""
 
 from enforcecore.core.config import Settings, settings
-from enforcecore.core.enforcer import Enforcer, enforce
+from enforcecore.core.enforcer import Enforcer, clear_policy_cache, enforce
 from enforcecore.core.policy import (
+    ContentRulesPolicyConfig,
     NetworkPolicy,
     PIIRedactionConfig,
     Policy,
     PolicyEngine,
     PolicyRules,
+    RateLimitPolicyConfig,
     ResourceLimits,
     load_policy,
 )
@@ -38,6 +40,7 @@ __all__ = [
     "AuditError",
     # Types & Enums
     "CallContext",
+    "ContentRulesPolicyConfig",
     "CostLimitError",
     "Decision",
     "DomainDeniedError",
@@ -56,6 +59,7 @@ __all__ = [
     "PolicyLoadError",
     "PolicyRules",
     "PolicyValidationError",
+    "RateLimitPolicyConfig",
     "RedactionError",
     "RedactionEvent",
     "RedactionStrategy",
@@ -66,6 +70,7 @@ __all__ = [
     "ToolDeniedError",
     "ViolationAction",
     "ViolationType",
+    "clear_policy_cache",
     "enforce",
     "load_policy",
     "settings",

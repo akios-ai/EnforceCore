@@ -9,9 +9,9 @@ from enforcecore.core.rules import (
     ContentRuleConfig,
     RuleEngine,
     RuleViolation,
-    _extract_strings,
     get_builtin_rules,
 )
+from enforcecore.utils import extract_strings
 
 # ---------------------------------------------------------------------------
 # ContentRule model
@@ -282,20 +282,20 @@ class TestFromConfig:
 
 class TestExtractStrings:
     def test_flat_strings(self) -> None:
-        assert _extract_strings(("a", "b")) == ["a", "b"]
+        assert extract_strings(("a", "b")) == ["a", "b"]
 
     def test_nested_dict(self) -> None:
-        result = _extract_strings(({"key": "value"},))
+        result = extract_strings(({"key": "value"},))
         assert result == ["value"]
 
     def test_nested_list(self) -> None:
-        result = _extract_strings((["a", "b"],))
+        result = extract_strings((["a", "b"],))
         assert result == ["a", "b"]
 
     def test_non_strings_skipped(self) -> None:
-        result = _extract_strings((42, 3.14, None))
+        result = extract_strings((42, 3.14, None))
         assert result == []
 
     def test_deep_nesting(self) -> None:
-        result = _extract_strings(({"a": {"b": ["deep"]}},))
+        result = extract_strings(({"a": {"b": ["deep"]}},))
         assert result == ["deep"]

@@ -154,16 +154,16 @@ class TestL1SharedExtractStrings:
         assert isinstance(result, list)
 
     def test_backward_compat_rules(self) -> None:
-        """Backward-compatible alias in rules module."""
-        from enforcecore.core.rules import _extract_strings
+        """Canonical import from utils module."""
+        from enforcecore.utils import extract_strings as es
 
-        assert _extract_strings(("x",)) == ["x"]
+        assert es(("x",)) == ["x"]
 
     def test_backward_compat_network(self) -> None:
-        """Backward-compatible alias in network module."""
-        from enforcecore.guard.network import _extract_strings
+        """Canonical import from utils module."""
+        from enforcecore.utils import extract_strings as es
 
-        assert _extract_strings(("x",)) == ["x"]
+        assert es(("x",)) == ["x"]
 
 
 # ---------------------------------------------------------------------------

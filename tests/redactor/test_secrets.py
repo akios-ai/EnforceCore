@@ -332,4 +332,4 @@ class TestModuleHelpers:
         assert "aws_access_key" in cats
         assert "github_token" in cats
         assert "private_key" in cats
-        assert len(cats) == 7
+        assert len(cats) == 11

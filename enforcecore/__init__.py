@@ -29,6 +29,7 @@ from enforcecore.auditor.engine import (
     load_trail,
     verify_trail,
 )
+from enforcecore.auditor.rotation import AuditRotator
 from enforcecore.core.config import Settings, settings
 from enforcecore.core.enforcer import Enforcer, clear_policy_cache, enforce
 from enforcecore.core.hardening import (
@@ -118,6 +119,7 @@ from enforcecore.plugins.hooks import (
     on_redaction,
     on_violation,
 )
+from enforcecore.plugins.webhooks import WebhookDispatcher, WebhookEvent
 from enforcecore.redactor.engine import DetectedEntity, RedactionResult, Redactor
 from enforcecore.redactor.patterns import CustomPattern, PatternRegistry
 from enforcecore.redactor.secrets import DetectedSecret, SecretScanner
@@ -127,13 +129,15 @@ from enforcecore.redactor.unicode import (
     normalize_unicode,
     prepare_for_detection,
 )
+from enforcecore.telemetry import EnforceCoreInstrumentor, EnforceCoreMetrics
 
-__version__ = "1.0.9a1"
+__version__ = "1.0.10a1"
 
 __all__ = [
     "AuditBackend",
     "AuditEntry",
     "AuditError",
+    "AuditRotator",
     "Auditor",
     "BenchmarkResult",
     "BenchmarkRunner",
@@ -153,6 +157,8 @@ __all__ = [
     "DomainChecker",
     "DomainDeniedError",
     "EnforceCoreError",
+    "EnforceCoreInstrumentor",
+    "EnforceCoreMetrics",
     "EnforcementDepthError",
     "EnforcementResult",
     "EnforcementViolation",
@@ -205,6 +211,8 @@ __all__ = [
     "ViolationAction",
     "ViolationHookContext",
     "ViolationType",
+    "WebhookDispatcher",
+    "WebhookEvent",
     "__version__",
     "check_input_size",
     "clear_policy_cache",
