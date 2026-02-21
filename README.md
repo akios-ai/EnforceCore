@@ -221,14 +221,21 @@ async def search(query: str) -> str:
 
 ## Performance
 
-| Component | Overhead |
-|---|---|
-| Policy evaluation | < 1ms |
-| PII redaction (v1.0.1) | 5–15ms |
-| Audit entry (v1.0.2) | < 1ms |
-| Resource guard (v1.0.3) | < 1ms (no timeout) |
-| Integration adapter (v1.0.4) | ~0ms (thin shim) |
-| **Typical total** | **< 1ms** (v1.0.0) / **8–20ms** (full stack) |
+> Measured with 1 000 iterations + 100 warmup on Apple Silicon (arm64), Python 3.14.
+> Run `python -m benchmarks.run` for your hardware. See [docs/benchmarks.md](docs/benchmarks.md) for methodology.
+
+| Component | P50 (ms) | P99 (ms) |
+|---|---|---|
+| Policy evaluation | 0.012 | 0.228 |
+| PII redaction (short) | 0.028 | 0.275 |
+| PII redaction (~2KB) | 0.129 | 0.220 |
+| Audit entry (write) | 0.068 | 0.232 |
+| Audit chain verify (100 entries) | 1.114 | 1.457 |
+| Resource guard | < 0.001 | < 0.001 |
+| Rate limiter | < 0.001 | 0.002 |
+| Secret detection | 0.012 | 0.017 |
+| **Full enforcement (E2E)** | **0.056** | **0.892** |
+| **E2E + PII redaction** | **0.093** | **0.807** |
 
 Negligible compared to tool call latency (100ms–10s for API calls).
 
@@ -252,7 +259,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.11a1** | Documentation & Academic Foundation | ✅ Shipped |
 | **v1.0.12a1** | Threat Model & Compliance Mapping | ✅ Shipped |
 | **v1.0.13a1** | Formal Verification & Property Testing | ✅ Shipped |
-| **v1.0.14a1** | Reproducible Benchmarks | 📋 Planned |
+| **v1.0.14a1** | Reproducible Benchmarks & Evaluation | ✅ Shipped |
 | **v1.0.15a1** | End-to-End Examples & Integration | 📋 Planned |
 | **v1.0.16a1** | API Freeze & Stability Audit | 📋 Planned |
 | **v1.0.17a1** | Packaging & Publication | 📋 Planned |

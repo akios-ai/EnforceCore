@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.14a1] — 2026-02-21
+
+### Added
+
+#### Reproducible Benchmark Suite (`enforcecore/eval/benchmarks.py`)
+- Enhanced `_measure()` with configurable warmup phase (default 100 iterations)
+- New percentile fields: P50, P99.9, standard deviation on every benchmark
+- `_percentile()` helper for linear interpolation percentile calculation
+- 8 new component-level benchmarks:
+  - `bench_policy_large_allowlist` — scalability with 100/1000/10000 tools
+  - `bench_pii_long_text` — PII redaction on ~2KB text
+  - `bench_pii_clean_text` — PII scan fast-path (no entities)
+  - `bench_audit_verify` — Merkle chain verification
+  - `bench_rate_limiter` — sliding window acquire
+  - `bench_secret_detection` — AWS/GitHub/bearer token scanning
+- Suite now runs 15 benchmarks total (was 7)
+
+#### Benchmark Types (`enforcecore/eval/types.py`)
+- `BenchmarkResult`: added `p50_ms`, `p999_ms`, `std_dev_ms`, `warmup_iterations`
+- `BenchmarkResult.to_dict()` — JSON-serializable dictionary export
+- `BenchmarkResult.to_row()` — Markdown table row formatting
+- `BenchmarkSuite`: added `cpu`, `machine`, `enforcecore_version` fields
+- `BenchmarkSuite.to_dict()` — structured dict with metadata + results
+- `BenchmarkSuite.to_json()` — indented JSON export
+- `BenchmarkSuite.to_markdown()` — full Markdown report with environment info
+
+#### Benchmark CLI (`benchmarks/`)
+- `python -m benchmarks.run` CLI entry point
+- `--iterations`, `--warmup`, `--format`, `--output` options
+- JSON, Markdown, or both output formats
+- Output to stdout or directory
+
+#### Documentation (`docs/benchmarks.md`)
+- Methodology: warmup, iteration count, percentile calculation, clock source
+- Full reference results table from 1000-iteration run
+- Key observations and performance characteristics
+- Reproduction instructions (CLI and Python API)
+
+#### CI Benchmark Job (`.github/workflows/ci.yml`)
+- New `benchmark` job runs after tests pass
+- Generates JSON + Markdown results as build artifacts
+- 90-day artifact retention for regression tracking
+
+### Changed
+- `BenchmarkRunner.run_all()` now captures CPU, machine, and version metadata
+- `run_all()` now executes 15 benchmarks (up from 7)
+- Updated all existing test fixtures for new `BenchmarkResult` required fields
+
 ## [1.0.13a1] — 2025-02-21
 
 ### Added
