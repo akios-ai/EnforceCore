@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.12a1] — 2025-02-21
+
+### Added
+
+#### Threat Model (`docs/threat-model.md`)
+- Formal threat model with 4 adversary types:
+  - A1: Compromised LLM output (prompt injection, jailbreak)
+  - A2: Malicious tool response (compromised API, MITM)
+  - A3: Insider threat (developer disabling enforcement)
+  - A4: Supply chain (compromised dependency)
+- 4 formal security properties with precise statements:
+  - S1: Fail-closed completeness
+  - S2: Audit completeness
+  - S3: Chain integrity
+  - S4: Redaction totality
+- Each property linked to implementation code and verification tests
+- 5 trust boundaries documented (policy files, env vars, audit storage, hooks, settings singleton)
+- 6 assumptions and 11 known limitations explicitly stated
+- Mermaid diagram of trust zones
+
+#### EU AI Act Compliance Mapping (`docs/compliance/eu-ai-act.md`)
+- Article-by-article mapping for Articles 9, 13, 14, 15, 17
+- Each mapping: requirement → EnforceCore capability → evidence (code paths + tests)
+- Traceability matrix: Article → Module → Test file → Documentation
+- Verification commands for each article
+- Gaps and planned work table with target releases
+
+#### GDPR Considerations (`docs/compliance/gdpr.md`)
+- Article 5(1)(c) — Data minimisation via PII redaction
+- Article 5(1)(e) — Storage limitation via audit retention/rotation
+- Article 25 — Data protection by design (redaction in pipeline)
+- Article 30 — Records of processing via Merkle audit trail
+- Article 17 — Right-to-erasure tension analysis:
+  - Hash-only storage mitigates most concerns
+  - Redact-before-audit pipeline documented
+  - Tombstone strategy discussed (not yet implemented)
+
+#### Attack Surface Analysis (`docs/security/attack-surface.md`)
+- 7 entry point categories enumerated (enforcement API, policy loading, config, audit, redactor, hooks, CLI)
+- Attack vectors with risk level, mitigation, and status for each entry point
+- Full dependency audit (4 core + 10 optional) with risk assessments
+- Dev-mode and fail-open analysis with truth table
+- Summary of 6 unmitigated risks with planned fixes
+
+### Changed
+
+#### SECURITY.md
+- Added security properties table (S1–S4) with caveats
+- Added links to threat model, attack surface, EU AI Act, and GDPR docs
+- Updated design principles to be more precise (fail-open caveat documented)
+- Expanded scope and out-of-scope sections
+
+#### MkDocs Navigation
+- Added Security section (Threat Model, Attack Surface)
+- Added Compliance section (EU AI Act, GDPR)
+
 ## [1.0.11a1] — 2025-02-21
 
 ### Added

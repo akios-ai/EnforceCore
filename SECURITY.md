@@ -27,23 +27,47 @@ We will acknowledge receipt within **48 hours** and provide a timeline for a fix
 
 EnforceCore is a security-critical component. Our design principles:
 
-- **Fail-closed:** If enforcement fails for any reason, the call is blocked. Never fails open.
-- **No bypass paths:** There is no configuration that disables enforcement silently.
-- **Minimal dependencies:** Core enforcement uses only stdlib + Pydantic. Fewer deps = smaller attack surface.
-- **Tamper-proof audit:** Merkle-chained audit trails detect any modification, deletion, or reordering.
+- **Fail-closed:** If enforcement fails for any reason, the call is blocked. Never fails open (unless explicitly configured via `ENFORCECORE_FAIL_OPEN=true`).
+- **No silent bypass:** Enabling fail-open without `ENFORCECORE_DEV_MODE=1` emits a `RuntimeWarning`.
+- **Minimal dependencies:** 4 core runtime deps (pydantic, pydantic-settings, pyyaml, structlog). Fewer deps = smaller attack surface.
+- **Tamper-evident audit:** Merkle-chained audit trails detect any modification, deletion, insertion, or reordering.
+- **Deterministic decisions:** Policy evaluation is purely deterministic — same input always produces the same decision (no randomness, no ML).
+
+## Security Properties
+
+EnforceCore claims four formal security properties (see [Threat Model](docs/threat-model.md) §4 for full details):
+
+| Property | Statement | Caveat |
+|---|---|---|
+| **S1 — Fail-Closed Completeness** | Every enforcement path terminates in ALLOW or BLOCK | `fail_open=True` allows internal (non-violation) errors to pass |
+| **S2 — Audit Completeness** | Every enforced call produces exactly one audit entry | Requires `audit_enabled=True` (default) |
+| **S3 — Chain Integrity** | Any audit trail modification is detectable | Symmetric only — no asymmetric signature (rebuild attack possible) |
+| **S4 — Redaction Totality** | Every PII/secret match is redacted before tool execution | Regex-based — inherent false negatives on novel formats |
+
+## Security Documentation
+
+| Document | Description |
+|---|---|
+| [Threat Model](docs/threat-model.md) | Adversary model (4 types), trust boundaries, formal properties, assumptions, known limitations |
+| [Attack Surface](docs/security/attack-surface.md) | All entry points, attack vectors, mitigations, dependency audit, dev-mode analysis |
+| [EU AI Act Mapping](docs/compliance/eu-ai-act.md) | Articles 9, 13, 14, 15, 17 mapped to EnforceCore capabilities |
+| [GDPR Considerations](docs/compliance/gdpr.md) | Data minimisation, storage limitation, data protection by design, right-to-erasure tension |
 
 ## Scope
 
 The following are in scope for security reports:
 
 - Bypass of policy enforcement (a denied tool call executes)
-- Fail-open behavior (enforcement error allows a call through)
-- Audit trail tampering that goes undetected
-- PII leakage through the redaction engine
-- Dependency vulnerabilities in core dependencies
+- Fail-open behavior (enforcement error allows a call through unexpectedly)
+- Audit trail tampering that goes undetected by `verify_trail()`
+- PII/secret leakage through the redaction engine
+- Dependency vulnerabilities in core dependencies (pydantic, pyyaml, structlog)
+- Unicode evasion of PII detection
 
 ## Out of Scope
 
-- Vulnerabilities in optional/dev dependencies
+- Vulnerabilities in optional/dev dependencies (presidio, opentelemetry, mkdocs)
 - Denial of service via policy misconfiguration (user error)
 - Issues that require physical access to the machine
+- Decorator removal (library-level limitation — see Threat Model §7)
+- In-process bypass by application code (same-process trust boundary)

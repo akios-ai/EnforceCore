@@ -250,7 +250,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.9a1** | CLI & Policy Tooling | ✅ Shipped |
 | **v1.0.10a1** | Observability & Telemetry | ✅ Shipped |
 | **v1.0.11a1** | Documentation & Academic Foundation | ✅ Shipped |
-| **v1.0.12a1** | Threat Model & Compliance Mapping | 📋 Planned |
+| **v1.0.12a1** | Threat Model & Compliance Mapping | ✅ Shipped |
 | **v1.0.13a1** | Formal Verification & Property Testing | 📋 Planned |
 | **v1.0.14a1** | Reproducible Benchmarks | 📋 Planned |
 | **v1.0.15a1** | End-to-End Examples & Integration | 📋 Planned |

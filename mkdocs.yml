@@ -117,6 +117,12 @@ nav:
     - Vision: vision.md
     - Related Work: related-work.md
     - Roadmap: roadmap.md
+  - Security:
+    - Threat Model: threat-model.md
+    - Attack Surface: security/attack-surface.md
+  - Compliance:
+    - EU AI Act: compliance/eu-ai-act.md
+    - GDPR: compliance/gdpr.md
 
 extra:
   social:
