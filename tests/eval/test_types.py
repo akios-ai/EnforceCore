@@ -303,10 +303,13 @@ class TestBenchmarkResult:
             iterations=1000,
             mean_ms=0.5,
             median_ms=0.4,
+            p50_ms=0.4,
             p95_ms=0.8,
             p99_ms=1.0,
+            p999_ms=1.5,
             min_ms=0.1,
             max_ms=2.0,
+            std_dev_ms=0.2,
             total_ms=500.0,
         )
         assert r.ops_per_second == 2000.0
@@ -317,10 +320,13 @@ class TestBenchmarkResult:
             iterations=0,
             mean_ms=0.0,
             median_ms=0.0,
+            p50_ms=0.0,
             p95_ms=0.0,
             p99_ms=0.0,
+            p999_ms=0.0,
             min_ms=0.0,
             max_ms=0.0,
+            std_dev_ms=0.0,
             total_ms=0.0,
         )
         assert r.ops_per_second == 0.0
@@ -346,10 +352,13 @@ class TestBenchmarkSuite:
             iterations=100,
             mean_ms=1.0,
             median_ms=0.9,
+            p50_ms=0.9,
             p95_ms=2.0,
             p99_ms=3.0,
+            p999_ms=4.0,
             min_ms=0.5,
             max_ms=5.0,
+            std_dev_ms=0.5,
             total_ms=100.0,
         )
         s = BenchmarkSuite(results=[r], python_version="3.14.2", platform="macOS arm64")
