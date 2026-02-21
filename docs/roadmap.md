@@ -527,24 +527,475 @@ async def agent_tool(query: str) -> str:
 
 ---
 
+## v1.0.11 — Documentation & Academic Foundation
+**Focus:** Make the project credible at first glance to a researcher or academic reviewer.
+
+### Why this matters:
+A researcher evaluating a framework looks at three things in the first 30 seconds:
+how to cite it, whether the API is documented, and where it sits in the literature.
+Currently EnforceCore has none of these. The code is excellent — the packaging is not.
+
+### What ships:
+- **API reference site** (MkDocs + mkdocstrings)
+  - Auto-generated from docstrings for all 110+ public exports
+  - Browsable, searchable, versioned
+  - Deployed to GitHub Pages (enforcecore.dev or equivalent)
+  - Cross-linked from README
+- **Docstring audit**
+  - Every public class, function, and method has a complete docstring
+  - Consistent format: one-line summary, Args, Returns, Raises, Example
+  - Verified via `ruff` docstring rules (D100–D418)
+- **CITATION.cff**
+  - Machine-readable citation metadata (GitHub natively renders this)
+  - BibTeX export for academic papers
+  - Proper author attribution
+- **Related work document** (`docs/related-work.md`)
+  - Survey of runtime verification for AI agents
+  - Positioning vs. existing tools: NeMo Guardrails, Guardrails AI, LlamaGuard, Rebuff
+  - Academic references: agent containment, sandboxing, runtime monitoring
+  - Clear articulation of what EnforceCore does differently (call-boundary enforcement vs. prompt-level)
+- **Architecture diagrams**
+  - Mermaid diagrams replacing ASCII art in `docs/architecture.md`
+  - Component interaction diagrams
+  - Data flow diagrams (enforcement pipeline, audit chain, redaction pipeline)
+  - Threat boundary diagram (what is inside/outside the trust perimeter)
+- **README completion**
+  - Roadmap table shows all shipped releases (currently stale at v1.0.7)
+  - "For Researchers" section with link to related work, citation, and contribution guide
+  - "For Enterprises" section with link to compliance mapping and threat model
+
+### What a user can do after v1.0.11:
+```bash
+# Browse the API docs
+open https://akios-ai.github.io/EnforceCore/
+
+# Cite the project in a paper
+# CITATION.cff provides BibTeX automatically
+```
+
+### Definition of Done:
+- [ ] Every public export has a complete docstring (110+)
+- [ ] MkDocs site builds and deploys to GitHub Pages
+- [ ] CITATION.cff renders correctly on GitHub
+- [ ] `docs/related-work.md` has 10+ academic/industry references
+- [ ] Architecture diagrams use Mermaid (not ASCII)
+- [ ] README roadmap table is complete and accurate
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.12 — Threat Model & Compliance Mapping
+**Focus:** Answer the questions regulators and security reviewers will ask. Make compliance claims verifiable.
+
+### Why this matters:
+The vision claims "EU AI Act ready" and "structurally impossible violations." These are powerful
+claims but currently backed by zero documentation. A researcher will immediately ask:
+"Against what adversary model? Which articles of the AI Act? Where's the proof?"
+This release provides those answers.
+
+### What ships:
+- **Formal threat model** (`docs/threat-model.md`)
+  - Adversary model: capabilities, goals, and attack vectors
+    - Malicious agent (compromised LLM, prompt injection)
+    - Malicious tool (dependency that attempts data exfiltration)
+    - Insider threat (developer disabling enforcement)
+    - Supply chain (compromised EnforceCore dependency)
+  - Trust boundaries: what must be trusted, what is untrusted
+  - Security properties with formal statements:
+    - **Fail-closed completeness**: Every code path through the enforcer terminates in either allow or block
+    - **Audit completeness**: Every enforced call produces exactly one audit entry
+    - **Chain integrity**: Any modification to the audit trail is detectable
+    - **Redaction totality**: Every PII/secret match in scope is redacted before the call
+  - Assumptions: what must hold for guarantees to apply
+  - Known limitations: what we explicitly do NOT protect against
+- **EU AI Act compliance mapping** (`docs/compliance/eu-ai-act.md`)
+  - Article 9 (Risk Management) → policy engine + content rules + rate limits
+  - Article 13 (Transparency) → audit trails + CLI inspect
+  - Article 14 (Human Oversight) → policy YAML review + dry-run mode
+  - Article 15 (Accuracy, Robustness, Cybersecurity) → enforcement + resource guard
+  - Article 17 (Quality Management) → test suite + CI + coverage + versioning
+  - Each mapping: article text excerpt → EnforceCore capability → evidence (code + tests)
+- **GDPR considerations** (`docs/compliance/gdpr.md`)
+  - PII redaction as Article 25 (Data Protection by Design)
+  - Audit trail as Article 30 (Records of Processing)
+  - Retention enforcement as Article 5(1)(e) (Storage Limitation)
+  - Right to erasure considerations (audit trail immutability vs. GDPR Article 17)
+- **Attack surface analysis** (`docs/security/attack-surface.md`)
+  - Enumerated attack vectors with mitigations
+  - Dev-mode / fail-open analysis and documentation
+  - Dependency audit (what each dependency does, why it's needed)
+- **Enhanced SECURITY.md**
+  - Expand with threat model summary
+  - Link to full threat model document
+
+### Definition of Done:
+- [ ] Threat model reviewed and internally consistent
+- [ ] EU AI Act mapping covers Articles 9, 13, 14, 15, 17
+- [ ] GDPR document addresses Articles 5, 25, 30 and the right-to-erasure tension
+- [ ] Attack surface analysis lists all entry points
+- [ ] All claims in the vision document are backed by specific documentation
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.13 — Formal Verification & Property Testing
+**Focus:** Prove enforcement properties with mathematical rigor. This is what makes researchers excited.
+
+### Why this matters:
+EnforceCore claims "structurally impossible violations." Property-based testing and formal
+invariant verification transform this from a marketing claim into a verifiable statement.
+Researchers can reproduce the proofs. This is the single most compelling differentiator
+for academic adoption — no other agent safety framework does this.
+
+### What ships:
+- **Property-based testing** (Hypothesis)
+  - Policy engine properties:
+    - ∀ valid policy, ∀ tool call → decision is deterministic
+    - ∀ policy where tool ∈ denied_tools → decision = blocked
+    - ∀ policy where tool ∉ allowed_tools (when allowlist exists) → decision = blocked
+    - merge(A, merge(B, C)) ≡ merge(merge(A, B), C) (associativity)
+  - Merkle chain properties:
+    - ∀ sequence of entries → chain is valid
+    - ∀ chain, ∀ single-entry modification → verify_trail detects it
+    - ∀ chain, ∀ deletion → verify_trail detects it
+    - ∀ chain, ∀ insertion → verify_trail detects it
+    - ∀ chain, ∀ reordering → verify_trail detects it
+  - Redactor properties:
+    - ∀ text containing a known PII pattern → redactor detects it
+    - ∀ text, redact(text).count(PII) = 0 (completeness)
+    - ∀ text without PII → redact(text) = text (no false positives on clean input)
+  - Enforcer properties:
+    - ∀ error during enforcement → call is blocked (fail-closed)
+    - ∀ enforced call → exactly one audit entry is produced
+    - ∀ allowed call → result passes through unmodified (modulo redaction)
+- **Mutation testing** (mutmut)
+  - Run mutation testing on core enforcement paths
+  - Target: >85% mutation kill rate on enforcer, policy engine, auditor
+  - Survivors analyzed and either killed or documented as benign
+- **Formal invariant specifications** (`docs/formal/invariants.md`)
+  - Written specifications of each property in precise language
+  - Mapping from specification to test that verifies it
+  - Discussion of completeness (what is proved, what is not)
+- **Policy algebra** (`docs/formal/policy-algebra.md`)
+  - Formal definition of policy composition (merge)
+  - Properties: associativity, idempotency analysis, conflict resolution semantics
+  - Edge cases documented and tested
+
+### What a user/researcher can do after v1.0.13:
+```bash
+# Run property-based tests
+pytest tests/formal/ -v --hypothesis-show-statistics
+
+# Run mutation testing
+mutmut run --paths-to-mutate=enforcecore/core/enforcer.py
+
+# Read the formal invariant specifications
+open docs/formal/invariants.md
+```
+
+### Definition of Done:
+- [ ] 20+ Hypothesis property tests covering all core components
+- [ ] Mutation testing >85% kill rate on enforcer + policy engine + auditor
+- [ ] Formal invariant specifications written and linked to tests
+- [ ] Policy algebra document with composition properties
+- [ ] All properties reproducible from a clean checkout
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.14 — Reproducible Benchmarks & Evaluation
+**Focus:** Replace marketing claims with rigorous, reproducible performance data.
+
+### Why this matters:
+The README says "< 1ms" for policy evaluation and "8–20ms" for full stack. The vision
+says "< 0.5ms overhead." A researcher will immediately ask: "On what hardware? How many
+iterations? What's the p99? Is it reproducible?" This release provides real answers.
+
+### What ships:
+- **Benchmark harness** (`benchmarks/`)
+  - Automated benchmark suite with proper statistical methodology
+  - Warmup phase + 10,000 iterations minimum per measurement
+  - Reports: mean, median, p50, p95, p99, p99.9, std deviation
+  - Hardware/software environment captured automatically
+  - Comparison baselines: no enforcement, manual checks, other tools
+  - Results output as JSON + human-readable Markdown
+- **Component-level benchmarks**
+  - Policy evaluation: simple policy, complex policy, large allowlist (1000 tools)
+  - PII redaction: short text, long text, many entities, no entities
+  - Audit entry: write latency, chain verification latency
+  - Secret detection: 11 categories, various text lengths
+  - Full stack: decorator overhead end-to-end
+  - Rate limiter: sliding window under contention
+- **Scalability analysis**
+  - Policy size: 10, 100, 1,000, 10,000 allowed tools
+  - Concurrent enforcement: 1, 10, 50, 100 threads
+  - Audit trail size: resume performance with 1K, 10K, 100K entries
+  - Memory footprint: base, per-policy, per-auditor
+- **Memory profiling**
+  - Base import footprint
+  - Per-component allocation
+  - Long-running session memory stability (no leaks)
+- **Published benchmark report** (`docs/benchmarks.md`)
+  - Tables with real numbers from CI hardware
+  - Methodology section explaining how to reproduce
+  - Comparison with "no enforcement" baseline
+  - Discussion of overhead vs. typical tool call latency
+- **Benchmark CI**
+  - Performance regression detection in CI
+  - Alert if any component exceeds documented thresholds
+
+### What a user/researcher can do after v1.0.14:
+```bash
+# Run the full benchmark suite
+python -m benchmarks.run --output results/
+
+# Run a specific benchmark
+python -m benchmarks.run --component policy --iterations 50000
+
+# Compare with baseline
+python -m benchmarks.run --compare no-enforcement,enforcecore
+
+# View the published report
+open docs/benchmarks.md
+```
+
+### Definition of Done:
+- [ ] Benchmark harness runs all component benchmarks
+- [ ] Results include p50/p95/p99 latencies (not just mean)
+- [ ] Scalability tests cover policy size, concurrency, audit trail size
+- [ ] Memory profiling shows no leaks over 100K calls
+- [ ] Published report with methodology and reproduction instructions
+- [ ] Benchmark CI detects regressions
+- [ ] README performance table updated with real numbers
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.15 — End-to-End Examples & Integration Testing
+**Focus:** Show, don't tell. Real-world scenarios that demonstrate the value proposition.
+
+### Why this matters:
+A researcher considering adoption needs to see EnforceCore solving real problems,
+not just toy examples. A 5-line quickstart is necessary but not sufficient.
+This release provides complete, runnable scenarios that map to real agent safety concerns.
+
+### What ships:
+- **End-to-end example suite** (`examples/scenarios/`)
+  - **Healthcare agent** — HIPAA-style PII protection for a medical Q&A agent
+    - Policy: only approved medical APIs, all patient data redacted
+    - Audit trail for regulatory review
+    - Shows: PII redaction + tool gating + audit
+  - **Financial agent** — Cost-controlled trading research assistant
+    - Policy: budget limits, rate limiting, authorized data sources only
+    - Webhook alerts on cost threshold breach
+    - Shows: cost tracking + rate limits + webhooks
+  - **Code agent** — Sandboxed code execution assistant
+    - Policy: no shell access, no file system writes, no network calls
+    - Content rules blocking injection patterns
+    - Shows: content rules + network enforcement + resource guard
+  - **Multi-framework** — Same policy applied across LangGraph, CrewAI, AutoGen
+    - Demonstrates framework-agnostic enforcement
+    - Same audit trail format regardless of framework
+    - Shows: integration adapters + audit consistency
+  - **Compliance demo** — EU AI Act scenario
+    - Full enforcement pipeline + audit + telemetry
+    - Policy review via dry-run mode
+    - Audit verification via CLI
+    - Shows: compliance workflow end-to-end
+- **Integration test suite** (`tests/integration/`)
+  - End-to-end tests that exercise the full pipeline (not mocked)
+  - Policy → Enforcer → Redactor → Guard → Auditor → Verify
+  - Multi-policy composition scenarios
+  - Concurrent enforcement stress tests
+  - Cross-session audit chain continuity
+- **Docker-based reproducibility**
+  - `docker-compose.yml` for benchmark + evaluation environment
+  - Pinned Python version + dependencies
+  - Reproducible from any machine
+
+### Definition of Done:
+- [ ] 5 end-to-end example scenarios, each runnable standalone
+- [ ] Integration test suite covers full pipeline (no mocks)
+- [ ] Docker environment reproduces benchmarks and evaluation
+- [ ] Each example has a README explaining the scenario
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.16 — API Freeze & Stability Audit
+**Focus:** Lock down the public API surface. No more changes until v2.0.
+
+### Why this matters:
+Before declaring stable, we must be confident that every public symbol is intentional,
+well-named, and something we're willing to maintain for years. Researchers and enterprises
+need to trust that their code won't break on upgrade. This is a one-way door.
+
+### What ships:
+- **API surface audit**
+  - Every one of the 110+ exports reviewed:
+    - Is it necessary? (Remove if not)
+    - Is it well-named? (Rename now or never)
+    - Is it fully typed? (Fix any `Any` returns)
+    - Is it tested? (Add test if not)
+  - Deprecated symbols removed:
+    - `guard_sync` / `guard_async` (deprecated since v1.0.6)
+    - Any other deprecated aliases
+  - Internal symbols verified as private (underscore-prefixed)
+- **`py.typed` marker**
+  - PEP 561 marker file for typed package
+  - Full mypy strict compliance verified
+  - Type stubs complete for all public API
+- **API compatibility test suite** (`tests/api/`)
+  - Tests that import and use every public symbol
+  - Prevents accidental removal or signature changes
+  - Version-pinned expectations
+- **Semantic versioning contract** (`docs/versioning.md`)
+  - What constitutes a breaking change
+  - Deprecation policy: warn for 2 minor versions before removal
+  - Backport policy for security fixes
+  - Compatibility promises for v1.x
+- **Migration guide** (`docs/migration.md`)
+  - Alpha → stable migration steps
+  - Deprecated API alternatives
+  - Breaking changes summary (if any)
+
+### Definition of Done:
+- [ ] API surface audit complete — every export justified
+- [ ] All deprecated symbols removed
+- [ ] `py.typed` marker present and mypy strict passes
+- [ ] API compatibility test suite covers all public symbols
+- [ ] `docs/versioning.md` written and linked from README
+- [ ] `docs/migration.md` covers alpha → stable path
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.17 — Packaging & Publication Infrastructure
+**Focus:** Make EnforceCore installable by anyone in the world with one command.
+
+### What ships:
+- **PyPI publication pipeline**
+  - GitHub Actions workflow: tag push → build → TestPyPI → PyPI
+  - Wheel + sdist built with hatchling
+  - TestPyPI dry-run verified
+  - Automated version consistency checks (pyproject.toml ↔ __init__.py)
+- **Package signing**
+  - Sigstore attestations (PEP 740)
+  - Provenance metadata for supply chain security
+  - SLSA Level 2 compliance (build provenance)
+- **Documentation site deployment**
+  - MkDocs Material deployed to GitHub Pages
+  - Automated on push to main
+  - Versioned documentation (latest + per-release)
+  - Search functionality
+  - Custom domain if available
+- **Docker images**
+  - `ghcr.io/akios-ai/enforcecore:latest` — for reproducible evaluation
+  - `ghcr.io/akios-ai/enforcecore:benchmark` — for benchmark reproduction
+  - Automated builds in CI
+- **Release automation**
+  - Changelog verification (CHANGELOG.md entry required)
+  - Version tag creation
+  - GitHub Release with auto-generated notes
+  - Announcement template for social/academic channels
+
+### Definition of Done:
+- [ ] `pip install enforcecore` works from TestPyPI
+- [ ] Package signed with Sigstore attestations
+- [ ] Documentation site accessible and searchable
+- [ ] Docker images build and run correctly
+- [ ] Release workflow tested end-to-end (tag → TestPyPI)
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.0 — Stable Release 🎯
+**Focus:** The official stable release. This is what Valérie and the research community sees.
+
+### Why this is a separate release:
+The stable release is not about new features — it's about **confidence**.
+Every alpha suffix removed. Every claim backed by documentation. Every API
+symbol committed to long-term stability. This is the version we stand behind.
+
+### What ships:
+- **Version `1.0.0`** — no alpha, no pre-release suffix
+- **Published to PyPI** — `pip install enforcecore`
+- **Documentation site live** — full API reference, guides, formal specs
+- **All claims verified:**
+  - "< X ms overhead" → backed by published benchmarks with methodology
+  - "EU AI Act ready" → backed by specific article-by-article mapping
+  - "Tamper-proof audit" → backed by formal Merkle chain invariants
+  - "Structurally impossible violations" → backed by property tests + threat model
+  - "Framework-agnostic" → backed by 3+ framework integration examples
+- **GitHub Release** with complete changelog
+- **CITATION.cff** verified and rendering correctly
+- **Announcement ready** (email to Valérie, social posts, HN/Reddit)
+
+### What a user/researcher can do:
+```bash
+pip install enforcecore
+
+# OR with all extras:
+pip install enforcecore[all]
+
+# Cite in a paper:
+# See CITATION.cff on GitHub
+
+# Browse API docs:
+# https://akios-ai.github.io/EnforceCore/
+
+# Run the evaluation suite:
+enforcecore eval --scenarios all
+
+# Verify an audit trail:
+enforcecore verify audit.jsonl
+
+# Read the formal invariants:
+# docs/formal/invariants.md
+```
+
+### Definition of Done:
+- [ ] Version is `1.0.0` (no suffix)
+- [ ] Published to PyPI and installable
+- [ ] Documentation site live and accessible
+- [ ] All README claims have backing documentation
+- [ ] CITATION.cff correct and rendering
+- [ ] Benchmark report published with real numbers
+- [ ] Threat model, compliance mapping, and formal invariants published
+- [ ] 5+ end-to-end example scenarios runnable
+- [ ] Zero known security issues
+- [ ] Test suite passing, 96%+ coverage
+
+---
+
 ## Release Arc
 
 ```
-Foundation                          Extensibility    Deep Security    Operations       Production
-v1.0.0  v1.0.1  v1.0.2  v1.0.3    v1.0.7           v1.0.8           v1.0.9           v1.0.10
- Core    PII    Audit   Guard       Plugins          Content Rules    CLI              Telemetry
-        Redact  Trail   Cost        Hooks            Network          Policy Compose   Audit Ops
-                        Kill        Secrets          Rate Limit       Dry-Run          Webhooks
-                                    Backends         Arg Inspection   Schema           PyPI v1.0.0
+Phase 1: Foundation                Phase 2: Extensibility       Phase 3: Deep Security
+v1.0.0a  v1.0.1a  v1.0.2a         v1.0.7a                      v1.0.8a
+ Core     PII     Audit            Plugins                       Content Rules
+         Redact   Trail            Hooks                         Network
+                                   Secrets                       Rate Limit
+v1.0.3a  v1.0.4a  v1.0.5a         Backends                      Arg Inspection
+ Guard    Frame    Eval
+ Cost     Integ    Suite           Phase 4: Operations           Phase 5: Academic Rigor
+ Kill                              v1.0.9a   v1.0.10a            v1.0.11a  v1.0.12a  v1.0.13a
+v1.0.6a                            CLI       Telemetry            API Docs  Threat    Formal
+ Harden                            Policy    Audit Ops            Citation  Model     Verification
+ Unicode                           Compose   Webhooks             Related   EU AI     Property
+ Polish                            Dry-Run                        Work      Act       Testing
 
-v1.0.4  v1.0.5  v1.0.6
- Frame   Eval    Harden
- Integ   Suite   Unicode
-                 Polish
+                                   Phase 6: Production Readiness
+                                   v1.0.14a  v1.0.15a  v1.0.16a  v1.0.17a  → v1.0.0 STABLE
+                                   Bench-     E2E       API       Packaging   Release
+                                   marks      Examples  Freeze    PyPI
+                                   Repro      Docker    py.typed  Signing
+                                   Profiling  Integ     Versioning Docs Site
 ```
 
-Each release makes the framework meaningfully more capable. By v1.0.10, EnforceCore is the
-**complete, production-grade runtime enforcement layer** for any Python-based agentic AI system.
+Each release makes the framework meaningfully more capable and more credible.
+By v1.0.0 stable, EnforceCore is the **complete, rigorously verified, researcher-ready
+runtime enforcement layer** for any Python-based agentic AI system.
 
 ---
 
@@ -552,26 +1003,40 @@ Each release makes the framework meaningfully more capable. By v1.0.10, EnforceC
 
 | Release | Focus | Tests (cumulative) | Status |
 |---|---|---|---|
-| v1.0.0 | Core Enforcer + Policy Engine | 94 | ✅ Shipped |
-| v1.0.1 | PII Redactor | 161 | ✅ Shipped |
-| v1.0.2 | Merkle Audit Trail | 213 | ✅ Shipped |
-| v1.0.3 | Resource Guard + KillSwitch | 284 | ✅ Shipped |
-| v1.0.4 | Framework Integrations | 334 | ✅ Shipped |
-| v1.0.5 | Evaluation Suite | 431 | ✅ Shipped |
-| v1.0.6 | Hardening + Polish | 544 | ✅ Shipped |
-| v1.0.7 | Plugin & Extensibility | 709 | ✅ Shipped |
-| v1.0.8 | Deep Inspection & Network | 858 | ✅ Shipped |
-| v1.0.9 | CLI & Policy Tooling | 940 | ✅ Shipped |
-| v1.0.10 | Observability + PyPI v1.0.0 | 1038 | ✅ Shipped |
+| v1.0.0a1 | Core Enforcer + Policy Engine | 94 | ✅ Shipped |
+| v1.0.1a1 | PII Redactor | 161 | ✅ Shipped |
+| v1.0.2a1 | Merkle Audit Trail | 213 | ✅ Shipped |
+| v1.0.3a1 | Resource Guard + KillSwitch | 284 | ✅ Shipped |
+| v1.0.4a1 | Framework Integrations | 334 | ✅ Shipped |
+| v1.0.5a1 | Evaluation Suite | 431 | ✅ Shipped |
+| v1.0.6a1 | Hardening + Polish | 544 | ✅ Shipped |
+| v1.0.7a1 | Plugin & Extensibility | 709 | ✅ Shipped |
+| v1.0.8a1 | Deep Inspection & Network | 858 | ✅ Shipped |
+| v1.0.9a1 | CLI & Policy Tooling | 940 | ✅ Shipped |
+| v1.0.10a1 | Observability & Telemetry | 1038 | ✅ Shipped |
+| v1.0.11a1 | Documentation & Academic Foundation | — | 📋 Planned |
+| v1.0.12a1 | Threat Model & Compliance Mapping | — | 📋 Planned |
+| v1.0.13a1 | Formal Verification & Property Testing | — | 📋 Planned |
+| v1.0.14a1 | Reproducible Benchmarks | — | 📋 Planned |
+| v1.0.15a1 | End-to-End Examples & Integration | — | 📋 Planned |
+| v1.0.16a1 | API Freeze & Stability Audit | — | 📋 Planned |
+| v1.0.17a1 | Packaging & Publication | — | 📋 Planned |
+| **v1.0.0** | **Stable Release** | — | **🎯 Target** |
 
 ---
 
-## Beyond v1.0 (Future Directions)
+## Beyond v1.0 Stable (Future Directions)
 
-These are **not committed** — they represent potential future work based on adoption:
+These are **not committed** — they represent potential future work based on adoption
+and community input. Each is a genuine research/engineering challenge:
 
-- **v1.1** — Multi-tenant enforcement (per-agent/per-tenant policy isolation)
-- **v1.2** — Policy Hub (community repository of reusable policies + rule packs)
-- **v1.3** — Formal verification integration (model checking of policy correctness)
-- **v1.4** — Multi-language SDKs (TypeScript, Go, Rust bindings via FFI)
-- **v2.0** — Distributed enforcement for multi-agent systems across processes/machines
+- **v1.1** — Multi-tenant enforcement (per-agent/per-tenant policy isolation with namespace-scoped audit trails)
+- **v1.2** — Policy Hub (community repository of reusable, audited policies and rule packs — think "Docker Hub for agent policies")
+- **v1.3** — Distributed enforcement (multi-agent systems across processes/machines with consistent policy evaluation)
+- **v1.4** — Multi-language SDKs (TypeScript, Go, Rust bindings via FFI — same enforcement semantics in every runtime)
+- **v2.0** — Formal verification backend (integration with TLA+/Alloy/Z3 for machine-checked policy correctness proofs)
+- **Research track** — Academic collaboration on open problems:
+  - Optimal policy composition in multi-agent hierarchies
+  - Information-flow control at agent boundaries
+  - Runtime verification of temporal safety properties (LTL/CTL over agent traces)
+  - Quantitative enforcement (probabilistic policy decisions with risk budgets)
