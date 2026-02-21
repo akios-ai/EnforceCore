@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/coverage-96%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-1038_passed-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-1461_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -257,7 +257,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.14a1** | Reproducible Benchmarks & Evaluation | ✅ Shipped |
 | **v1.0.15a1** | End-to-End Examples & Integration | ✅ Shipped |
 | **v1.0.16a1** | API Freeze & Stability Audit | ✅ Shipped |
-| **v1.0.17a1** | Adversarial Scenario Expansion | 📋 Planned |
+| **v1.0.17a1** | Adversarial Scenario Expansion | ✅ Shipped |
 | **v1.0.18a1** | Security Landscape & Positioning | 📋 Planned |
 | **v1.0.19a1** | Pre-Release Polish & Community | 📋 Planned |
 | **v1.0.20a1** | Packaging & Publication | 📋 Planned |
@@ -300,7 +300,7 @@ problem of AI agent safety. We welcome academic collaboration.
 - 🔬 [**Open Research Questions**](docs/related-work.md#5-open-research-questions) —
   policy composition, temporal properties, adversarial robustness
 - 🧪 [**Evaluation Suite**](docs/evaluation.md) — reproducible adversarial
-  benchmarks with 26 scenarios
+  benchmarks with 20 scenarios across 10 threat categories
 - 📐 [**Architecture**](docs/architecture.md) — formal design with Mermaid
   diagrams
 
@@ -358,7 +358,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1038 tests · 96% coverage · 0 lint errors
+**Current stats:** 1461 tests · 96% coverage · 0 lint errors
 
 ---
 

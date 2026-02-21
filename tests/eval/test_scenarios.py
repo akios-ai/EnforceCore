@@ -39,7 +39,7 @@ class TestScenarioRegistry:
 
     def test_all_scenarios_registered(self) -> None:
         scenarios = get_all_scenarios()
-        assert len(scenarios) >= 13
+        assert len(scenarios) >= 20
 
     def test_all_have_executors(self) -> None:
         for s in get_all_scenarios():

@@ -6,7 +6,7 @@ enforcement capabilities against adversarial threat scenarios.
 Modules:
 
 * :mod:`~enforcecore.eval.types` — Type definitions (Scenario, Results, etc.)
-* :mod:`~enforcecore.eval.scenarios` — 13 adversarial scenarios across 7 threat
+* :mod:`~enforcecore.eval.scenarios` — 20 adversarial scenarios across 10 threat
   categories
 * :mod:`~enforcecore.eval.runner` — Test harness / scenario runner
 * :mod:`~enforcecore.eval.benchmarks` — Per-component performance benchmarks

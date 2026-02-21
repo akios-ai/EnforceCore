@@ -924,13 +924,13 @@ enforcecore eval --compare baseline,enforcecore --scenarios all --output compari
 ```
 
 ### Definition of Done:
-- [ ] 5 new multi-stage scenarios implemented and documented
-- [ ] Ransomware campaign demonstrates 4-stage containment
-- [ ] Supply-chain scenario catches credential exfiltration
-- [ ] Multi-agent collusion tested with isolated policies
-- [ ] All scenarios reproducible with fixed seeds
-- [ ] Eval report updated with new scenario results
-- [ ] Tests passing, 96%+ coverage
+- [x] 5 new multi-stage scenarios implemented and documented
+- [x] Ransomware campaign demonstrates 4-stage containment
+- [x] Supply-chain scenario catches credential exfiltration
+- [x] Multi-agent collusion tested with isolated policies
+- [x] All scenarios reproducible with fixed seeds
+- [x] Eval report updated with new scenario results
+- [x] Tests passing, 96%+ coverage
 
 ---
 
@@ -1197,7 +1197,7 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.14a1 | Reproducible Benchmarks & Evaluation | 1090 | ✅ Shipped |
 | v1.0.15a1 | End-to-End Examples & Integration | 1138 | ✅ Shipped |
 | v1.0.16a1 | API Freeze & Stability Audit | 1416 | ✅ Shipped |
-| v1.0.17a1 | Adversarial Scenario Expansion | — | 📋 Planned |
+| v1.0.17a1 | Adversarial Scenario Expansion | — | ✅ Shipped |
 | v1.0.18a1 | Security Landscape & Positioning | — | 📋 Planned |
 | v1.0.19a1 | Pre-Release Polish & Community | — | 📋 Planned |
 | v1.0.20a1 | Packaging & Publication | — | 📋 Planned |
