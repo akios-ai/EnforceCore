@@ -1,0 +1,30 @@
+# Shared multi-framework policy
+name: "multi-framework"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "search_web"
+    - "calculator"
+    - "get_weather"
+    - "translate"
+
+  denied_tools:
+    - "execute_shell"
+    - "delete_file"
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+    strategy: "placeholder"
+
+  resource_limits:
+    max_call_duration_seconds: 10
+    max_cost_usd: 2.00
+
+  max_output_size_bytes: 524288
+  redact_output: true
+
+on_violation: "block"

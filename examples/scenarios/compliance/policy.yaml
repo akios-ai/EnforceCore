@@ -1,0 +1,60 @@
+# EU AI Act compliance policy
+name: "eu-ai-act-compliant"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "classify_document"
+    - "summarize_text"
+    - "translate_text"
+    - "extract_entities"
+
+  denied_tools:
+    - "execute_shell"
+    - "delete_file"
+    - "modify_database"
+    - "send_notification"
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+      - ssn
+      - credit_card
+      - ip_address
+      - person_name
+    strategy: "placeholder"
+
+  resource_limits:
+    max_call_duration_seconds: 30
+    max_memory_mb: 512
+    max_cost_usd: 10.00
+
+  content_rules:
+    enabled: true
+    block_patterns:
+      - name: "prompt_injection"
+        pattern: "(?i)(ignore previous|disregard instructions|you are now)"
+        reason: "Potential prompt injection detected"
+      - name: "data_exfiltration"
+        pattern: "(?i)(send (all|my) data to|forward.*to external)"
+        reason: "Potential data exfiltration attempt"
+
+  network:
+    enabled: true
+    allowed_domains:
+      - "api.internal.company.eu"
+      - "translate.googleapis.com"
+    deny_all_other: true
+
+  rate_limits:
+    enabled: true
+    global_limit:
+      max_calls: 100
+      window_seconds: 60
+
+  max_output_size_bytes: 1048576
+  redact_output: true
+
+on_violation: "block"

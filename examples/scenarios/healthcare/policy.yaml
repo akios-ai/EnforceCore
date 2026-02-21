@@ -1,0 +1,50 @@
+# HIPAA-style policy for medical Q&A agent
+name: "hipaa-medical"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "lookup_drug_interactions"
+    - "query_symptoms_db"
+    - "schedule_appointment"
+
+  denied_tools:
+    - "execute_shell"
+    - "delete_file"
+    - "write_file"
+    - "send_email"
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+      - ssn
+      - credit_card
+      - ip_address
+      - person_name
+    strategy: "placeholder"
+
+  resource_limits:
+    max_call_duration_seconds: 15
+    max_memory_mb: 128
+    max_cost_usd: 2.00
+
+  content_rules:
+    enabled: true
+    block_patterns:
+      - name: "prompt_injection"
+        pattern: "(?i)(ignore previous|disregard instructions|system prompt)"
+        reason: "Potential prompt injection detected"
+
+  network:
+    enabled: true
+    allowed_domains:
+      - "api.medline.gov"
+      - "rxnav.nlm.nih.gov"
+    deny_all_other: true
+
+  max_output_size_bytes: 262144  # 256KB
+  redact_output: true
+
+on_violation: "block"

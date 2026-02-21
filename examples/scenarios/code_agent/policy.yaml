@@ -1,0 +1,60 @@
+# Sandboxed code agent policy — maximum restriction
+name: "code-sandbox"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "run_python_sandbox"
+    - "explain_code"
+    - "format_code"
+
+  denied_tools:
+    - "execute_shell"
+    - "write_file"
+    - "delete_file"
+    - "read_file"
+    - "send_email"
+    - "http_request"
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - email
+      - phone
+      - ssn
+      - ip_address
+    strategy: "placeholder"
+
+  resource_limits:
+    max_call_duration_seconds: 5
+    max_memory_mb: 64
+    max_cost_usd: 1.00
+
+  content_rules:
+    enabled: true
+    block_patterns:
+      - name: "os_system"
+        pattern: "os\\.system\\s*\\("
+        reason: "Direct OS command execution is forbidden"
+      - name: "subprocess"
+        pattern: "subprocess\\.(run|call|Popen|check_output)"
+        reason: "Subprocess execution is forbidden"
+      - name: "eval_exec"
+        pattern: "\\b(eval|exec)\\s*\\("
+        reason: "Dynamic code evaluation is forbidden"
+      - name: "file_write"
+        pattern: "open\\(.+['\"]w['\"]"
+        reason: "File write operations are forbidden"
+      - name: "prompt_injection"
+        pattern: "(?i)(ignore previous|disregard instructions|system prompt)"
+        reason: "Potential prompt injection detected"
+
+  network:
+    enabled: true
+    allowed_domains: []
+    deny_all_other: true
+
+  max_output_size_bytes: 65536  # 64KB
+  redact_output: true
+
+on_violation: "block"

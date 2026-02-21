@@ -1,0 +1,31 @@
+# EnforceCore — Docker Compose for reproducible CI tasks
+# -------------------------------------------------------
+# Usage:
+#   docker compose run test          # full test suite
+#   docker compose run integration   # integration tests only
+#   docker compose run benchmark     # benchmarks
+#   docker compose run lint          # ruff + mypy
+
+services:
+  test:
+    build: .
+    command: python -m pytest -v --tb=short
+    volumes:
+      - ./test-results:/app/test-results
+
+  integration:
+    build: .
+    command: python -m pytest tests/integration/ -v --tb=short
+
+  benchmark:
+    build: .
+    command: python -m enforcecore.benchmarks.run
+
+  lint:
+    build: .
+    command: >
+      sh -c "
+        python -m ruff check enforcecore/ tests/ &&
+        python -m ruff format --check enforcecore/ tests/ &&
+        python -m mypy enforcecore/
+      "
