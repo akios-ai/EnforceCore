@@ -136,14 +136,16 @@ class NullBackend(AuditBackend):
     but the audit pipeline should still execute.
     """
 
-    __slots__ = ("_count",)
+    __slots__ = ("_count", "_lock")
 
     def __init__(self) -> None:
         self._count = 0
+        self._lock = threading.Lock()
 
     def write(self, entry_dict: dict[str, Any]) -> None:
         """Discard the entry, only increment counter."""
-        self._count += 1
+        with self._lock:
+            self._count += 1
 
     def close(self) -> None:
         """No-op."""
@@ -151,7 +153,8 @@ class NullBackend(AuditBackend):
     @property
     def entries_discarded(self) -> int:
         """Number of entries that were discarded."""
-        return self._count
+        with self._lock:
+            return self._count
 
     def __repr__(self) -> str:
         return f"NullBackend(discarded={self._count})"
@@ -260,16 +263,26 @@ class MultiBackend(AuditBackend):
         self._backends = list(backends)
 
     def write(self, entry_dict: dict[str, Any]) -> None:
-        """Write to all backends. Logs errors but continues."""
+        """Write to all backends. Logs errors but continues.
+
+        Raises:
+            AuditError: If ALL backends fail to write.
+        """
+        errors: list[Exception] = []
         for backend in self._backends:
             try:
                 backend.write(entry_dict)
-            except Exception:
+            except Exception as exc:
+                errors.append(exc)
                 logger.error(
                     "multi_backend_write_error",
                     backend=repr(backend),
                     exc_info=True,
                 )
+        if len(errors) == len(self._backends):
+            from enforcecore.core.types import AuditError
+
+            raise AuditError(f"All {len(self._backends)} audit backends failed to write")
 
     def close(self) -> None:
         """Close all backends."""

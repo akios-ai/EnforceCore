@@ -52,10 +52,16 @@ logger = structlog.get_logger("enforcecore.redactor")
 
 _PII_PATTERNS: dict[str, re.Pattern[str]] = {
     "email": re.compile(r"\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b"),
-    "ssn": re.compile(r"\b(?!000|666|9\d\d)\d{3}[-\s]?\d{2}[-\s]?\d{4}\b"),
+    "ssn": re.compile(
+        r"\b(?!000|666|9\d\d)"
+        r"(?:\d{3}-\d{2}-\d{4}"  # dashes: 123-45-6789
+        r"|\d{3} \d{2} \d{4}"  # spaces: 123 45 6789
+        r"|\d{9})"  # plain:  123456789
+        r"\b"
+    ),
     "credit_card": re.compile(
         r"\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))"
-        r"[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{0,4}\b"
+        r"[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{1,4}\b"
     ),
     "phone": re.compile(
         r"(?<!\d)"  # No digit before
@@ -186,6 +192,13 @@ class Redactor:
     def strategy(self) -> RedactionStrategy:
         return self._strategy
 
+    def __repr__(self) -> str:
+        return (
+            f"Redactor(categories={self._categories!r}, "
+            f"strategy={self._strategy.value!r}, "
+            f"secret_detection={self._secret_scanner is not None})"
+        )
+
     # -- Detection -----------------------------------------------------------
 
     def detect(self, text: str) -> list[DetectedEntity]:
@@ -197,15 +210,18 @@ class Redactor:
         Includes built-in PII patterns, custom patterns from the
         PatternRegistry, and secret patterns if enabled.
         """
-        # Apply unicode normalization to defeat evasion techniques
+        # Apply unicode normalization to defeat evasion techniques.
+        # If normalization changes text length, fall back to original to
+        # avoid position mismatch when slicing for replacement.
         normalized = prepare_for_detection(text)
+        use_text = text if len(normalized) != len(text) else normalized
         entities: list[DetectedEntity] = []
 
         # Built-in PII patterns
         for cat in self._categories:
             if cat == "person_name":
                 # Skip person_name detection (too noisy with pure regex)
-                logger.debug(
+                logger.warning(
                     "person_name_detection_skipped",
                     reason="pure regex detection is too noisy; "
                     "consider using an NLP pipeline for name detection",
@@ -216,7 +232,7 @@ class Redactor:
             if pattern is None:
                 continue
 
-            for match in pattern.finditer(normalized):
+            for match in pattern.finditer(use_text):
                 entities.append(
                     DetectedEntity(
                         category=cat,
@@ -228,7 +244,7 @@ class Redactor:
 
         # Custom patterns from the global registry
         for cat, custom in PatternRegistry.get_all().items():
-            for match in custom.regex.finditer(normalized):
+            for match in custom.regex.finditer(use_text):
                 matched_text = match.group()
                 # Apply optional validator
                 if custom.validator is not None and not custom.validator(matched_text):
@@ -244,7 +260,7 @@ class Redactor:
 
         # Secret detection
         if self._secret_scanner is not None:
-            for secret in self._secret_scanner.detect(normalized):
+            for secret in self._secret_scanner.detect(use_text):
                 entities.append(
                     DetectedEntity(
                         category=secret.category,

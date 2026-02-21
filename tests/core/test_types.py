@@ -46,6 +46,8 @@ class TestViolationType:
             "tool_denied",
             "tool_not_allowed",
             "domain_denied",
+            "content_violation",
+            "rate_limit",
             "cost_limit",
             "resource_limit",
             "output_size",

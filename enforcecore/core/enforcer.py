@@ -39,11 +39,15 @@ from enforcecore.core.hardening import (
     warn_fail_open,
 )
 from enforcecore.core.policy import Policy, PolicyEngine
+from enforcecore.core.rules import ContentRuleConfig, RuleEngine
 from enforcecore.core.types import (
     CallContext,
+    ContentViolationError,
     EnforceCoreError,
     EnforcementViolation,
 )
+from enforcecore.guard.network import DomainChecker
+from enforcecore.guard.ratelimit import RateLimitConfig, RateLimiter
 from enforcecore.plugins.hooks import (
     HookContext,
     HookRegistry,
@@ -71,11 +75,11 @@ T = TypeVar("T")
 class Enforcer:
     """Central coordinator for runtime enforcement.
 
-    In v1.0.0, the Enforcer only does policy evaluation (pre/post call).
-    Future releases (v1.0.1+) will add redaction, auditing, and resource
-    guarding through this same coordinator — without changing the public API.
+    The Enforcer coordinates the full enforcement pipeline: policy
+    evaluation, PII redaction, content rule checking, rate limiting,
+    network enforcement, resource guarding, auditing, and hooks.
 
-    The Enforcer is **thread-safe** — it holds no mutable per-call state.
+    The Enforcer is **thread-safe** -- it holds no mutable per-call state.
     Each call gets its own ``CallContext``.
 
     Example::
@@ -84,13 +88,24 @@ class Enforcer:
         result = await enforcer.enforce_async(my_tool, "arg1", key="val")
     """
 
-    __slots__ = ("_auditor", "_engine", "_guard", "_redactor")
+    __slots__ = (
+        "_auditor",
+        "_domain_checker",
+        "_engine",
+        "_guard",
+        "_rate_limiter",
+        "_redactor",
+        "_rule_engine",
+    )
 
     def __init__(self, policy: Policy) -> None:
         self._engine = PolicyEngine(policy)
         self._redactor = self._build_redactor(policy)
         self._auditor = self._build_auditor()
         self._guard = self._build_guard()
+        self._rule_engine = self._build_rule_engine(policy)
+        self._rate_limiter = self._build_rate_limiter(policy)
+        self._domain_checker = self._build_domain_checker(policy)
 
     @classmethod
     def from_file(cls, path: str | Path) -> Enforcer:
@@ -143,6 +158,32 @@ class Enforcer:
             strategy=pii_cfg.strategy,
         )
 
+    @staticmethod
+    def _build_rule_engine(policy: Policy) -> RuleEngine | None:
+        """Create a RuleEngine from the policy's content rules config."""
+        cfg = policy.rules.content_rules
+        config = ContentRuleConfig(
+            enabled=cfg.enabled,
+            block_patterns=cfg.block_patterns,
+        )
+        return RuleEngine.from_config(config)
+
+    @staticmethod
+    def _build_rate_limiter(policy: Policy) -> RateLimiter | None:
+        """Create a RateLimiter from the policy's rate limits config."""
+        cfg = policy.rules.rate_limits
+        config = RateLimitConfig(
+            enabled=cfg.enabled,
+            per_tool=cfg.per_tool,
+            global_limit=cfg.global_limit,
+        )
+        return RateLimiter.from_config(config)
+
+    @staticmethod
+    def _build_domain_checker(policy: Policy) -> DomainChecker | None:
+        """Create a DomainChecker from the policy's network config."""
+        return DomainChecker.from_policy(policy.rules.network)
+
     def _redact_args(
         self,
         args: tuple[Any, ...],
@@ -171,8 +212,10 @@ class Enforcer:
         return tuple(new_args), new_kwargs, total
 
     def _redact_output(self, result: Any) -> tuple[Any, int]:
-        """Redact PII from output if it's a string."""
+        """Redact PII from output if it's a string and redact_output is enabled."""
         if self._redactor is None or not isinstance(result, str):
+            return result, 0
+        if not self._engine.policy.rules.redact_output:
             return result, 0
         res = self._redactor.redact(result)
         return res.text, res.count
@@ -250,6 +293,7 @@ class Enforcer:
 
         t0 = time.perf_counter()
         hooks = HookRegistry.global_registry()
+        input_redactions = 0
 
         # Track enforcement nesting
         enter_enforcement(resolved_name)
@@ -276,6 +320,31 @@ class Enforcer:
             # Pre-call
             pre = self._engine.evaluate_pre_call(ctx)
             self._engine.raise_if_blocked(pre, ctx)
+
+            # Content rule inspection on arguments
+            if self._rule_engine is not None:
+                violations = self._rule_engine.check_args(args, kwargs)
+                if violations:
+                    v = violations[0]
+                    raise ContentViolationError(
+                        v.rule_name,
+                        v.description,
+                        tool_name=resolved_name,
+                        policy_name=self.policy_name,
+                    )
+
+            # Network domain enforcement on arguments
+            if self._domain_checker is not None:
+                self._domain_checker.check_args(
+                    args,
+                    kwargs,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
+
+            # Rate limiting
+            if self._rate_limiter is not None:
+                self._rate_limiter.acquire(resolved_name, self.policy_name)
 
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
@@ -314,6 +383,18 @@ class Enforcer:
 
             # Redact outputs
             result, output_redactions = self._redact_output(result)
+
+            # Content rule inspection on output
+            if self._rule_engine is not None and isinstance(result, str):
+                out_violations = self._rule_engine.check(result)
+                if out_violations:
+                    v = out_violations[0]
+                    raise ContentViolationError(
+                        v.rule_name,
+                        f"output: {v.description}",
+                        tool_name=resolved_name,
+                        policy_name=self.policy_name,
+                    )
 
             # Fire redaction hooks for output redactions
             if output_redactions > 0:
@@ -371,7 +452,7 @@ class Enforcer:
                     violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
                 )
             )
-            # Record blocked calls too
+            # Record blocked calls too (preserve any redaction count)
             elapsed = (time.perf_counter() - t0) * 1000
             self._record_audit(
                 tool_name=resolved_name,
@@ -379,7 +460,7 @@ class Enforcer:
                 decision="blocked",
                 overhead_ms=round(elapsed, 2),
                 call_duration_ms=0.0,
-                input_redactions=0,
+                input_redactions=input_redactions,
                 output_redactions=0,
                 violation_type=exc.violation_type if hasattr(exc, "violation_type") else None,
                 violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
@@ -418,6 +499,7 @@ class Enforcer:
 
         t0 = time.perf_counter()
         hooks = HookRegistry.global_registry()
+        input_redactions = 0
 
         # Track enforcement nesting
         enter_enforcement(resolved_name)
@@ -444,6 +526,31 @@ class Enforcer:
             # Pre-call
             pre = self._engine.evaluate_pre_call(ctx)
             self._engine.raise_if_blocked(pre, ctx)
+
+            # Content rule inspection on arguments
+            if self._rule_engine is not None:
+                violations = self._rule_engine.check_args(args, kwargs)
+                if violations:
+                    v = violations[0]
+                    raise ContentViolationError(
+                        v.rule_name,
+                        v.description,
+                        tool_name=resolved_name,
+                        policy_name=self.policy_name,
+                    )
+
+            # Network domain enforcement on arguments
+            if self._domain_checker is not None:
+                self._domain_checker.check_args(
+                    args,
+                    kwargs,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
+
+            # Rate limiting
+            if self._rate_limiter is not None:
+                self._rate_limiter.acquire(resolved_name, self.policy_name)
 
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
@@ -482,6 +589,18 @@ class Enforcer:
 
             # Redact outputs
             result, output_redactions = self._redact_output(result)
+
+            # Content rule inspection on output
+            if self._rule_engine is not None and isinstance(result, str):
+                out_violations = self._rule_engine.check(result)
+                if out_violations:
+                    v = out_violations[0]
+                    raise ContentViolationError(
+                        v.rule_name,
+                        f"output: {v.description}",
+                        tool_name=resolved_name,
+                        policy_name=self.policy_name,
+                    )
 
             # Fire redaction hooks for output redactions
             if output_redactions > 0:
@@ -546,7 +665,7 @@ class Enforcer:
                 decision="blocked",
                 overhead_ms=round(elapsed, 2),
                 call_duration_ms=0.0,
-                input_redactions=0,
+                input_redactions=input_redactions,
                 output_redactions=0,
                 violation_type=exc.violation_type if hasattr(exc, "violation_type") else None,
                 violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
@@ -592,6 +711,7 @@ class Enforcer:
         warnings.warn(
             "guard_sync() only performs pre-call policy checks. "
             "Use enforce_sync() for full protection (redaction, audit, resource guards).",
+            DeprecationWarning,
             stacklevel=2,
         )
         ctx = CallContext(
@@ -628,6 +748,7 @@ class Enforcer:
         warnings.warn(
             "guard_async() only performs pre-call policy checks. "
             "Use enforce_async() for full protection (redaction, audit, resource guards).",
+            DeprecationWarning,
             stacklevel=2,
         )
         ctx = CallContext(
@@ -645,8 +766,18 @@ class Enforcer:
 # ---------------------------------------------------------------------------
 
 # Cache of loaded policies to avoid re-parsing YAML on every call.
+# LRU-style: bounded to prevent unbounded memory growth.
+_POLICY_CACHE_MAX_SIZE = 64
 _policy_cache: dict[str, Policy] = {}
 _policy_cache_lock = threading.Lock()
+
+
+def clear_policy_cache() -> int:
+    """Clear the policy cache and return the number of evicted entries."""
+    with _policy_cache_lock:
+        count = len(_policy_cache)
+        _policy_cache.clear()
+        return count
 
 
 def _resolve_policy(
@@ -660,6 +791,10 @@ def _resolve_policy(
         key = str(policy)
         with _policy_cache_lock:
             if key not in _policy_cache:
+                if len(_policy_cache) >= _POLICY_CACHE_MAX_SIZE:
+                    # Evict oldest entry (FIFO)
+                    oldest = next(iter(_policy_cache))
+                    del _policy_cache[oldest]
                 _policy_cache[key] = Policy.from_file(key)
             return _policy_cache[key]
 
@@ -668,6 +803,9 @@ def _resolve_policy(
         key = str(settings.default_policy)
         with _policy_cache_lock:
             if key not in _policy_cache:
+                if len(_policy_cache) >= _POLICY_CACHE_MAX_SIZE:
+                    oldest = next(iter(_policy_cache))
+                    del _policy_cache[oldest]
                 _policy_cache[key] = Policy.from_file(key)
             return _policy_cache[key]
 

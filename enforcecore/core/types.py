@@ -31,6 +31,8 @@ class ViolationType(enum.StrEnum):
     TOOL_DENIED = "tool_denied"
     TOOL_NOT_ALLOWED = "tool_not_allowed"
     DOMAIN_DENIED = "domain_denied"
+    CONTENT_VIOLATION = "content_violation"
+    RATE_LIMIT = "rate_limit"
     COST_LIMIT = "cost_limit"
     RESOURCE_LIMIT = "resource_limit"
     OUTPUT_SIZE = "output_size"
@@ -185,6 +187,26 @@ class DomainDeniedError(EnforcementViolation):
             policy_name=policy_name,
             violation_type=ViolationType.DOMAIN_DENIED,
             reason=f"domain '{domain}' not in allowed list",
+        )
+
+
+class ContentViolationError(EnforcementViolation):
+    """Content rule violation detected in arguments or output."""
+
+    def __init__(
+        self,
+        rule_name: str,
+        description: str,
+        *,
+        tool_name: str = "",
+        policy_name: str = "",
+    ) -> None:
+        super().__init__(
+            f"Content rule '{rule_name}' violated: {description}",
+            tool_name=tool_name,
+            policy_name=policy_name,
+            violation_type=ViolationType.CONTENT_VIOLATION,
+            reason=f"content rule '{rule_name}': {description}",
         )
 
 
