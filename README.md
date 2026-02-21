@@ -238,14 +238,25 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 
 | Release | Focus | Status |
 |---|---|---|
-| **v1.0.0** | Core Enforcer + Policy Engine | ✅ Shipped |
-| **v1.0.1** | PII Redactor | ✅ Shipped |
-| **v1.0.2** | Merkle Audit Trail | ✅ Shipped |
-| **v1.0.3** | Resource Guard + KillSwitch | ✅ Shipped |
-| **v1.0.4** | Framework Integrations | ✅ Shipped |
-| **v1.0.5** | Evaluation Suite | ✅ Shipped |
-| **v1.0.6** | Hardening + Polish | ✅ Shipped |
-| **v1.0.7** | Plugin & Extensibility | ✅ Shipped |
+| **v1.0.0a1** | Core Enforcer + Policy Engine | ✅ Shipped |
+| **v1.0.1a1** | PII Redactor | ✅ Shipped |
+| **v1.0.2a1** | Merkle Audit Trail | ✅ Shipped |
+| **v1.0.3a1** | Resource Guard + KillSwitch | ✅ Shipped |
+| **v1.0.4a1** | Framework Integrations | ✅ Shipped |
+| **v1.0.5a1** | Evaluation Suite | ✅ Shipped |
+| **v1.0.6a1** | Hardening + Polish | ✅ Shipped |
+| **v1.0.7a1** | Plugin & Extensibility | ✅ Shipped |
+| **v1.0.8a1** | Deep Inspection & Network Control | ✅ Shipped |
+| **v1.0.9a1** | CLI & Policy Tooling | ✅ Shipped |
+| **v1.0.10a1** | Observability & Telemetry | ✅ Shipped |
+| **v1.0.11a1** | Documentation & Academic Foundation | 📋 Planned |
+| **v1.0.12a1** | Threat Model & Compliance Mapping | 📋 Planned |
+| **v1.0.13a1** | Formal Verification & Property Testing | 📋 Planned |
+| **v1.0.14a1** | Reproducible Benchmarks | 📋 Planned |
+| **v1.0.15a1** | End-to-End Examples & Integration | 📋 Planned |
+| **v1.0.16a1** | API Freeze & Stability Audit | 📋 Planned |
+| **v1.0.17a1** | Packaging & Publication | 📋 Planned |
+| **v1.0.0** | **Stable Release** | 🎯 Target |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 
