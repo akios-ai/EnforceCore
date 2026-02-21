@@ -178,6 +178,12 @@ class RuleEngine:
     __slots__ = ("_compiled", "_rules")
 
     def __init__(self, rules: list[ContentRule] | None = None) -> None:
+        """Initialize the rule engine.
+
+        Args:
+            rules: List of content rules to evaluate. If ``None``, the
+                engine starts with no rules (add via :meth:`add_rule`).
+        """
         self._rules: list[ContentRule] = list(rules) if rules else []
         self._compiled: dict[str, re.Pattern[str]] = {}
         for rule in self._rules:
@@ -222,13 +228,24 @@ class RuleEngine:
         return cls(rules)
 
     def add_rule(self, rule: ContentRule) -> None:
-        """Add a rule to the engine."""
+        """Add a rule to the engine.
+
+        Args:
+            rule: The content rule to register.
+        """
         self._rules.append(rule)
         if rule.pattern:
             self._compiled[rule.name] = re.compile(rule.pattern, re.IGNORECASE)
 
     def remove_rule(self, name: str) -> bool:
-        """Remove a rule by name.  Returns True if found and removed."""
+        """Remove a rule by name.
+
+        Args:
+            name: Name of the rule to remove.
+
+        Returns:
+            ``True`` if the rule was found and removed, ``False`` otherwise.
+        """
         for i, rule in enumerate(self._rules):
             if rule.name == name:
                 self._rules.pop(i)
@@ -248,7 +265,11 @@ class RuleEngine:
     def check(self, text: str) -> list[RuleViolation]:
         """Check text against all rules.
 
-        Returns a list of violations (empty means clean).
+        Args:
+            text: The text to inspect for rule violations.
+
+        Returns:
+            A list of :class:`RuleViolation` objects (empty means clean).
         """
         if not text or not self._rules:
             return []
@@ -302,6 +323,13 @@ class RuleEngine:
         """Check all string arguments and string values in kwargs.
 
         Recursively inspects nested structures (dicts, lists, tuples).
+
+        Args:
+            args: Positional arguments to inspect.
+            kwargs: Keyword arguments to inspect.
+
+        Returns:
+            A list of :class:`RuleViolation` objects found in the arguments.
         """
         violations: list[RuleViolation] = []
         texts = extract_strings(args) + extract_strings(tuple(kwargs.values()))

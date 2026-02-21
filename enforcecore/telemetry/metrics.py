@@ -114,7 +114,16 @@ class EnforceCoreMetrics:
         input_redactions: int = 0,
         output_redactions: int = 0,
     ) -> None:
-        """Record a completed enforcement call."""
+        """Record a completed enforcement call.
+
+        Args:
+            tool_name: Name of the enforced tool.
+            decision: Enforcement decision (``"allowed"`` or ``"blocked"``).
+            duration_ms: Tool call duration in milliseconds.
+            overhead_ms: Enforcement overhead in milliseconds.
+            input_redactions: Number of PII entities redacted from inputs.
+            output_redactions: Number of PII entities redacted from outputs.
+        """
         attrs = {"tool": tool_name, "decision": decision}
         total_redactions = input_redactions + output_redactions
 
@@ -137,7 +146,12 @@ class EnforceCoreMetrics:
             self._otel_histogram_overhead.record(overhead_ms, attrs)
 
     def record_violation(self, *, tool_name: str, violation_type: str) -> None:
-        """Record a policy violation."""
+        """Record a policy violation.
+
+        Args:
+            tool_name: Name of the tool that was blocked.
+            violation_type: Category of the violation (e.g., ``"tool_denied"``).
+        """
         with self._lock:
             self._violations += 1
 
@@ -147,7 +161,11 @@ class EnforceCoreMetrics:
             )
 
     def record_cost(self, usd: float) -> None:
-        """Record accumulated cost."""
+        """Record accumulated cost.
+
+        Args:
+            usd: Cost in USD to add to the running total.
+        """
         with self._lock:
             self._cost_usd += usd
 

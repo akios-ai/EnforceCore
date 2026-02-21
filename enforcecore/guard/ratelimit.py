@@ -47,6 +47,14 @@ class RateLimitError(EnforcementViolation):
         *,
         policy_name: str = "",
     ) -> None:
+        """Initialize a rate limit error.
+
+        Args:
+            tool_name: Name of the rate-limited tool.
+            max_calls: Maximum calls allowed in the window.
+            window_seconds: Duration of the sliding window in seconds.
+            policy_name: Name of the policy with the rate limit.
+        """
         super().__init__(
             f"Rate limit exceeded for '{tool_name}': max {max_calls} calls per {window_seconds}s",
             tool_name=tool_name,
@@ -187,7 +195,13 @@ class RateLimiter:
         max_calls: int,
         window_seconds: float,
     ) -> None:
-        """Set rate limit for a specific tool."""
+        """Set rate limit for a specific tool.
+
+        Args:
+            tool_name: Name of the tool to rate-limit (case-insensitive).
+            max_calls: Maximum number of calls allowed in the window.
+            window_seconds: Duration of the sliding window in seconds.
+        """
         with self._lock:
             self._windows[tool_name.lower()] = _SlidingWindow(max_calls, window_seconds)
 
@@ -197,7 +211,12 @@ class RateLimiter:
         max_calls: int,
         window_seconds: float,
     ) -> None:
-        """Set a global rate limit across all tools."""
+        """Set a global rate limit across all tools.
+
+        Args:
+            max_calls: Maximum number of calls allowed in the window.
+            window_seconds: Duration of the sliding window in seconds.
+        """
         with self._lock:
             self._global = _SlidingWindow(max_calls, window_seconds)
 

@@ -1,0 +1,124 @@
+site_name: EnforceCore
+site_description: "The runtime enforcement layer for agentic AI systems"
+site_url: https://akios-ai.github.io/EnforceCore/
+repo_url: https://github.com/akios-ai/EnforceCore
+repo_name: akios-ai/EnforceCore
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            merge_init_into_class: true
+            show_if_no_docstring: false
+            heading_level: 2
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - tables
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: quickstart.md
+    - FAQ: faq.md
+    - Troubleshooting: troubleshooting.md
+  - Architecture:
+    - Overview: architecture.md
+    - API Design: api-design.md
+    - Tech Stack: tech-stack.md
+  - API Reference:
+    - Overview: api/index.md
+    - Core:
+      - Enforcer: api/enforcer.md
+      - Policy: api/policy.md
+      - Types: api/types.md
+      - Rules: api/rules.md
+      - Hardening: api/hardening.md
+      - Config: api/config.md
+    - Redactor:
+      - Engine: api/redactor.md
+      - Patterns: api/patterns.md
+      - Secrets: api/secrets.md
+      - Unicode: api/unicode.md
+    - Auditor:
+      - Engine: api/auditor.md
+      - Backends: api/backends.md
+      - Rotation: api/rotation.md
+    - Guard:
+      - Engine: api/guard.md
+      - Network: api/network.md
+      - Rate Limiter: api/ratelimit.md
+    - Plugins:
+      - Hooks: api/hooks.md
+      - Webhooks: api/webhooks.md
+    - Telemetry:
+      - Instrumentor: api/instrumentor.md
+      - Metrics: api/metrics.md
+    - Integrations: api/integrations.md
+    - Evaluation: api/evaluation.md
+  - Guides:
+    - Developer Guide: dev-guide.md
+    - Contributing: contributing.md
+    - Evaluation Suite: evaluation.md
+  - Research:
+    - Vision: vision.md
+    - Related Work: related-work.md
+    - Roadmap: roadmap.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/akios-ai/EnforceCore

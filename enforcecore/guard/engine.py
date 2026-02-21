@@ -82,6 +82,12 @@ class CostTracker:
     __slots__ = ("_budget", "_lock", "_total")
 
     def __init__(self, budget_usd: float | None = None) -> None:
+        """Initialize the cost tracker.
+
+        Args:
+            budget_usd: Maximum cost budget in USD. ``None`` means
+                unlimited (no budget enforcement).
+        """
         self._budget = budget_usd
         self._total: float = 0.0
         self._lock = threading.Lock()
@@ -287,6 +293,14 @@ class ResourceGuard:
         cost_tracker: CostTracker | None = None,
         kill_switch: KillSwitch | None = None,
     ) -> None:
+        """Initialize the resource guard.
+
+        Args:
+            cost_tracker: Cost tracker instance. Creates a default
+                (unlimited budget) tracker if ``None``.
+            kill_switch: Kill switch instance. Creates a new
+                (non-tripped) switch if ``None``.
+        """
         self._cost_tracker = cost_tracker or CostTracker()
         self._kill_switch = kill_switch or KillSwitch()
 

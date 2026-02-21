@@ -49,6 +49,16 @@ class DomainChecker:
         denied_domains: list[str] | None = None,
         deny_all_other: bool = True,
     ) -> None:
+        """Initialize the domain checker.
+
+        Args:
+            allowed_domains: List of allowed domain patterns (supports
+                fnmatch wildcards like ``*.example.com``).
+            denied_domains: List of denied domain patterns. Takes
+                priority over the allowed list.
+            deny_all_other: If ``True``, domains not in the allowed
+                list are denied. Defaults to ``True``.
+        """
         self._allowed = [d.lower() for d in (allowed_domains or [])]
         self._denied = [d.lower() for d in (denied_domains or [])]
         self._deny_all_other = deny_all_other

@@ -99,6 +99,11 @@ class Enforcer:
     )
 
     def __init__(self, policy: Policy) -> None:
+        """Initialize the enforcer with a policy.
+
+        Args:
+            policy: The :class:`Policy` to enforce on every call.
+        """
         self._engine = PolicyEngine(policy)
         self._redactor = self._build_redactor(policy)
         self._auditor = self._build_auditor()
@@ -109,7 +114,14 @@ class Enforcer:
 
     @classmethod
     def from_file(cls, path: str | Path) -> Enforcer:
-        """Create an enforcer from a YAML policy file."""
+        """Create an enforcer from a YAML policy file.
+
+        Args:
+            path: Path to the policy YAML file.
+
+        Returns:
+            A new :class:`Enforcer` configured with the loaded policy.
+        """
         return cls(Policy.from_file(path))
 
     @property

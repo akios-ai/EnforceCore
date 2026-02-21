@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.11a1] — 2025-02-21
+
+### Added
+
+#### Documentation & Academic Foundation
+- **MkDocs site** — full API reference site powered by MkDocs Material + mkdocstrings
+  - Auto-generated docs for all 110+ public exports from Google-style docstrings
+  - 22 API reference pages organized by module (core, redactor, auditor, guard, plugins, telemetry)
+  - Quick start guide, architecture overview, and navigation structure
+  - Mermaid diagram support via `pymdownx.superfences` custom fences
+  - Dark/light theme toggle, search, code copy, and navigation tabs
+- **CITATION.cff** — machine-readable citation metadata (CFF v1.2.0) for academic use
+- **`docs/related-work.md`** — survey of runtime verification for AI agents
+  - Positions EnforceCore vs. NeMo Guardrails, Guardrails AI, LlamaGuard, Rebuff, LangChain
+  - 10+ academic references (runtime verification, reference monitors, agent containment, IFC)
+  - Comparison table across 12 dimensions (enforcement point, determinism, audit, cost, etc.)
+  - Five open research questions for collaboration
+
+#### Architecture Diagrams
+- **Mermaid diagrams** replace all ASCII art in `docs/architecture.md`:
+  - High-level architecture flowchart (agent → API → enforcer → components)
+  - Enforcement data-flow sequence diagram (pre-call → redact → guard → execute → audit)
+  - Module dependency graph (6 subgraph clusters with 20+ nodes)
+  - Exception hierarchy class diagram (13 exception types)
+  - Threat boundary model (untrusted → enforcement boundary → trusted zones)
+
+#### README Enhancements
+- **For Researchers** section — links to related work, citation, open questions, evaluation suite
+- **For Enterprises** section — feature table (audit, PII, cost, governance, EU AI Act)
+- **Documentation table** — added Related Work and API Reference links
+
+### Changed
+
+#### Docstring Completeness
+- Audited all 110+ public exports; fixed 18 missing + 36 incomplete docstrings
+- All exception `__init__` methods now have full Args documentation
+- All class constructors document parameters with types and defaults
+- All `BenchmarkRunner.bench_*` methods have Args/Returns sections
+- Enhanced `RuleEngine`, `RateLimiter`, `MetricsRecorder` method docstrings
+- Added `docs` optional dependency group: `mkdocs-material>=9.5`, `mkdocstrings[python]>=0.24`
+- Updated Documentation URL in `pyproject.toml` to MkDocs site
+
 ## [1.0.10a1] — 2025-02-21
 
 ### Added

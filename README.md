@@ -249,7 +249,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.8a1** | Deep Inspection & Network Control | ✅ Shipped |
 | **v1.0.9a1** | CLI & Policy Tooling | ✅ Shipped |
 | **v1.0.10a1** | Observability & Telemetry | ✅ Shipped |
-| **v1.0.11a1** | Documentation & Academic Foundation | 📋 Planned |
+| **v1.0.11a1** | Documentation & Academic Foundation | ✅ Shipped |
 | **v1.0.12a1** | Threat Model & Compliance Mapping | 📋 Planned |
 | **v1.0.13a1** | Formal Verification & Property Testing | 📋 Planned |
 | **v1.0.14a1** | Reproducible Benchmarks | 📋 Planned |
@@ -269,14 +269,69 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 | 📐 [Architecture](docs/architecture.md) | Technical design and component overview |
 | 🗺️ [Roadmap](docs/roadmap.md) | v1.0.x incremental release plan |
 | 🔧 [API Design](docs/api-design.md) | Public API surface and patterns |
+| � [API Reference](https://akios-ai.github.io/EnforceCore/) | Auto-generated docs (MkDocs) |
 | 🛠️ [Developer Guide](docs/dev-guide.md) | Setup, standards, and workflow |
 | 🧪 [Tech Stack](docs/tech-stack.md) | Technology choices and rationale |
 | 📊 [Evaluation](docs/evaluation.md) | Adversarial scenarios, benchmarks, and reports |
+| 📄 [Related Work](docs/related-work.md) | Survey and academic positioning |
 | ❓ [FAQ](docs/faq.md) | Frequently asked questions |
 | 🔍 [Troubleshooting](docs/troubleshooting.md) | Common errors and debugging tips |
 | 🌍 [Vision](docs/vision.md) | Why EnforceCore exists |
 | 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
 | 🔒 [Security](SECURITY.md) | Vulnerability reporting policy |
+
+---
+
+## For Researchers
+
+EnforceCore applies established computer science principles — runtime
+verification, reference monitors, information-flow control — to the novel
+problem of AI agent safety. We welcome academic collaboration.
+
+- 📄 [**Related Work**](docs/related-work.md) — survey of runtime verification
+  for AI agents, positioning vs. NeMo Guardrails, LlamaGuard, and others
+- 📑 [**CITATION.cff**](CITATION.cff) — machine-readable citation metadata
+  ([how to cite](#citation))
+- 🔬 [**Open Research Questions**](docs/related-work.md#5-open-research-questions) —
+  policy composition, temporal properties, adversarial robustness
+- 🧪 [**Evaluation Suite**](docs/evaluation.md) — reproducible adversarial
+  benchmarks with 26 scenarios
+- 📐 [**Architecture**](docs/architecture.md) — formal design with Mermaid
+  diagrams
+
+### Citation
+
+```bibtex
+@software{enforcecore2026,
+  title  = {EnforceCore: Runtime Enforcement Layer for Agentic AI Systems},
+  author = {{AKIOS AI}},
+  year   = {2026},
+  url    = {https://github.com/akios-ai/EnforceCore},
+  license = {Apache-2.0}
+}
+```
+
+---
+
+## For Enterprises
+
+EnforceCore is designed for production deployment in regulated environments.
+
+| Concern | EnforceCore Feature |
+|---|---|
+| **Audit compliance** | Merkle-chained, tamper-evident audit trails |
+| **Data protection** | Real-time PII redaction (11 categories) |
+| **Cost control** | Per-call and cumulative cost budgets |
+| **Access governance** | Declarative tool allow/deny policies |
+| **Network control** | Domain allowlisting with wildcard support |
+| **Rate limiting** | Per-tool, per-window, global rate caps |
+| **Incident response** | Structured violation events + webhook alerts |
+| **EU AI Act** | Designed for Article 9, 13, 14, 15 alignment |
+
+- 🔒 **Fail-closed by default** — if enforcement fails, the call is blocked
+- 📦 **No vendor lock-in** — Apache 2.0, works with any agent framework
+- 🌍 **Cross-platform** — Linux, macOS, Windows (advanced Linux hardening optional)
+- 📊 **Observability** — OpenTelemetry traces, Prometheus-compatible metrics
 
 ---
 

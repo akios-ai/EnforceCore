@@ -138,13 +138,28 @@ class BenchmarkRunner:
         policy: Policy | None = None,
         pii_policy: Policy | None = None,
     ) -> None:
+        """Initialize the benchmark runner.
+
+        Args:
+            policy: Policy to use for benchmarks. Defaults to a standard
+                benchmark policy with 3 allowed + 2 denied tools.
+            pii_policy: Policy with PII redaction enabled. Defaults to
+                a benchmark policy detecting email, phone, and SSN.
+        """
         self._policy = policy or _BENCH_POLICY
         self._pii_policy = pii_policy or _BENCH_PII_POLICY
 
     # -- Individual benchmarks -----------------------------------------------
 
     def bench_policy_pre_call(self, iterations: int = 1000) -> BenchmarkResult:
-        """Benchmark policy pre-call evaluation only."""
+        """Benchmark policy pre-call evaluation only.
+
+        Args:
+            iterations: Number of iterations to run.
+
+        Returns:
+            A :class:`BenchmarkResult` with timing statistics.
+        """
         engine = PolicyEngine(self._policy)
         ctx = CallContext(tool_name="search_web", args=("test query",), kwargs={})
 
@@ -156,7 +171,14 @@ class BenchmarkRunner:
         return result
 
     def bench_policy_post_call(self, iterations: int = 1000) -> BenchmarkResult:
-        """Benchmark policy post-call evaluation only."""
+        """Benchmark policy post-call evaluation only.
+
+        Args:
+            iterations: Number of iterations to run.
+
+        Returns:
+            A :class:`BenchmarkResult` with timing statistics.
+        """
         engine = PolicyEngine(self._policy)
         ctx = CallContext(tool_name="search_web", args=("test query",), kwargs={})
 
@@ -168,7 +190,14 @@ class BenchmarkRunner:
         return result
 
     def bench_pii_redaction(self, iterations: int = 1000) -> BenchmarkResult:
-        """Benchmark PII redaction on a string with mixed PII."""
+        """Benchmark PII redaction on a string with mixed PII.
+
+        Args:
+            iterations: Number of iterations to run.
+
+        Returns:
+            A :class:`BenchmarkResult` with timing statistics.
+        """
         redactor = Redactor(
             categories=["email", "phone", "ssn"],
             strategy=RedactionStrategy.MASK,
@@ -186,7 +215,14 @@ class BenchmarkRunner:
         return result
 
     def bench_audit_record(self, iterations: int = 1000) -> BenchmarkResult:
-        """Benchmark audit record creation (in-memory, no I/O)."""
+        """Benchmark audit record creation (in-memory, no I/O).
+
+        Args:
+            iterations: Number of iterations to run.
+
+        Returns:
+            A :class:`BenchmarkResult` with timing statistics.
+        """
         import os
         import tempfile
         from pathlib import Path
@@ -215,7 +251,14 @@ class BenchmarkRunner:
         return result
 
     def bench_guard_overhead(self, iterations: int = 1000) -> BenchmarkResult:
-        """Benchmark resource guard overhead on a trivial call."""
+        """Benchmark resource guard overhead on a trivial call.
+
+        Args:
+            iterations: Number of iterations to run.
+
+        Returns:
+            A :class:`BenchmarkResult` with timing statistics.
+        """
         from enforcecore.guard.engine import CostTracker, ResourceGuard
 
         guard = ResourceGuard(cost_tracker=CostTracker())
@@ -234,7 +277,14 @@ class BenchmarkRunner:
         return result
 
     def bench_enforcer_e2e(self, iterations: int = 1000) -> BenchmarkResult:
-        """Benchmark the full enforcement pipeline (no PII redaction)."""
+        """Benchmark the full enforcement pipeline (no PII redaction).
+
+        Args:
+            iterations: Number of iterations to run.
+
+        Returns:
+            A :class:`BenchmarkResult` with timing statistics.
+        """
         # Ensure audit is disabled for clean benchmark
         original_audit = settings.audit_enabled
         settings.audit_enabled = False
@@ -257,7 +307,14 @@ class BenchmarkRunner:
         return result
 
     def bench_enforcer_with_pii(self, iterations: int = 1000) -> BenchmarkResult:
-        """Benchmark the full enforcement pipeline WITH PII redaction."""
+        """Benchmark the full enforcement pipeline WITH PII redaction.
+
+        Args:
+            iterations: Number of iterations to run.
+
+        Returns:
+            A :class:`BenchmarkResult` with timing statistics.
+        """
         original_audit = settings.audit_enabled
         original_redaction = settings.redaction_enabled
         settings.audit_enabled = False
