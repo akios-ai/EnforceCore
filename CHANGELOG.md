@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.13a1] — 2025-02-21
+
+### Added
+
+#### Property-Based Tests (`tests/formal/`)
+- 30 Hypothesis property-based tests verifying 22 formal invariants
+- `test_prop_policy.py` — 10 tests covering 8 policy engine properties:
+  - P1: Evaluation determinism
+  - P2: Deny enforcement (with case-insensitivity)
+  - P3: Allowlist enforcement (with converse)
+  - P4: Deny priority over allow
+  - P5: Open-by-default (null allowlist)
+  - P6: Closed-on-empty (empty allowlist)
+  - P7: Merge denied-tools union
+  - P8: Decision completeness
+- `test_prop_merkle.py` — 8 tests covering 5 Merkle chain properties:
+  - M1: Hash determinism
+  - M2: Hash sensitivity
+  - M3: Chain validity (arbitrary length)
+  - M4: Tamper detection (modification, deletion, reorder)
+  - M5: Append stability
+- `test_prop_redactor.py` — 8 tests covering 5 redactor properties:
+  - R1: Idempotency
+  - R2: Completeness (email, phone)
+  - R3: Safety (clean text unchanged)
+  - R4: Detect–redact consistency
+  - R5: Strategy independence
+- `test_prop_enforcer.py` — 4 tests covering 4 enforcer properties:
+  - E1: Fail-closed (denied tools raise)
+  - E2: Allowed pass-through
+  - E3: Enforcement idempotency
+  - E4: Internal error propagation
+
+#### Formal Documentation (`docs/formal/`)
+- `invariants.md` — Complete formal specification of all 22 invariants
+  with mathematical notation, linking each to its Hypothesis test
+- `policy-algebra.md` — Algebraic properties of the merge operation:
+  - Formal definition using tuple notation
+  - Monotonic denial proof
+  - Evaluation truth table
+  - Conflict resolution summary with security implications
+  - Edge cases (empty merge, self-merge, cascade example)
+
+### Changed
+- Added `hypothesis>=6.100` to dev dependencies in `pyproject.toml`
+- Test count increased from 1038 to 1068 (+30 property tests)
+
 ## [1.0.12a1] — 2025-02-21
 
 ### Added
