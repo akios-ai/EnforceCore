@@ -257,7 +257,10 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.14a1** | Reproducible Benchmarks & Evaluation | ✅ Shipped |
 | **v1.0.15a1** | End-to-End Examples & Integration | ✅ Shipped |
 | **v1.0.16a1** | API Freeze & Stability Audit | ✅ Shipped |
-| **v1.0.17a1** | Packaging & Publication | 📋 Planned |
+| **v1.0.17a1** | Adversarial Scenario Expansion | 📋 Planned |
+| **v1.0.18a1** | Security Landscape & Positioning | 📋 Planned |
+| **v1.0.19a1** | Pre-Release Polish & Community | 📋 Planned |
+| **v1.0.20a1** | Packaging & Publication | 📋 Planned |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
