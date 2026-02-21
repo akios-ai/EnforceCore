@@ -266,7 +266,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.17a1** | Adversarial Scenario Expansion | ✅ Shipped |
 | **v1.0.18a1** | Security Landscape & Positioning | ✅ Shipped |
 | **v1.0.19a1** | Pre-Release Polish & Community | ✅ Shipped |
-| **v1.0.20a1** | Packaging & Publication | 📋 Planned |
+| **v1.0.20a1** | Packaging & Publication | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.

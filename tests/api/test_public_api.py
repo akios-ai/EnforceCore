@@ -366,9 +366,16 @@ class TestEnumMembers:
     def test_threat_category_members(self) -> None:
         members = {m.value for m in enforcecore.ThreatCategory}
         expected = {
-            "tool_abuse", "data_exfiltration", "resource_exhaustion",
-            "policy_evasion", "pii_leakage", "privilege_escalation",
-            "prompt_injection", "ransomware", "supply_chain", "collusion",
+            "tool_abuse",
+            "data_exfiltration",
+            "resource_exhaustion",
+            "policy_evasion",
+            "pii_leakage",
+            "privilege_escalation",
+            "prompt_injection",
+            "ransomware",
+            "supply_chain",
+            "collusion",
         }
         assert expected <= members
 
