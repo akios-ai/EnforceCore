@@ -41,4 +41,5 @@ htmlcov/
 
 # Audit logs (local only)
 audit_logs/
-*.jsonlresults/
+*.jsonl
+results/

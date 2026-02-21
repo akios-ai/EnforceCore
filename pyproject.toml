@@ -86,6 +86,7 @@ Homepage = "https://github.com/akios-ai/EnforceCore"
 Repository = "https://github.com/akios-ai/EnforceCore"
 Documentation = "https://akios-ai.github.io/EnforceCore/"
 Issues = "https://github.com/akios-ai/EnforceCore/issues"
+Changelog = "https://github.com/akios-ai/EnforceCore/blob/main/CHANGELOG.md"
 
 [project.scripts]
 enforcecore = "enforcecore.cli.main:app"

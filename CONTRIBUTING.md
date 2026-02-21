@@ -23,7 +23,7 @@ Be respectful, constructive, and professional. We're building a security-critica
    git checkout -b feat/your-feature
    ```
 
-2. **Write your code** following the standards in [dev-guide.md](dev-guide.md)
+2. **Write your code** following the standards in [dev-guide.md](docs/dev-guide.md)
 
 3. **Write tests** for all new functionality:
    - New policy rules → test in `tests/core/test_policy.py`
@@ -68,7 +68,7 @@ Be respectful, constructive, and professional. We're building a security-critica
 
 ## Development Setup
 
-See [dev-guide.md](dev-guide.md) for full setup instructions.
+See [dev-guide.md](docs/dev-guide.md) for full setup instructions.
 
 Quick start:
 ```bash
