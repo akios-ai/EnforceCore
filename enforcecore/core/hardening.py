@@ -270,9 +270,15 @@ def enter_enforcement(
     state.tool_chain.append(tool_name)
 
     if state.depth > max_depth:
+        # Roll back state changes before raising so exit_enforcement()
+        # leaves the state consistent even if cleanup is missed.
+        state.tool_chain.pop()
+        state.depth -= 1
+        if state.depth == 0:
+            _enforcement_scope.set(None)
         raise EnforcementDepthError(
-            f"Enforcement nesting depth ({state.depth}) exceeds maximum ({max_depth}). "
-            f"Call chain: {' -> '.join(state.tool_chain)}"
+            f"Enforcement nesting depth ({state.depth + 1}) exceeds maximum ({max_depth}). "
+            f"Call chain: {' -> '.join([*state.tool_chain, tool_name])}"
         )
 
     logger.debug(

@@ -306,8 +306,10 @@ class Enforcer:
         t0 = time.perf_counter()
         hooks = HookRegistry.global_registry()
         input_redactions = 0
+        r_args: tuple[Any, ...] = args
+        r_kwargs: dict[str, Any] = dict(kwargs)
 
-        # Track enforcement nesting
+        # Track enforcement nesting (inside try so exit_enforcement runs on error)
         enter_enforcement(resolved_name)
         try:
             # Fire pre-call hooks
@@ -516,7 +518,7 @@ class Enforcer:
         r_args: tuple[Any, ...] = args
         r_kwargs: dict[str, Any] = dict(kwargs)
 
-        # Track enforcement nesting
+        # Track enforcement nesting (inside try so exit_enforcement runs on error)
         enter_enforcement(resolved_name)
         try:
             # Fire pre-call hooks (async)
