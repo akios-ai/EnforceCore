@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.15a1] — 2026-02-21
+
+### Added
+
+#### End-to-End Scenario Examples (`examples/scenarios/`)
+- **Healthcare** (`healthcare/`) — HIPAA-style PII redaction (email, phone, SSN),
+  tool gating for approved medical APIs, Merkle-chained audit trail with
+  verification, content rule enforcement
+- **Financial** (`financial/`) — cumulative cost budget ($5 cap), per-tool and
+  global rate limiting (10/min per-tool, 50/min global), tool gating to
+  authorized financial data sources, PII masking for credit card numbers,
+  network domain enforcement
+- **Code Agent** (`code_agent/`) — content rules blocking dangerous patterns
+  (os.system, subprocess, eval, file_write, prompt_injection), deny-all
+  network policy, resource guards (5s time limit, 64MB memory), PII protection
+  in code snippets
+- **Multi-Framework** (`multi_framework/`) — same YAML policy enforced
+  identically across plain `@enforce` decorator, `Enforcer` class,
+  LangGraph adapter, CrewAI adapter, AutoGen adapter (import-guarded)
+- **Compliance** (`compliance/`) — EU AI Act compliant workflow with policy
+  dry-run preview (PolicyEngine.evaluate_pre_call), full enforcement pipeline,
+  Merkle-chained audit trail generation and cryptographic verification,
+  compliance evidence summary
+- Each scenario includes README.md, policy.yaml, and runnable Python demo
+
+#### Integration Test Suite (`tests/integration/`)
+- **48 new integration tests** — no mocks, real policies, real audit files
+- `test_full_pipeline.py` — full E2E: Policy → Enforcer → Redactor → Guard →
+  Auditor → Verify for all 5 scenarios (healthcare, financial, code agent,
+  compliance, cross-policy)
+- `test_multi_policy.py` — multi-policy isolation, universal denial checks,
+  policy properties, multi-policy audit trail, `Enforcer.from_file()`
+- `test_concurrent.py` — thread-safety (20-thread concurrent calls, mixed
+  allow/deny, concurrent audit integrity), async concurrency, stress tests
+  (100 sequential calls, rapid rate-limited calls)
+- `test_audit_continuity.py` — Merkle chain structure validation (first
+  entry, chain links, deterministic hashes), tamper detection (modified
+  tool name, deleted entry, swapped entries), edge cases (empty trail,
+  single entry, order preservation)
+- Integration `conftest.py` re-enables audit (overrides the global autouse
+  `_disable_audit_globally` fixture)
+
+#### Docker Reproducibility
+- `Dockerfile` — Python 3.12-slim base, full dev install, runs test suite
+- `docker-compose.yml` — services: `test`, `integration`, `benchmark`, `lint`
+
+### Changed
+- Test count: 1090 → 1138 (+48 integration tests)
+
 ## [1.0.14a1] — 2026-02-21
 
 ### Added

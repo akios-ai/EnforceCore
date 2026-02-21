@@ -1,0 +1,53 @@
+# Financial research agent policy — cost-controlled
+name: "financial-research"
+version: "1.0"
+
+rules:
+  allowed_tools:
+    - "get_stock_quote"
+    - "search_news"
+    - "get_financials"
+    - "calculate_ratio"
+
+  denied_tools:
+    - "execute_trade"
+    - "transfer_funds"
+    - "execute_shell"
+
+  pii_redaction:
+    enabled: true
+    categories:
+      - credit_card
+      - ssn
+    strategy: "mask"
+
+  resource_limits:
+    max_call_duration_seconds: 30
+    max_memory_mb: 256
+    max_cost_usd: 5.00
+
+  rate_limits:
+    enabled: true
+    per_tool:
+      get_stock_quote:
+        max_calls: 10
+        window_seconds: 60
+      search_news:
+        max_calls: 10
+        window_seconds: 60
+    global_limit:
+      max_calls: 50
+      window_seconds: 60
+
+  network:
+    enabled: true
+    allowed_domains:
+      - "api.polygon.io"
+      - "financialmodelingprep.com"
+      - "newsapi.org"
+    deny_all_other: true
+
+  max_output_size_bytes: 1048576  # 1MB
+  redact_output: true
+
+on_violation: "block"

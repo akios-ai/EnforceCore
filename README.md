@@ -260,7 +260,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.12a1** | Threat Model & Compliance Mapping | ✅ Shipped |
 | **v1.0.13a1** | Formal Verification & Property Testing | ✅ Shipped |
 | **v1.0.14a1** | Reproducible Benchmarks & Evaluation | ✅ Shipped |
-| **v1.0.15a1** | End-to-End Examples & Integration | 📋 Planned |
+| **v1.0.15a1** | End-to-End Examples & Integration | ✅ Shipped |
 | **v1.0.16a1** | API Freeze & Stability Audit | 📋 Planned |
 | **v1.0.17a1** | Packaging & Publication | 📋 Planned |
 | **v1.0.0** | **Stable Release** | 🎯 Target |

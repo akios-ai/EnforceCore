@@ -1018,7 +1018,7 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.12a1 | Threat Model & Compliance Mapping | — | ✅ Shipped |
 | v1.0.13a1 | Formal Verification & Property Testing | 1068 | ✅ Shipped |
 | v1.0.14a1 | Reproducible Benchmarks & Evaluation | 1090 | ✅ Shipped |
-| v1.0.15a1 | End-to-End Examples & Integration | — | 📋 Planned |
+| v1.0.15a1 | End-to-End Examples & Integration | 1138 | ✅ Shipped |
 | v1.0.16a1 | API Freeze & Stability Audit | — | 📋 Planned |
 | v1.0.17a1 | Packaging & Publication | — | 📋 Planned |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |
