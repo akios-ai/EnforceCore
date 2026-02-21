@@ -120,6 +120,9 @@ nav:
   - Security:
     - Threat Model: threat-model.md
     - Attack Surface: security/attack-surface.md
+  - Formal Verification:
+    - Invariants: formal/invariants.md
+    - Policy Algebra: formal/policy-algebra.md
   - Compliance:
     - EU AI Act: compliance/eu-ai-act.md
     - GDPR: compliance/gdpr.md
