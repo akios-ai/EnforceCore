@@ -1,0 +1,121 @@
+name: Release
+
+# Triggered when a version tag is pushed (e.g. v1.0.20a1)
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write   # Needed for GitHub Release creation
+  id-token: write   # Needed for PyPI trusted publishing (OIDC)
+
+jobs:
+  # ── Gate: run the full CI matrix first ────────────────────────────────
+  quality:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy enforcecore/
+      - run: pytest --tb=short -q
+
+  # ── Build artifacts ───────────────────────────────────────────────────
+  build:
+    needs: [quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+
+      - name: Build sdist + wheel
+        run: python -m build --sdist --wheel
+
+      - name: Verify no internal/ leakage in wheel
+        run: |
+          python -m zipfile -l dist/*.whl | grep -q 'internal/' \
+            && { echo "::error::internal/ leaked into wheel!"; exit 1; } \
+            || echo "✓ Wheel is clean"
+
+      - name: Verify no internal/ leakage in sdist
+        run: |
+          tar tzf dist/*.tar.gz | grep -q 'internal/' \
+            && { echo "::error::internal/ leaked into sdist!"; exit 1; } \
+            || echo "✓ Sdist is clean"
+
+      - name: Clean install test
+        run: |
+          python -m venv /tmp/clean-test
+          /tmp/clean-test/bin/pip install --quiet dist/*.whl
+          /tmp/clean-test/bin/python -c "
+          import enforcecore
+          missing = [s for s in enforcecore.__all__ if not hasattr(enforcecore, s)]
+          assert not missing, f'Missing symbols: {missing}'
+          print(f'✓ {len(enforcecore.__all__)} symbols OK — v{enforcecore.__version__}')
+          "
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ── Publish to PyPI (trusted publishing / OIDC) ──────────────────────
+  pypi:
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/enforcecore
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Uses OIDC trusted publishing — no API tokens needed
+        # Configure at: https://pypi.org/manage/project/enforcecore/settings/publishing/
+
+  # ── Create GitHub Release ─────────────────────────────────────────────
+  github-release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          # Extract section between this version and the next ## header
+          BODY=$(sed -n "/^## \[${TAG}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.changelog.outputs.body }}
+          files: dist/*
+          prerelease: ${{ contains(github.ref, 'a') || contains(github.ref, 'b') || contains(github.ref, 'rc') }}
+          generate_release_notes: false

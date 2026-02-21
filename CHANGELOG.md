@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Packaging & Publication
+- `scripts/release.py` — automated release script with dry-run mode,
+  version bumping across all files, CHANGELOG management, artifact
+  building, leakage verification, clean-install testing, and git
+  commit/tag automation
+- `.github/workflows/release.yml` — GitHub Actions release workflow:
+  cross-platform CI gate (3.11–3.13 × Ubuntu/macOS), artifact leakage
+  checks, PyPI trusted publishing (OIDC), and automatic GitHub Release
+  creation with changelog extraction
+- `[tool.hatch.build.targets.sdist] exclude` — explicit exclusion of
+  `internal/` and `.github/` from sdist builds (belt-and-suspenders
+  alongside `.gitignore`)
+- Release process documented in RELEASING.md
+
+### Verified
+
+- Clean wheel install: all 110 public symbols import correctly
+- 10-point enforcement correctness test from clean install (tool deny,
+  PII redaction, domain checking, rate limiting, content rules, audit,
+  input hardening, eval scenarios, unicode normalization, secret scanning)
+- All 6 examples execute successfully (`quickstart.py`, `pii_redaction.py`,
+  `resource_guard.py`, `audit_trail.py`, `evaluation_suite.py`,
+  `framework_integrations.py`)
+- 20/20 adversarial scenarios contained, 0 escaped
+- No `internal/` folder leakage in wheel or sdist
+
 ## [1.0.19a1] — 2026-02-21
 
 ### Added

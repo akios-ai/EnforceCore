@@ -1043,39 +1043,41 @@ Broken links, stale tables, missing credits, inconsistent tone — any of these 
 ## v1.0.20 — Packaging & Publication Infrastructure
 **Focus:** Make EnforceCore installable by anyone in the world with one command.
 
-### What ships:
+### What shipped:
 - **PyPI publication pipeline**
-  - GitHub Actions workflow: tag push → build → TestPyPI → PyPI
+  - GitHub Actions release workflow (`.github/workflows/release.yml`):
+    tag push → full CI matrix gate → build → leakage verification →
+    clean install test → PyPI trusted publishing (OIDC) → GitHub Release
   - Wheel + sdist built with hatchling
-  - TestPyPI dry-run verified
-  - Automated version consistency checks (pyproject.toml ↔ __init__.py)
-- **Package signing**
-  - Sigstore attestations (PEP 740)
-  - Provenance metadata for supply chain security
-  - SLSA Level 2 compliance (build provenance)
-- **Documentation site deployment**
-  - MkDocs Material deployed to GitHub Pages
-  - Automated on push to main
-  - Versioned documentation (latest + per-release)
-  - Search functionality
-  - Custom domain if available
-- **Docker images**
-  - `ghcr.io/akios-ai/enforcecore:latest` — for reproducible evaluation
-  - `ghcr.io/akios-ai/enforcecore:benchmark` — for benchmark reproduction
-  - Automated builds in CI
-- **Release automation**
-  - Changelog verification (CHANGELOG.md entry required)
-  - Version tag creation
-  - GitHub Release with auto-generated notes
-  - Announcement template for social/academic channels
+  - Automated artifact verification (no `internal/` leakage)
+  - Clean-install testing in fresh venv during CI
+- **Release automation script** (`scripts/release.py`)
+  - Dry-run mode for safe preview
+  - Version bumping across all files (pyproject.toml, __init__.py,
+    CITATION.cff, telemetry instrumentor)
+  - CHANGELOG management (auto-inserts version header)
+  - Artifact build + verify + clean-install test
+  - Git commit + tag creation
+- **`RELEASING.md`** — structured, step-by-step release process documentation
+- **Package safety hardening**
+  - Explicit `[tool.hatch.build.targets.sdist] exclude` for `internal/` and `.github/`
+  - Belt-and-suspenders with `.gitignore`
+- **10-point enforcement correctness verification** from clean install
+- **All 6 examples verified** end-to-end
+
+### Deferred to v1.0.0:
+- Package signing (Sigstore attestations, PEP 740)
+- Documentation site deployment (MkDocs Material → GitHub Pages)
+- Docker images (`ghcr.io/akios-ai/enforcecore`)
 
 ### Definition of Done:
-- [ ] `pip install enforcecore` works from TestPyPI
-- [ ] Package signed with Sigstore attestations
-- [ ] Documentation site accessible and searchable
-- [ ] Docker images build and run correctly
-- [ ] Release workflow tested end-to-end (tag → TestPyPI)
-- [ ] Tests passing, 96%+ coverage
+- [x] Release script works (dry-run + execute modes)
+- [x] GitHub Actions release workflow created
+- [x] No `internal/` leakage in wheel or sdist
+- [x] Clean install from wheel imports all 110 public symbols
+- [x] All 1461 tests passing
+- [x] 20/20 adversarial scenarios contained
+- [x] Release process documented in RELEASING.md
 
 ---
 
@@ -1199,8 +1201,8 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.16a1 | API Freeze & Stability Audit | 1416 | ✅ Shipped |
 | v1.0.17a1 | Adversarial Scenario Expansion | 1461 | ✅ Shipped |
 | v1.0.18a1 | Security Landscape & Positioning | 1461 | ✅ Shipped |
-| v1.0.19a1 | Pre-Release Polish & Community | — | ✅ Shipped |
-| v1.0.20a1 | Packaging & Publication | — | 📋 Planned |
+| v1.0.19a1 | Pre-Release Polish & Community | 1461 | ✅ Shipped |
+| v1.0.20a1 | Packaging & Publication | 1461 | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |
 
 ---

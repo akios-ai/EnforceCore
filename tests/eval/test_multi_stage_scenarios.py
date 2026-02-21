@@ -152,9 +152,7 @@ class TestMultiStageHelper:
         )
         assert result.outcome == ScenarioOutcome.CONTAINED
 
-    def test_insufficient_blocks_is_escaped(
-        self, allow_all_policy: Policy
-    ) -> None:
+    def test_insufficient_blocks_is_escaped(self, allow_all_policy: Policy) -> None:
         """If not enough stages are blocked, outcome should be ESCAPED."""
         scenario = Scenario(
             id="test-multi-escape",
@@ -212,24 +210,18 @@ class TestMultiStageHelper:
 class TestRansomwareScenarios:
     """Tests for ransomware multi-stage scenarios."""
 
-    def test_campaign_contained_specific_policy(
-        self, specific_tools_policy: Policy
-    ) -> None:
+    def test_campaign_contained_specific_policy(self, specific_tools_policy: Policy) -> None:
         """Ransomware campaign stages 2-4 must be blocked by specific policy."""
         result = run_ransomware_campaign(specific_tools_policy)
         assert result.outcome == ScenarioOutcome.CONTAINED
         assert "Blocked" in result.details
 
-    def test_campaign_escaped_allow_all(
-        self, allow_all_policy: Policy
-    ) -> None:
+    def test_campaign_escaped_allow_all(self, allow_all_policy: Policy) -> None:
         """Ransomware campaign escapes an allow-all policy."""
         result = run_ransomware_campaign(allow_all_policy)
         assert result.outcome == ScenarioOutcome.ESCAPED
 
-    def test_encrypt_only_contained(
-        self, specific_tools_policy: Policy
-    ) -> None:
+    def test_encrypt_only_contained(self, specific_tools_policy: Policy) -> None:
         """All 5 encryption attempts must be blocked."""
         result = run_ransomware_encrypt_only(specific_tools_policy)
         assert result.outcome == ScenarioOutcome.CONTAINED
@@ -258,23 +250,17 @@ class TestRansomwareScenarios:
 class TestSupplyChainScenarios:
     """Tests for supply-chain attack scenarios."""
 
-    def test_cred_harvest_contained(
-        self, specific_tools_policy: Policy
-    ) -> None:
+    def test_cred_harvest_contained(self, specific_tools_policy: Policy) -> None:
         """Credential harvesting exfiltration must be blocked."""
         result = run_supply_chain_cred_harvest(specific_tools_policy)
         assert result.outcome == ScenarioOutcome.CONTAINED
 
-    def test_hidden_exfil_contained(
-        self, specific_tools_policy: Policy
-    ) -> None:
+    def test_hidden_exfil_contained(self, specific_tools_policy: Policy) -> None:
         """Hidden exfiltration (base64/hex/split encoding) must be blocked."""
         result = run_supply_chain_hidden_exfil(specific_tools_policy)
         assert result.outcome == ScenarioOutcome.CONTAINED
 
-    def test_cred_harvest_escaped_allow_all(
-        self, allow_all_policy: Policy
-    ) -> None:
+    def test_cred_harvest_escaped_allow_all(self, allow_all_policy: Policy) -> None:
         """Allow-all policy lets credential harvesting through."""
         result = run_supply_chain_cred_harvest(allow_all_policy)
         assert result.outcome == ScenarioOutcome.ESCAPED
@@ -328,17 +314,13 @@ class TestCollusionScenarios:
 class TestPrivEscalationChain:
     """Tests for the multi-step privilege escalation chain."""
 
-    def test_escalation_chain_contained(
-        self, specific_tools_policy: Policy
-    ) -> None:
+    def test_escalation_chain_contained(self, specific_tools_policy: Policy) -> None:
         """All 4 escalation stages must be blocked."""
         result = run_priv_escalation_chain(specific_tools_policy)
         assert result.outcome == ScenarioOutcome.CONTAINED
         assert "Blocked 4/4" in result.details
 
-    def test_escalation_chain_escaped_allow_all(
-        self, allow_all_policy: Policy
-    ) -> None:
+    def test_escalation_chain_escaped_allow_all(self, allow_all_policy: Policy) -> None:
         """Allow-all lets escalation through."""
         result = run_priv_escalation_chain(allow_all_policy)
         assert result.outcome == ScenarioOutcome.ESCAPED
@@ -357,23 +339,17 @@ class TestPrivEscalationChain:
 class TestSlowBurnExfil:
     """Tests for the slow-burn data exfiltration scenario."""
 
-    def test_slow_burn_contained_specific(
-        self, specific_tools_policy: Policy
-    ) -> None:
+    def test_slow_burn_contained_specific(self, specific_tools_policy: Policy) -> None:
         """Slow-burn exfil must be blocked by tool policy."""
         result = run_slow_burn_exfil(specific_tools_policy)
         assert result.outcome == ScenarioOutcome.CONTAINED
 
-    def test_slow_burn_with_pii_redaction(
-        self, pii_mask_policy: Policy
-    ) -> None:
+    def test_slow_burn_with_pii_redaction(self, pii_mask_policy: Policy) -> None:
         """With PII redaction, PII should be redacted even if call is allowed."""
         result = run_slow_burn_exfil(pii_mask_policy)
         assert result.outcome == ScenarioOutcome.CONTAINED
 
-    def test_slow_burn_escaped_allow_all(
-        self, allow_all_policy: Policy
-    ) -> None:
+    def test_slow_burn_escaped_allow_all(self, allow_all_policy: Policy) -> None:
         """Allow-all with no PII redaction: calls go through, but the
         scenario's send_data function doesn't echo PII in output, so the
         PII check is against the return value (not the input).  The scenario
@@ -414,17 +390,13 @@ class TestMultiStageMetadata:
     """All multi-stage scenario results have proper metadata."""
 
     @pytest.mark.parametrize("scenario_id", MULTI_STAGE_IDS)
-    def test_result_has_duration(
-        self, scenario_id: str, specific_tools_policy: Policy
-    ) -> None:
+    def test_result_has_duration(self, scenario_id: str, specific_tools_policy: Policy) -> None:
         executor = SCENARIO_EXECUTORS[scenario_id]
         result = executor(specific_tools_policy)
         assert result.duration_ms >= 0
 
     @pytest.mark.parametrize("scenario_id", MULTI_STAGE_IDS)
-    def test_result_has_details(
-        self, scenario_id: str, specific_tools_policy: Policy
-    ) -> None:
+    def test_result_has_details(self, scenario_id: str, specific_tools_policy: Policy) -> None:
         executor = SCENARIO_EXECUTORS[scenario_id]
         result = executor(specific_tools_policy)
         assert result.details  # Non-empty details string
