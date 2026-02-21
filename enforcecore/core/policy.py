@@ -47,7 +47,7 @@ class PIIRedactionConfig(BaseModel):
     """Configuration for PII redaction within a policy."""
 
     enabled: bool = False
-    categories: list[str] = ["email", "phone", "ssn", "credit_card"]
+    categories: list[str] = ["email", "phone", "ssn", "credit_card", "ip_address"]
     strategy: RedactionStrategy = RedactionStrategy.PLACEHOLDER
 
 
@@ -60,10 +60,56 @@ class ResourceLimits(BaseModel):
 
 
 class NetworkPolicy(BaseModel):
-    """Network-level policy (domain allow/deny)."""
+    """Network-level policy (domain allow/deny).
 
+    When ``allowed_domains`` is non-empty and ``deny_all_other`` is True,
+    only the listed domains (and their subdomains via wildcards) are allowed.
+    ``denied_domains`` blocks specific domains even if otherwise allowed.
+    """
+
+    enabled: bool = False
     allowed_domains: list[str] = []
+    denied_domains: list[str] = []
     deny_all_other: bool = True
+
+
+class ContentRulesPolicyConfig(BaseModel):
+    """Content rules configuration in a policy.
+
+    Example YAML::
+
+        content_rules:
+          enabled: true
+          block_patterns:
+            - name: shell_injection
+            - name: custom_rule
+              pattern: "dangerous_pattern"
+              action: block
+    """
+
+    enabled: bool = False
+    block_patterns: list[dict[str, str]] = []
+
+
+class RateLimitPolicyConfig(BaseModel):
+    """Rate limit configuration in a policy.
+
+    Example YAML::
+
+        rate_limits:
+          enabled: true
+          per_tool:
+            search_web:
+              max_calls: 10
+              window_seconds: 60
+          global:
+            max_calls: 100
+            window_seconds: 60
+    """
+
+    enabled: bool = False
+    per_tool: dict[str, dict[str, float]] = {}
+    global_limit: dict[str, float] | None = None
 
 
 class PolicyRules(BaseModel):
@@ -79,6 +125,8 @@ class PolicyRules(BaseModel):
     pii_redaction: PIIRedactionConfig = PIIRedactionConfig()
     resource_limits: ResourceLimits = ResourceLimits()
     network: NetworkPolicy = NetworkPolicy()
+    content_rules: ContentRulesPolicyConfig = ContentRulesPolicyConfig()
+    rate_limits: RateLimitPolicyConfig = RateLimitPolicyConfig()
     max_output_size_bytes: int | None = None
     redact_output: bool = True
 
@@ -244,9 +292,11 @@ class PolicyEngine:
         """
         rules = self._policy.rules
         tool = context.tool_name
+        tool_lower = tool.lower()
 
-        # Check explicit deny list first
-        if tool in rules.denied_tools:
+        # Check explicit deny list first (case-insensitive)
+        denied_lower = {t.lower() for t in rules.denied_tools}
+        if tool_lower in denied_lower:
             logger.warning(
                 "tool_denied",
                 tool=tool,
@@ -259,19 +309,21 @@ class PolicyEngine:
                 reason=f"tool '{tool}' is in the denied list",
             )
 
-        # Check allowed list (if specified)
-        if rules.allowed_tools is not None and tool not in rules.allowed_tools:
-            logger.warning(
-                "tool_not_allowed",
-                tool=tool,
-                policy=self._policy.name,
-                reason="not in allowed_tools list",
-            )
-            return PreCallResult(
-                Decision.BLOCKED,
-                ViolationType.TOOL_NOT_ALLOWED,
-                reason=f"tool '{tool}' is not in the allowed list",
-            )
+        # Check allowed list (if specified, case-insensitive)
+        if rules.allowed_tools is not None:
+            allowed_lower = {t.lower() for t in rules.allowed_tools}
+            if tool_lower not in allowed_lower:
+                logger.warning(
+                    "tool_not_allowed",
+                    tool=tool,
+                    policy=self._policy.name,
+                    reason="not in allowed_tools list",
+                )
+                return PreCallResult(
+                    Decision.BLOCKED,
+                    ViolationType.TOOL_NOT_ALLOWED,
+                    reason=f"tool '{tool}' is not in the allowed list",
+                )
 
         logger.debug("pre_call_allowed", tool=tool, policy=self._policy.name)
         return PreCallResult(Decision.ALLOWED)

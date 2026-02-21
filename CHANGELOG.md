@@ -7,6 +7,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.8a1] — 2025-02-20
+
+### Added
+
+#### Content Rules Engine (`enforcecore.core.rules`)
+- **ContentRule** frozen dataclass — named rule with regex pattern and/or predicate function
+- **RuleViolation** frozen dataclass — matched rule name, matched text, position
+- **RuleEngine** — evaluates text against a collection of content rules
+  - `check(text)` scans text for violations, returns list of `RuleViolation`
+  - `check_args(args, kwargs)` recursively extracts and checks all string arguments
+  - `add_rule()` / `remove_rule()` for runtime modification
+  - `from_config(ContentRuleConfig)` factory for policy-driven construction
+  - `with_builtins()` factory pre-loaded with all 4 built-in rule sets
+- **4 built-in rule categories** via `get_builtin_rules()`:
+  - `shell_injection` — rm -rf, sudo, curl|bash chains, backtick execution, pipe to shell
+  - `path_traversal` — ../, %2e%2e, /etc/passwd, /etc/shadow patterns
+  - `sql_injection` — ' OR 1=1, UNION SELECT, DROP TABLE, comment injection
+  - `code_execution` — exec/eval/compile calls, `__import__`, os.system, subprocess
+- **ContentRuleConfig** policy model — `enabled` flag + `block_patterns` list
+
+#### Rate Limiter (`enforcecore.guard.ratelimit`)
+- **RateLimiter** with sliding-window algorithm
+  - Per-tool limits via `RateLimit(max_calls, window_seconds)`
+  - Global limit across all tools
+  - Case-insensitive tool name matching
+  - Thread-safe via per-window locks
+  - `acquire(tool_name)` — raises `RateLimitError` when limit exceeded
+  - `reset(tool_name?)` — clear one or all windows
+  - `get_tool_usage()` / `get_global_usage()` — current window counts
+  - `get_limits()` — introspect configured limits
+  - `from_config(RateLimitConfig)` factory for policy-driven construction
+- **RateLimitError** exception with `tool_name`, `limit`, `window_seconds` attributes
+- **RateLimitConfig** / **RateLimit** policy models
+- **RateLimitPolicyConfig** — `enabled`, `per_tool` dict, `global_limit` config
+
+#### Network Domain Enforcement (`enforcecore.guard.network`)
+- **DomainChecker** — URL domain allow/deny enforcement
+  - `is_domain_allowed(domain)` — checks against allow/deny lists
+  - `extract_domains(text)` — extracts domains from URLs in text
+  - `check_text(text)` — raises `DomainDeniedError` for denied domains
+  - `check_args(args, kwargs)` — recursively checks all string arguments
+  - `from_policy(NetworkPolicy)` factory for policy-driven construction
+  - Wildcard patterns via fnmatch (e.g., `*.example.com`)
+  - Denied domains always take priority over allowed
+  - Port stripping and case-insensitive matching
+- Expanded **NetworkPolicy** with `enabled`, `denied_domains` fields
+
+#### Output Content Filtering
+- Enforcer now runs content rule checks on tool outputs (both sync + async paths)
+- Raises `ContentViolationError` when output contains dangerous content
+- Completes the input→execute→output inspection pipeline
+
+#### New Public Exports (10 new, 100 total)
+- Rules: `ContentRule`, `ContentRuleConfig`, `RuleEngine`, `RuleViolation`, `get_builtin_rules`
+- Rate Limiting: `RateLimit`, `RateLimitError`, `RateLimiter`
+- Network: `DomainChecker`
+- Types: `ContentViolationError`
+
+#### Testing
+- 149 new tests across 4 test files:
+  - `test_rules.py` — 35 tests: content rules, built-in categories, engine operations, config
+  - `test_ratelimit.py` — 28 tests: sliding window, per-tool/global limits, thread safety, config
+  - `test_network.py` — 24 tests: domain matching, wildcards, URL extraction, policy factory
+  - `test_v108_fixes.py` — 62 tests: all bug fixes + integration (content rules, network,
+    rate limiting, defense-in-depth pipeline)
+- Total: **858 tests**
+
+### Fixed
+
+#### Critical
+- **C-1**: `_redact_output()` now checks `redact_output` policy flag before redacting
+- **C-2**: Tool matching in `evaluate_pre_call()` is now case-insensitive (`.lower()` comparison)
+
+#### High
+- **H-1**: Policy evaluation uses LRU cache (max 64 entries, FIFO eviction) with `clear_policy_cache()`
+- **H-3**: `input_redactions` initialized before try block so blocked audit entries preserve the count
+- **H-4**: Unicode normalization falls back to original text when normalization changes string length
+- **H-6**: SSN regex tightened to require consistent separators (all dashes, all spaces, or no separators)
+
+#### Medium
+- **M-1**: Enforcer class docstring updated from stale "v1.0.0" description
+- **M-2**: `person_name` detection escalated from `logger.debug` to `logger.warning`
+- **M-3**: PII default categories aligned to include `ip_address`
+- **M-4**: `NullBackend._count` made thread-safe with `threading.Lock()`
+- **M-6**: `MultiBackend.write()` raises `AuditError` when ALL backends fail
+- **M-7**: `guard_sync`/`guard_async` changed from `UserWarning` to `DeprecationWarning`
+
+#### Low
+- **L-3**: Added `__repr__` to `Redactor` class
+- **L-6**: Credit card regex `\d{0,4}` corrected to `\d{1,4}` (disallow zero-length groups)
+
+### Changed
+- Version bumped from `1.0.7a1` to `1.0.8a1`
+- `enforcecore.__init__.py` updated with 10 new exports (100 total)
+- `enforcecore.core.enforcer` — wires content rules, network enforcement, and rate limiting
+  into both `enforce_sync()` and `enforce_async()` pipelines (input check → execute → output check)
+- `enforcecore.core.policy` — new config models for content rules, rate limits; expanded network policy
+- `enforcecore.core.types` — new `ViolationType.CONTENT_VIOLATION`, `ViolationType.RATE_LIMIT`,
+  `ContentViolationError` exception
+
 ## [1.0.7a1] — 2025-02-20
 
 ### Added

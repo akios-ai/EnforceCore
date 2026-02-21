@@ -46,9 +46,17 @@ from enforcecore.core.hardening import (
     validate_tool_name,
 )
 from enforcecore.core.policy import Policy, PolicyEngine, load_policy
+from enforcecore.core.rules import (
+    ContentRule,
+    ContentRuleConfig,
+    RuleEngine,
+    RuleViolation,
+    get_builtin_rules,
+)
 from enforcecore.core.types import (
     AuditError,
     CallContext,
+    ContentViolationError,
     CostLimitError,
     Decision,
     DomainDeniedError,
@@ -83,6 +91,8 @@ from enforcecore.eval.types import (
     ThreatCategory,
 )
 from enforcecore.guard.engine import CostTracker, KillSwitch, ResourceGuard
+from enforcecore.guard.network import DomainChecker
+from enforcecore.guard.ratelimit import RateLimit, RateLimiter, RateLimitError
 from enforcecore.integrations._base import require_package, wrap_with_policy
 from enforcecore.plugins.hooks import (
     HookContext,
@@ -104,7 +114,7 @@ from enforcecore.redactor.unicode import (
     prepare_for_detection,
 )
 
-__version__ = "1.0.7a1"
+__version__ = "1.0.8a1"
 
 __all__ = [
     "AuditBackend",
@@ -116,12 +126,16 @@ __all__ = [
     "BenchmarkSuite",
     "CallContext",
     "CallbackBackend",
+    "ContentRule",
+    "ContentRuleConfig",
+    "ContentViolationError",
     "CostLimitError",
     "CostTracker",
     "CustomPattern",
     "Decision",
     "DetectedEntity",
     "DetectedSecret",
+    "DomainChecker",
     "DomainDeniedError",
     "EnforceCoreError",
     "EnforcementDepthError",
@@ -144,6 +158,9 @@ __all__ = [
     "PolicyError",
     "PolicyLoadError",
     "PolicyValidationError",
+    "RateLimit",
+    "RateLimitError",
+    "RateLimiter",
     "RedactionError",
     "RedactionEvent",
     "RedactionHookContext",
@@ -152,6 +169,8 @@ __all__ = [
     "Redactor",
     "ResourceGuard",
     "ResourceLimitError",
+    "RuleEngine",
+    "RuleViolation",
     "Scenario",
     "ScenarioOutcome",
     "ScenarioResult",
@@ -174,6 +193,7 @@ __all__ = [
     "enter_enforcement",
     "exit_enforcement",
     "generate_report",
+    "get_builtin_rules",
     "get_enforcement_chain",
     "get_enforcement_depth",
     "is_dev_mode",

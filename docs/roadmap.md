@@ -344,7 +344,7 @@ auditor = Auditor(backend=backend)
 
 ---
 
-## v1.0.8 — Deep Inspection & Network Enforcement
+## v1.0.8 — Deep Inspection & Network Enforcement ✅ Shipped
 **Focus:** Move beyond tool-name gating. Inspect arguments, filter content, enforce network boundaries, rate-limit calls.
 
 ### What ships:
@@ -392,12 +392,12 @@ async def agent_tool(command: str) -> str:
 ```
 
 ### Definition of Done:
-- [ ] Content rules block shell injection, path traversal, SQL injection
-- [ ] Domain allow/deny lists enforced on URL arguments
-- [ ] Rate limiting works per-tool and globally with sliding window
-- [ ] Output content filtering blocks secrets in responses
-- [ ] All rules configurable via policy YAML
-- [ ] Tests passing, 96%+ coverage
+- [x] Content rules block shell injection, path traversal, SQL injection
+- [x] Domain allow/deny lists enforced on URL arguments
+- [x] Rate limiting works per-tool and globally with sliding window
+- [x] Output content filtering blocks secrets in responses
+- [x] All rules configurable via policy YAML
+- [x] Tests passing, 96%+ coverage (858 tests, 149 new)
 
 ---
 
@@ -559,8 +559,8 @@ Each release makes the framework meaningfully more capable. By v1.0.10, EnforceC
 | v1.0.4 | Framework Integrations | 334 | ✅ Shipped |
 | v1.0.5 | Evaluation Suite | 431 | ✅ Shipped |
 | v1.0.6 | Hardening + Polish | 544 | ✅ Shipped |
-| v1.0.7 | Plugin & Extensibility | — | ✅ Shipped |
-| v1.0.8 | Deep Inspection & Network | — | 📋 Planned |
+| v1.0.7 | Plugin & Extensibility | 709 | ✅ Shipped |
+| v1.0.8 | Deep Inspection & Network | 858 | ✅ Shipped |
 | v1.0.9 | CLI & Policy Tooling | — | 📋 Planned |
 | v1.0.10 | Observability + PyPI v1.0.0 | — | 📋 Planned |
 
