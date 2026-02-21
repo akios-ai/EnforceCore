@@ -145,6 +145,15 @@ class EnforcementViolation(EnforceCoreError):  # noqa: N818 — intentionally na
         violation_type: ViolationType = ViolationType.POLICY_ERROR,
         reason: str = "",
     ) -> None:
+        """Initialize an enforcement violation.
+
+        Args:
+            message: Human-readable error message.
+            tool_name: Name of the tool that was blocked.
+            policy_name: Name of the policy that blocked the call.
+            violation_type: Category of the violation.
+            reason: Machine-readable reason string.
+        """
         super().__init__(message)
         self.tool_name = tool_name
         self.policy_name = policy_name
@@ -162,6 +171,13 @@ class ToolDeniedError(EnforcementViolation):
         policy_name: str = "",
         reason: str = "",
     ) -> None:
+        """Initialize a tool-denied error.
+
+        Args:
+            tool_name: Name of the denied tool.
+            policy_name: Name of the policy that denied the tool.
+            reason: Why the tool was denied.
+        """
         super().__init__(
             f"Tool '{tool_name}' is denied by policy '{policy_name}': {reason}",
             tool_name=tool_name,
@@ -181,6 +197,13 @@ class DomainDeniedError(EnforcementViolation):
         tool_name: str = "",
         policy_name: str = "",
     ) -> None:
+        """Initialize a domain-denied error.
+
+        Args:
+            domain: The denied domain name.
+            tool_name: Name of the tool that attempted the request.
+            policy_name: Name of the policy that blocked the domain.
+        """
         super().__init__(
             f"Domain '{domain}' is denied by policy '{policy_name}'",
             tool_name=tool_name,
@@ -201,6 +224,14 @@ class ContentViolationError(EnforcementViolation):
         tool_name: str = "",
         policy_name: str = "",
     ) -> None:
+        """Initialize a content violation error.
+
+        Args:
+            rule_name: Name of the content rule that was violated.
+            description: Human-readable description of the violation.
+            tool_name: Name of the tool whose content was inspected.
+            policy_name: Name of the policy that contains the rule.
+        """
         super().__init__(
             f"Content rule '{rule_name}' violated: {description}",
             tool_name=tool_name,
@@ -221,6 +252,14 @@ class CostLimitError(EnforcementViolation):
         tool_name: str = "",
         policy_name: str = "",
     ) -> None:
+        """Initialize a cost limit error.
+
+        Args:
+            current_cost: The current cumulative cost in USD.
+            budget: The configured budget in USD.
+            tool_name: Name of the tool that triggered the limit.
+            policy_name: Name of the policy with the budget.
+        """
         super().__init__(
             f"Cost limit exceeded: ${current_cost:.2f} >= ${budget:.2f} budget",
             tool_name=tool_name,
@@ -241,6 +280,14 @@ class ResourceLimitError(EnforcementViolation):
         tool_name: str = "",
         policy_name: str = "",
     ) -> None:
+        """Initialize a resource limit error.
+
+        Args:
+            resource: The resource that was exceeded (e.g., ``"time"``, ``"memory"``).
+            limit: Human-readable description of the limit.
+            tool_name: Name of the tool that exceeded the limit.
+            policy_name: Name of the policy with the resource limits.
+        """
         super().__init__(
             f"Resource limit exceeded: {resource} > {limit}",
             tool_name=tool_name,

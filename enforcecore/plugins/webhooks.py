@@ -94,6 +94,17 @@ class WebhookDispatcher:
         backoff_base: float = 1.0,
         backoff_max: float = 30.0,
     ) -> None:
+        """Initialize the webhook dispatcher.
+
+        Args:
+            on_violation: URL to POST when a policy violation occurs.
+            on_cost_threshold: URL to POST when cost thresholds are breached.
+            on_audit_error: URL to POST on audit trail errors.
+            retry_attempts: Number of retries on failure. Default 3.
+            timeout_seconds: HTTP request timeout in seconds. Default 10.
+            backoff_base: Base delay for exponential backoff in seconds.
+            backoff_max: Maximum backoff delay in seconds.
+        """
         self._on_violation = on_violation
         self._on_cost_threshold = on_cost_threshold
         self._on_audit_error = on_audit_error

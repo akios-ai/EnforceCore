@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "enforcecore"
-version = "1.0.10a1"
+version = "1.0.11a1"
 description = "The runtime enforcement layer for agentic AI systems."
 readme = "README.md"
 license = "Apache-2.0"
@@ -72,6 +72,10 @@ dev = [
     "rich>=13.0",
     "typer>=0.12",
 ]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.24",
+]
 all = [
     "enforcecore[redactor,cli,telemetry]",
 ]
@@ -79,7 +83,7 @@ all = [
 [project.urls]
 Homepage = "https://github.com/akios-ai/EnforceCore"
 Repository = "https://github.com/akios-ai/EnforceCore"
-Documentation = "https://github.com/akios-ai/EnforceCore/tree/main/docs"
+Documentation = "https://akios-ai.github.io/EnforceCore/"
 Issues = "https://github.com/akios-ai/EnforceCore/issues"
 
 [project.scripts]

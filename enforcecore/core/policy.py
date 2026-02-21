@@ -361,6 +361,13 @@ class PreCallResult:
         violation_type: ViolationType | None = None,
         reason: str = "",
     ) -> None:
+        """Initialize a pre-call evaluation result.
+
+        Args:
+            decision: The enforcement decision (allowed or blocked).
+            violation_type: The type of violation if blocked, or ``None``.
+            reason: Human-readable reason for the decision.
+        """
         self.decision = decision
         self.violation_type = violation_type
         self.reason = reason
@@ -381,6 +388,13 @@ class PostCallResult:
         violation_type: ViolationType | None = None,
         reason: str = "",
     ) -> None:
+        """Initialize a post-call evaluation result.
+
+        Args:
+            decision: The enforcement decision. Defaults to ``ALLOWED``.
+            violation_type: The type of violation if blocked, or ``None``.
+            reason: Human-readable reason for the decision.
+        """
         self.decision = decision
         self.violation_type = violation_type
         self.reason = reason
@@ -407,6 +421,11 @@ class PolicyEngine:
     __slots__ = ("_policy",)
 
     def __init__(self, policy: Policy) -> None:
+        """Initialize the policy engine.
+
+        Args:
+            policy: The policy to evaluate against call contexts.
+        """
         self._policy = policy
 
     @classmethod

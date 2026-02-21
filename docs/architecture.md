@@ -13,45 +13,106 @@ This is fundamentally different from:
 
 ## High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│         Agent Application Layer                      │
-│   (LangGraph / CrewAI / AutoGen / Custom Agent)      │
-└─────────────────────┬───────────────────────────────┘
-                      │  tool_call(args)
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│              EnforceCore Public API                   │
-│                                                      │
-│   @enforce(policy="my_policy.yaml")                  │
-│   async def call_tool(args):                         │
-│       ...                                            │
-└─────────────────────┬───────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│              Enforcer (Coordinator)                   │
-│                                                      │
-│   1. Load & resolve policy                           │
-│   2. Run pre-call checks                             │
-│   3. Apply redaction to inputs                       │
-│   4. Set up resource constraints                     │
-│   5. Execute call inside sandbox                     │
-│   6. Apply redaction to outputs                      │
-│   7. Run post-call checks                            │
-│   8. Record audit entry                              │
-│   9. Return result or raise violation                │
-└──┬──────────┬──────────┬──────────┬─────────────────┘
-   │          │          │          │
-   ▼          ▼          ▼          ▼
-┌──────┐ ┌────────┐ ┌────────┐ ┌──────────┐
-│Policy│ │Redactor│ │Auditor │ │  Guard   │
-│Engine│ │        │ │(Merkle)│ │(Resource │
-│      │ │        │ │        │ │+ Kill)   │
-└──────┘ └────────┘ └────────┘ └──────────┘
+```mermaid
+flowchart TB
+    subgraph APP["Agent Application Layer"]
+        direction LR
+        A1["LangGraph"] ~~~ A2["CrewAI"] ~~~ A3["AutoGen"] ~~~ A4["Custom Agent"]
+    end
+
+    APP -->|"tool_call(args)"| API
+
+    subgraph API["EnforceCore Public API"]
+        DEC["@enforce(policy='my_policy.yaml')<br/>async def call_tool(args): ..."]
+    end
+
+    API --> ENF
+
+    subgraph ENF["Enforcer (Coordinator)"]
+        direction TB
+        S1["1. Load & resolve policy"]
+        S2["2. Run pre-call checks"]
+        S3["3. Apply redaction to inputs"]
+        S4["4. Set up resource constraints"]
+        S5["5. Execute call inside sandbox"]
+        S6["6. Apply redaction to outputs"]
+        S7["7. Run post-call checks"]
+        S8["8. Record audit entry"]
+        S9["9. Return result or raise violation"]
+        S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
+    end
+
+    ENF --> PE["Policy Engine"]
+    ENF --> RD["Redactor"]
+    ENF --> AU["Auditor (Merkle)"]
+    ENF --> GU["Guard (Resource + Kill)"]
+
+    style APP fill:#e3f2fd,stroke:#1565c0
+    style API fill:#e8f5e9,stroke:#2e7d32
+    style ENF fill:#fff3e0,stroke:#e65100
+    style PE fill:#f3e5f5,stroke:#7b1fa2
+    style RD fill:#f3e5f5,stroke:#7b1fa2
+    style AU fill:#f3e5f5,stroke:#7b1fa2
+    style GU fill:#f3e5f5,stroke:#7b1fa2
 ```
 
 ## Core Components
+
+### Enforcement Data Flow
+
+The following diagram shows the complete flow of an enforced tool call,
+including threat boundaries:
+
+```mermaid
+sequenceDiagram
+    participant Agent as Agent / Framework
+    participant Enforcer as Enforcer
+    participant Policy as Policy Engine
+    participant Redactor as Redactor
+    participant Guard as Guard
+    participant Auditor as Auditor
+    participant Tool as External Tool
+
+    Agent->>Enforcer: tool_call(name, args)
+
+    rect rgb(255, 235, 238)
+        Note over Enforcer,Policy: Pre-call enforcement
+        Enforcer->>Policy: evaluate_pre(name, args)
+        Policy-->>Enforcer: PreCallResult(allow/deny)
+        alt Denied
+            Enforcer-->>Agent: raise ToolDeniedError
+        end
+    end
+
+    rect rgb(232, 245, 233)
+        Note over Enforcer,Redactor: Input redaction
+        Enforcer->>Redactor: redact(args)
+        Redactor-->>Enforcer: sanitized_args
+    end
+
+    rect rgb(227, 242, 253)
+        Note over Enforcer,Guard: Resource setup
+        Enforcer->>Guard: check_limits(cost, rate)
+        Guard-->>Enforcer: ok / raise
+    end
+
+    Enforcer->>Tool: execute(sanitized_args)
+    Tool-->>Enforcer: raw_result
+
+    rect rgb(232, 245, 233)
+        Note over Enforcer,Redactor: Output redaction
+        Enforcer->>Redactor: redact(result)
+        Redactor-->>Enforcer: sanitized_result
+    end
+
+    rect rgb(255, 243, 224)
+        Note over Enforcer,Auditor: Audit recording
+        Enforcer->>Auditor: record(entry)
+        Auditor-->>Enforcer: merkle_hash
+    end
+
+    Enforcer-->>Agent: sanitized_result
+```
 
 ### 1. Enforcer (Coordinator)
 
@@ -249,51 +310,107 @@ Each adapter is ~20-50 lines of code. The examples directory provides copy-paste
 
 ## Module Dependency Graph
 
-```
-enforcecore/
-├── core/
-│   ├── types.py          ← Shared types, exceptions, enums (no deps)
-│   ├── policy.py         ← Policy models + engine (depends: types, pydantic)
-│   ├── enforcer.py       ← Main coordinator (depends: policy, redactor, auditor, guard)
-│   └── config.py         ← Global configuration (depends: pydantic-settings)
-├── redactor/
-│   ├── engine.py         ← PII detection + redaction (depends: presidio)
-│   └── strategies.py     ← Redaction strategies (mask, hash, etc.)
-├── auditor/
-│   ├── merkle.py         ← Merkle tree implementation (depends: hashlib)
-│   ├── logger.py         ← Audit log writer (depends: structlog)
-│   └── verifier.py       ← Audit trail verification
-├── guard/
-│   ├── platform.py       ← Platform detection + abstraction
-│   ├── resource.py       ← Resource limits (cross-platform)
-│   ├── killswitch.py     ← Hard termination
-│   └── sandbox_linux.py  ← Optional Linux-specific hardening
-├── integrations/
-│   ├── langgraph.py
-│   ├── crewai.py
-│   ├── autogen.py
-│   └── base.py
-└── __init__.py           ← Public API exports
+```mermaid
+graph LR
+    subgraph core["enforcecore/core/"]
+        TYPES["types.py<br/><em>Shared types, exceptions</em>"]
+        POLICY["policy.py<br/><em>Policy models + engine</em>"]
+        CONFIG["config.py<br/><em>Global configuration</em>"]
+        RULES["rules.py<br/><em>Rule evaluation</em>"]
+        ENFORCER["enforcer.py<br/><em>Main coordinator</em>"]
+    end
+
+    subgraph redactor["enforcecore/redactor/"]
+        REDACT_ENG["engine.py<br/><em>PII detection + redaction</em>"]
+        PATTERNS["patterns.py<br/><em>Regex patterns</em>"]
+        SECRETS["secrets.py<br/><em>Secret scanning</em>"]
+        UNICODE["unicode.py<br/><em>Unicode normalization</em>"]
+    end
+
+    subgraph auditor["enforcecore/auditor/"]
+        MERKLE["merkle.py<br/><em>Merkle tree</em>"]
+        LOGGER["logger.py<br/><em>Audit log writer</em>"]
+        BACKENDS["backends.py<br/><em>Storage backends</em>"]
+        ROTATION["rotation.py<br/><em>Log rotation</em>"]
+    end
+
+    subgraph guard["enforcecore/guard/"]
+        GUARD_ENG["engine.py<br/><em>Resource limits</em>"]
+        NETWORK["network.py<br/><em>Domain enforcement</em>"]
+        RATELIMIT["ratelimit.py<br/><em>Rate limiting</em>"]
+    end
+
+    subgraph plugins["enforcecore/plugins/"]
+        HOOKS["hooks.py<br/><em>Lifecycle hooks</em>"]
+        WEBHOOKS["webhooks.py<br/><em>Webhook dispatch</em>"]
+    end
+
+    subgraph telemetry["enforcecore/telemetry/"]
+        INSTRUMENTOR["instrumentor.py<br/><em>OpenTelemetry</em>"]
+        METRICS["metrics.py<br/><em>Metrics recording</em>"]
+    end
+
+    ENFORCER --> POLICY
+    ENFORCER --> REDACT_ENG
+    ENFORCER --> MERKLE
+    ENFORCER --> GUARD_ENG
+    ENFORCER --> RULES
+    ENFORCER --> HOOKS
+    POLICY --> TYPES
+    RULES --> TYPES
+    CONFIG -.-> TYPES
+    REDACT_ENG --> PATTERNS
+    REDACT_ENG --> SECRETS
+    REDACT_ENG --> UNICODE
+    LOGGER --> MERKLE
+    LOGGER --> BACKENDS
+    LOGGER --> ROTATION
+    INSTRUMENTOR --> METRICS
+
+    style core fill:#e3f2fd,stroke:#1565c0
+    style redactor fill:#e8f5e9,stroke:#2e7d32
+    style auditor fill:#fff3e0,stroke:#e65100
+    style guard fill:#fce4ec,stroke:#c62828
+    style plugins fill:#f3e5f5,stroke:#7b1fa2
+    style telemetry fill:#e0f2f1,stroke:#00695c
 ```
 
 ## Error Handling Strategy
 
 EnforceCore uses a clear exception hierarchy:
 
-```
-EnforceCoreError (base)
-├── PolicyError
-│   ├── PolicyLoadError        ← Invalid/missing policy file
-│   ├── PolicyValidationError  ← Policy schema violation
-│   └── PolicyEvaluationError  ← Error during rule evaluation
-├── EnforcementViolation
-│   ├── ToolDeniedError        ← Tool not in allowed list
-│   ├── DomainDeniedError      ← Network domain blocked
-│   ├── CostLimitError         ← Cost budget exceeded
-│   └── ResourceLimitError     ← Resource limit breached
-├── RedactionError             ← PII detection/redaction failure
-├── AuditError                 ← Audit logging failure
-└── GuardError                 ← Resource guard failure
+```mermaid
+classDiagram
+    class EnforceCoreError {
+        <<base>>
+    }
+    class PolicyError
+    class PolicyLoadError
+    class PolicyValidationError
+    class PolicyEvaluationError
+    class EnforcementViolation
+    class ToolDeniedError
+    class DomainDeniedError
+    class CostLimitError
+    class ResourceLimitError
+    class ContentViolationError
+    class RedactionError
+    class AuditError
+    class GuardError
+
+    EnforceCoreError <|-- PolicyError
+    EnforceCoreError <|-- EnforcementViolation
+    EnforceCoreError <|-- RedactionError
+    EnforceCoreError <|-- AuditError
+    EnforceCoreError <|-- GuardError
+    PolicyError <|-- PolicyLoadError
+    PolicyError <|-- PolicyValidationError
+    PolicyError <|-- PolicyEvaluationError
+    EnforcementViolation <|-- ToolDeniedError
+    EnforcementViolation <|-- DomainDeniedError
+    EnforcementViolation <|-- CostLimitError
+    EnforcementViolation <|-- ResourceLimitError
+    EnforcementViolation <|-- ContentViolationError
 ```
 
 **Key principle:** Enforcement failures should **always fail closed** (block the call), never fail open (let it through). If the Policy Engine crashes, the call is blocked. If the Redactor fails, the call is blocked. Safety by default.
@@ -317,3 +434,45 @@ EnforceCoreError (base)
 | **Total overhead (typical)** | **8-20ms** | **Negligible vs tool call latency (100ms-10s)** |
 
 These are honest targets. We will publish real benchmarks with every release.
+
+## Threat Boundary Model
+
+```mermaid
+graph TB
+    subgraph UNTRUSTED["🔴 Untrusted Zone"]
+        LLM["LLM Output<br/>(stochastic, injectable)"]
+        USER["User Input<br/>(prompt injection)"]
+        TOOL_OUT["Tool Responses<br/>(external, uncontrolled)"]
+    end
+
+    subgraph BOUNDARY["🟡 Enforcement Boundary — EnforceCore"]
+        direction TB
+        POLICY_CHECK["Policy Engine<br/>Allow / Deny"]
+        REDACT_IN["Input Redaction<br/>PII removal"]
+        REDACT_OUT["Output Redaction<br/>PII removal"]
+        GUARD_CHECK["Guard<br/>Cost / Rate / Resource"]
+        AUDIT["Audit Trail<br/>Merkle chain"]
+    end
+
+    subgraph TRUSTED["🟢 Trusted Zone"]
+        TOOLS["Authorized Tools"]
+        DB["Databases"]
+        APIS["External APIs<br/>(allow-listed domains)"]
+    end
+
+    LLM -->|"tool_call"| POLICY_CHECK
+    USER -->|"args"| REDACT_IN
+    POLICY_CHECK --> GUARD_CHECK
+    REDACT_IN --> GUARD_CHECK
+    GUARD_CHECK --> TOOLS
+    TOOLS --> REDACT_OUT
+    TOOL_OUT --> REDACT_OUT
+    REDACT_OUT --> AUDIT
+    AUDIT -->|"sanitized result"| LLM
+    TOOLS --> DB
+    TOOLS --> APIS
+
+    style UNTRUSTED fill:#ffebee,stroke:#c62828
+    style BOUNDARY fill:#fff8e1,stroke:#f57f17
+    style TRUSTED fill:#e8f5e9,stroke:#2e7d32
+```

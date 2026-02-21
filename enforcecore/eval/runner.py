@@ -59,6 +59,11 @@ class ScenarioRunner:
     __slots__ = ("_policy",)
 
     def __init__(self, policy: Policy) -> None:
+        """Initialize the scenario runner.
+
+        Args:
+            policy: The policy to evaluate scenarios against.
+        """
         self._policy = policy
 
     @property

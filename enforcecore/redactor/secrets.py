@@ -186,6 +186,15 @@ class SecretScanner:
         self,
         categories: tuple[str, ...] | list[str] | None = None,
     ) -> None:
+        """Initialize the secret scanner.
+
+        Args:
+            categories: Secret categories to detect. Defaults to all
+                supported categories (AWS, GitHub, bearer tokens, etc.).
+
+        Raises:
+            ValueError: If an unknown category is specified.
+        """
         self._categories = tuple(categories) if categories else DEFAULT_SECRET_CATEGORIES
 
         # Validate categories
