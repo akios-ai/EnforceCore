@@ -27,6 +27,9 @@ class ThreatCategory(enum.StrEnum):
     PII_LEAKAGE = "pii_leakage"
     PRIVILEGE_ESCALATION = "privilege_escalation"
     PROMPT_INJECTION = "prompt_injection"
+    RANSOMWARE = "ransomware"
+    SUPPLY_CHAIN = "supply_chain"
+    COLLUSION = "collusion"
 
 
 class Severity(enum.StrEnum):

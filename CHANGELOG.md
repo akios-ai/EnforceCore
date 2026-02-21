@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.17a1] — 2026-02-21
+
+### Added
+
+#### Adversarial Scenario Expansion
+- 7 new multi-stage adversarial scenarios (20 total, up from 13)
+- 3 new `ThreatCategory` enum members: `RANSOMWARE`, `SUPPLY_CHAIN`,
+  `COLLUSION`
+- `StageResult` dataclass — structured per-stage outcome for multi-stage
+  scenario pipelines (stage name, tool, blocked flag, exception type, details)
+- `_run_multi_stage_scenario()` helper — orchestrates multi-stage attacks
+  with configurable `min_blocked` threshold, returns `CONTAINED` or `ESCAPED`
+
+#### New Scenarios
+- **Ransomware campaign** (`ransomware_campaign`) — 4-stage attack:
+  enumerate files → encrypt → delete originals → send ransom note.
+  Demonstrates defense-in-depth across file and network enforcement
+- **Ransomware encrypt-only** (`ransomware_encrypt_only`) — 5 parallel
+  file encryption attempts, all must be blocked
+- **Supply-chain credential harvest** (`supply_chain_cred_harvest`) —
+  reads environment variables → HTTP exfiltration → DNS exfiltration.
+  Tests secret detection and network enforcement
+- **Supply-chain hidden exfiltration** (`supply_chain_hidden_exfil`) —
+  base64, hex, and split-encoding evasion of output inspection
+- **Multi-agent collusion relay** (`collusion_relay`) — two agents with
+  isolated policies attempt cross-agent data relay. Tests per-agent
+  policy isolation
+- **Privilege escalation chain** (`priv_escalation_chain`) — modify own
+  policy → call admin tool → unicode trick → env injection. Tests
+  policy immutability and tool-name normalization
+- **Slow-burn exfiltration** (`slow_burn_exfil`) — 20 small data chunks
+  with embedded PII, tests cumulative output monitoring
+
+#### Tests
+- `tests/eval/test_multi_stage_scenarios.py` — 44 new tests across 9
+  test classes covering all multi-stage scenarios, StageResult, helper
+  function, registry, and metadata validation
+- Updated `test_threat_category_members` to include all 10 categories
+
 ## [1.0.16a1] — 2026-02-21
 
 ### Added
