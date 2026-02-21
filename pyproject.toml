@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "enforcecore"
-version = "1.0.9a1"
+version = "1.0.10a1"
 description = "The runtime enforcement layer for agentic AI systems."
 readme = "README.md"
 license = "Apache-2.0"
@@ -58,6 +58,10 @@ cli = [
     "typer>=0.12",
     "rich>=13.0",
 ]
+telemetry = [
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -69,7 +73,7 @@ dev = [
     "typer>=0.12",
 ]
 all = [
-    "enforcecore[redactor,cli]",
+    "enforcecore[redactor,cli,telemetry]",
 ]
 
 [project.urls]
@@ -125,6 +129,7 @@ module = [
     "langchain_core.*",
     "crewai.*",
     "autogen_core.*",
+    "opentelemetry.*",
 ]
 ignore_missing_imports = true
 

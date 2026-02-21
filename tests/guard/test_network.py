@@ -5,7 +5,8 @@ from __future__ import annotations
 import pytest
 
 from enforcecore.core.types import DomainDeniedError
-from enforcecore.guard.network import DomainChecker, _extract_strings
+from enforcecore.guard.network import DomainChecker
+from enforcecore.utils import extract_strings
 
 # ---------------------------------------------------------------------------
 # Domain matching
@@ -235,11 +236,11 @@ class TestRepr:
 
 class TestExtractStrings:
     def test_flat(self) -> None:
-        assert _extract_strings(("a", "b")) == ["a", "b"]
+        assert extract_strings(("a", "b")) == ["a", "b"]
 
     def test_nested(self) -> None:
-        result = _extract_strings(({"k": "v"},))
+        result = extract_strings(({"k": "v"},))
         assert result == ["v"]
 
     def test_non_strings(self) -> None:
-        assert _extract_strings((42,)) == []
+        assert extract_strings((42,)) == []

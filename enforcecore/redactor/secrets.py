@@ -11,6 +11,10 @@ Built-in categories:
 - bearer_token: Bearer/JWT tokens in Authorization headers
 - private_key: PEM-encoded private keys (RSA, EC, etc.)
 - password_in_url: Passwords embedded in URLs (://user:pass@host)
+- gcp_service_account: Google Cloud service account key JSON
+- azure_connection_string: Azure storage/service bus connection strings
+- database_connection_string: Database URIs (postgres, mysql, mongodb, redis)
+- ssh_private_key: OpenSSH private key markers
 
 Thread-safe: pattern compilation at import time, stateless detection.
 """
@@ -67,6 +71,31 @@ _SECRET_PATTERNS: dict[str, re.Pattern[str]] = {
         r"(?:https?|ftp|postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp)"
         r"://[^:\s]+:([^@\s]{3,})@[^\s]+"
     ),
+    # GCP service account key JSON (matches the private_key_id field pattern)
+    "gcp_service_account": re.compile(
+        r'"type"\s*:\s*"service_account"'
+        r"[\s\S]{0,500}"
+        r'"private_key_id"\s*:\s*"([a-f0-9]{40})"',
+    ),
+    # Azure connection strings (storage, service bus, cosmos, etc.)
+    "azure_connection_string": re.compile(
+        r"(?:DefaultEndpointsProtocol|AccountName|AccountKey|"
+        r"SharedAccessKey|Endpoint=sb://)"
+        r"[A-Za-z0-9+/=;.:\-\w]{20,500}",
+        re.IGNORECASE,
+    ),
+    # Database connection strings with credentials
+    "database_connection_string": re.compile(
+        r"(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp|mssql)"
+        r"://[^\s:]+:[^\s@]+@[^\s]+",
+        re.IGNORECASE,
+    ),
+    # SSH private key blocks
+    "ssh_private_key": re.compile(
+        r"-----BEGIN\s+OPENSSH\s+PRIVATE\s+KEY-----"
+        r"[\s\S]*?"
+        r"-----END\s+OPENSSH\s+PRIVATE\s+KEY-----"
+    ),
 }
 
 
@@ -79,6 +108,10 @@ _SECRET_PLACEHOLDERS: dict[str, str] = {
     "bearer_token": "<BEARER_TOKEN>",
     "private_key": "<PRIVATE_KEY>",
     "password_in_url": "<URL_PASSWORD>",
+    "gcp_service_account": "<GCP_SERVICE_ACCOUNT>",
+    "azure_connection_string": "<AZURE_CONNECTION_STRING>",
+    "database_connection_string": "<DATABASE_URI>",
+    "ssh_private_key": "<SSH_PRIVATE_KEY>",
 }
 
 _SECRET_MASKS: dict[str, str] = {
@@ -89,6 +122,10 @@ _SECRET_MASKS: dict[str, str] = {
     "bearer_token": "Bearer ****...",
     "private_key": "-----REDACTED PRIVATE KEY-----",
     "password_in_url": "****",
+    "gcp_service_account": "<GCP_KEY_REDACTED>",
+    "azure_connection_string": "AccountKey=****",
+    "database_connection_string": "://****:****@****",
+    "ssh_private_key": "-----REDACTED SSH KEY-----",
 }
 
 # Default enabled categories
@@ -100,6 +137,10 @@ DEFAULT_SECRET_CATEGORIES: tuple[str, ...] = (
     "bearer_token",
     "private_key",
     "password_in_url",
+    "gcp_service_account",
+    "azure_connection_string",
+    "database_connection_string",
+    "ssh_private_key",
 )
 
 

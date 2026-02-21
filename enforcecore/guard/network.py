@@ -149,7 +149,3 @@ class DomainChecker:
             f"DomainChecker(allowed={len(self._allowed)}, "
             f"denied={len(self._denied)}, deny_other={self._deny_all_other})"
         )
-
-
-# Backward-compatible alias
-_extract_strings = extract_strings

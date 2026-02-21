@@ -475,7 +475,8 @@ class Enforcer:
                     tool=resolved_name,
                     exc_info=True,
                 )
-                return func(*args, **kwargs)
+                # Use redacted args if available to prevent PII leakage
+                return func(*r_args, **r_kwargs)
             raise
         finally:
             exit_enforcement()
@@ -500,6 +501,8 @@ class Enforcer:
         t0 = time.perf_counter()
         hooks = HookRegistry.global_registry()
         input_redactions = 0
+        r_args: tuple[Any, ...] = args
+        r_kwargs: dict[str, Any] = dict(kwargs)
 
         # Track enforcement nesting
         enter_enforcement(resolved_name)
@@ -679,7 +682,8 @@ class Enforcer:
                     tool=resolved_name,
                     exc_info=True,
                 )
-                return await func(*args, **kwargs)
+                # Use redacted args if available to prevent PII leakage
+                return await func(*r_args, **r_kwargs)
             raise
         finally:
             exit_enforcement()
