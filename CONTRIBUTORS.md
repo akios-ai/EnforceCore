@@ -47,6 +47,13 @@ We are grateful to the researchers and practitioners whose work made this possib
 - **Agent Containment** — Armstrong, Sandberg & Bostrom (2012), Babcock et al. (2016)
   for framing the containment problem EnforceCore addresses
 
+### Evaluation Methodology
+
+- **Prof. Valérie Viet Triem Tong** (CentraleSupélec, IRISA/PIRAT) — the adversarial
+  evaluation approach (ransomware-like containment scenarios, SELinux/AppArmor
+  comparison methodology) was directly inspired by her feedback on defining
+  realistic threat models and convincing evaluation strategies
+
 ### Industry Tools
 
 - **Pydantic** — for the policy model and validation layer
