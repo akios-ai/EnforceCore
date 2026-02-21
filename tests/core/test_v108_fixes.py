@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for v1.0.8 bug fixes and feature integration.
 
 Covers all audit fixes (C-1, C-2, H-1, H-3, H-4, H-6, L-3, L-6,

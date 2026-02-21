@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """
 EnforceCore — The runtime enforcement layer for agentic AI systems.
 
@@ -131,7 +133,7 @@ from enforcecore.redactor.unicode import (
 )
 from enforcecore.telemetry import EnforceCoreInstrumentor, EnforceCoreMetrics
 
-__version__ = "1.0.18a1"
+__version__ = "1.0.19a1"
 
 __all__ = [
     "AuditBackend",

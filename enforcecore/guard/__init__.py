@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Resource limits, sandboxing, and kill switch.
 
 Public API:

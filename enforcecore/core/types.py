@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Shared types, exceptions, enums, and dataclasses for EnforceCore.
 
 This module has ZERO external dependencies — only stdlib.

@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Shared utilities for framework integration adapters.
 
 This module provides the building blocks used by all framework-specific

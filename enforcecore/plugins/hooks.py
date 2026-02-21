@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Lifecycle hook system for EnforceCore.
 
 Provides a registry of hooks that fire at key enforcement lifecycle events:

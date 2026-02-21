@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Test harness — scenario runner that orchestrates evaluation.
 
 The ``ScenarioRunner`` class executes adversarial scenarios against a

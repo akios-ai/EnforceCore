@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Lightweight PII detection engine.
 
 Uses regex patterns for common PII categories. Designed to be fast, portable,

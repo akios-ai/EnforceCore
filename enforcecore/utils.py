@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Shared utility functions used across EnforceCore modules."""
 
 from __future__ import annotations

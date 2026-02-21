@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for CLI commands (enforcecore.cli.main)."""
 
 from __future__ import annotations

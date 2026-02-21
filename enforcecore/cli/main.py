@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """EnforceCore CLI — operator-facing tools for policy management and auditing.
 
 Commands:

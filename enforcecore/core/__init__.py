@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Core enforcement engine — Policy Engine, Enforcer, types, and configuration."""
 
 from enforcecore.core.config import Settings, settings

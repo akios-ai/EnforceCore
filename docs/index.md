@@ -34,7 +34,7 @@ async def search_web(query: str) -> str:
 | ⚡ **Rate Limiting** | Sliding-window per-tool and global rate limits |
 | 🔌 **Framework Integrations** | LangGraph, CrewAI, AutoGen adapters |
 | 📊 **OpenTelemetry** | Traces, metrics, and spans for observability |
-| 🧪 **Evaluation Suite** | 13 adversarial scenarios + benchmarks |
+| 🧪 **Evaluation Suite** | 20 adversarial scenarios across 10 threat categories + benchmarks |
 
 ## Navigation
 

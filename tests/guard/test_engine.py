@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Unit tests for the Resource Guard engine.
 
 Tests CostTracker, KillSwitch, ResourceGuard, and _MemoryLimiter.

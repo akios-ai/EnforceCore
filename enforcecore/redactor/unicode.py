@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Unicode hardening for PII detection.
 
 Provides pre-processing steps to defeat unicode-based PII evasion:

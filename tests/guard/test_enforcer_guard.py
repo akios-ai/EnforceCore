@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Integration tests — guard wired through the Enforcer pipeline.
 
 Verifies that resource limits, cost tracking, and KillSwitch work

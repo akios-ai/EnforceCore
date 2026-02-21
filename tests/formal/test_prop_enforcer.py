@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Property-based tests for the Enforcer — Hypothesis.
 
 These tests verify fail-closed behaviour and audit completeness.

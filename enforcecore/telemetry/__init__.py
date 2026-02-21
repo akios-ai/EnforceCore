@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """OpenTelemetry integration for EnforceCore.
 
 Provides automatic tracing and metrics for enforcement calls when

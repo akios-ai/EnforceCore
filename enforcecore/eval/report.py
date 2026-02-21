@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Report generator — Markdown reports for evaluation results.
 
 Generates human-readable Markdown reports from :class:`SuiteResult` and

@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Policy models and evaluation engine.
 
 Policies define what an agent is allowed to do.  They are loaded from YAML

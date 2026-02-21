@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Shared fixtures for integration adapter tests.
 
 Provides mock framework modules (langchain_core, crewai, autogen_core)

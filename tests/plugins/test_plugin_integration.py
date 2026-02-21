@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Integration tests for the v1.0.7 plugin & extensibility system.
 
 Tests that hooks, custom patterns, secret detection, and audit backends

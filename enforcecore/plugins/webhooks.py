@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Event webhooks for EnforceCore.
 
 Sends HTTP callbacks when enforcement events occur (violations,

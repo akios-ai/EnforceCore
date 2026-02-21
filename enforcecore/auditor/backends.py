@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Pluggable audit trail backends for EnforceCore.
 
 Provides an abstract base class and built-in implementations for audit

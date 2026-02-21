@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Audit trail rotation, retention, and compression.
 
 Provides automatic management of audit JSONL files:

@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Content rule engine for argument-level inspection.
 
 Provides runtime inspection of tool call arguments to block dangerous

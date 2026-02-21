@@ -4,6 +4,7 @@ Thank you for your interest in contributing to EnforceCore. This document explai
 
 ## Code of Conduct
 
+All contributors are expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 Be respectful, constructive, and professional. We're building a security-critical tool — code quality and honest technical discussion matter more than speed.
 
 ## How to Contribute

@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Property-based tests for the Merkle audit chain — Hypothesis.
 
 These tests verify that the tamper-evident log maintains integrity

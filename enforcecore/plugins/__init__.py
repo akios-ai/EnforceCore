@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Plugin and extensibility system for EnforceCore."""
 
 from enforcecore.plugins.hooks import (
