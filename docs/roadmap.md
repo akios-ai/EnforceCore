@@ -870,7 +870,177 @@ need to trust that their code won't break on upgrade. This is a one-way door.
 
 ---
 
-## v1.0.17 — Packaging & Publication Infrastructure
+## v1.0.17 — Adversarial Scenario Expansion
+**Focus:** Broaden the evaluation suite with sophisticated, multi-stage attack scenarios.
+
+### Why this matters:
+The current eval suite covers 13 scenarios across 7 threat categories. Real-world attacks
+don't consist of a single blocked tool call — they unfold as multi-step campaigns where each
+step is innocuous in isolation but lethal in sequence. The framework's credibility depends on
+demonstrating containment of realistic attack chains, not just individual violations.
+
+### What ships:
+- **Ransomware-like multi-stage scenario** (`scenarios/ransomware_campaign`)
+  - Stage 1: Agent enumerates local files via `list_files` (allowed)
+  - Stage 2: Agent attempts bulk file encryption via `write_file` with encoded content
+  - Stage 3: Agent attempts to delete originals via `delete_file`
+  - Stage 4: Agent attempts to send ransom note via `send_email` to unauthorized recipient
+  - Each stage independently enforced — demonstrates defense-in-depth
+  - Expected: stages 2–4 blocked, stage 1 logged with anomaly flag
+- **Supply-chain attack scenario** (`scenarios/supply_chain`)
+  - Compromised dependency attempts credential harvesting
+  - Reads environment variables containing API keys
+  - Attempts exfiltration via DNS resolution or HTTP callback
+  - Tests: secret detection catches credentials, network enforcement blocks callback
+- **Privilege escalation chain** (`scenarios/privilege_escalation`)
+  - Agent starts with minimal permissions (read-only)
+  - Attempts to modify its own policy file
+  - Attempts to call admin-only tools by name manipulation (case, unicode)
+  - Attempts to disable enforcement via environment variable injection
+  - Tests: policy immutability, tool-name normalization, env-var gating
+- **Multi-agent collusion scenario** (`scenarios/multi_agent_collusion`)
+  - Two agents with separate policies attempt to relay blocked actions
+  - Agent A (has network access) passes data to Agent B (has file access)
+  - Tests: per-agent policy isolation, cross-agent audit correlation
+- **Slow-burn exfiltration scenario** (`scenarios/slow_burn_exfil`)
+  - Agent exfiltrates data in small chunks over many calls to stay under rate limits
+  - Tests cumulative output monitoring + anomaly detection integration point
+- **New `ThreatCategory` members** (if not already covered):
+  - `RANSOMWARE` — destructive multi-stage campaigns
+  - `SUPPLY_CHAIN` — compromised dependency attacks
+  - `COLLUSION` — multi-agent coordinated policy evasion
+- **Eval report generator** updated with new scenario results
+
+### What a user can do after v1.0.17:
+```bash
+# Run the ransomware campaign scenario
+enforcecore eval --scenario ransomware-campaign --policy strict.yaml
+
+# Run all multi-stage scenarios
+enforcecore eval --scenarios multi-stage --output results/
+
+# Compare containment rates across scenario categories
+enforcecore eval --compare baseline,enforcecore --scenarios all --output comparison.md
+```
+
+### Definition of Done:
+- [ ] 5 new multi-stage scenarios implemented and documented
+- [ ] Ransomware campaign demonstrates 4-stage containment
+- [ ] Supply-chain scenario catches credential exfiltration
+- [ ] Multi-agent collusion tested with isolated policies
+- [ ] All scenarios reproducible with fixed seeds
+- [ ] Eval report updated with new scenario results
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.18 — Security Landscape & Positioning
+**Focus:** Position EnforceCore in the broader security ecosystem. Show where it fits, what it complements, and what it doesn't replace.
+
+### Why this matters:
+Adopters — whether researchers, security engineers, or compliance teams — need to understand
+how EnforceCore relates to existing security tools they already use. Does it replace SELinux?
+Does it compete with AppArmor? Where does it sit relative to seccomp, capabilities, or
+container sandboxing? Without clear positioning, users either overestimate the scope
+("this replaces my OS security") or underestimate it ("why not just use SELinux?").
+
+### What ships:
+- **OS-level enforcement comparison** (expanded `docs/related-work.md`)
+  - SELinux (Type Enforcement): kernel-level MAC, file/network/process labels, policy complexity
+  - AppArmor (Path-based MAC): profile-based, path restrictions, simpler model
+  - seccomp-bpf: syscall filtering, BPF programs, container-level sandboxing
+  - Linux capabilities: fine-grained privilege decomposition
+  - Comparison table: enforcement layer, granularity, target, policy model, overhead
+  - Key insight: EnforceCore operates at the **application semantic layer** —
+    it understands "tool calls", "PII", and "agent intent", not syscalls or file paths
+  - These are **complementary**, not competing — use both for defense-in-depth
+- **Defense-in-depth architecture document** (`docs/defense-in-depth.md`)
+  - Layer diagram: hardware → kernel (seccomp/SELinux) → container → runtime (EnforceCore) → prompt
+  - What each layer catches that others miss
+  - Recommended deployment stack for maximum containment
+  - Gap analysis: what falls between layers
+- **Updated architecture docs**
+  - `docs/architecture.md` updated with security-layer context
+  - Mermaid diagram showing EnforceCore's position in the full stack
+  - Clear scope boundaries: "EnforceCore enforces at the Python runtime boundary.
+    It does not replace kernel-level MAC or container sandboxing."
+- **"When to use what" guide** (`docs/security/tool-selection.md`)
+  - Decision tree: containerized? → seccomp/AppArmor. Python agent? → EnforceCore. Both? → Yes.
+  - Common deployment patterns: EnforceCore + Docker + AppArmor
+  - Anti-patterns: using EnforceCore as sole sandboxing layer
+- **Updated README positioning**
+  - Add brief "EnforceCore vs. OS-Level Security" note in the "Why EnforceCore" section
+  - Link to defense-in-depth document
+
+### Definition of Done:
+- [ ] Related work document includes SELinux, AppArmor, seccomp comparison
+- [ ] Defense-in-depth document with layer diagram published
+- [ ] Architecture docs updated with security-layer context
+- [ ] Tool selection guide with decision tree
+- [ ] README updated with positioning note
+- [ ] No false claims — clearly state what EnforceCore does and does not replace
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.19 — Pre-Release Polish & Community
+**Focus:** Final quality pass before packaging. README completion, acknowledgements, contributor recognition, documentation consistency.
+
+### Why this matters:
+First impressions are permanent. When someone lands on the GitHub page — whether a potential
+user, a researcher, a journalist, or an enterprise evaluator — every detail matters.
+Broken links, stale tables, missing credits, inconsistent tone — any of these signals
+"not production-ready." This release is the final polish pass before the world sees v1.0.0.
+
+### What ships:
+- **README final review**
+  - All tables updated (roadmap, performance, comparison)
+  - All links verified (no broken internal/external links)
+  - Badge values accurate (test count, coverage, Python versions)
+  - Consistent voice and tone throughout
+  - "Quick Start" verified to work from a clean install
+- **Acknowledgements section** (`README.md`)
+  - Credit researchers, reviewers, and early feedback providers
+  - Link to relevant academic work that influenced the design
+  - "Standing on the shoulders of" — honest attribution of prior art
+  - Follows standard open-source acknowledgement conventions
+- **CONTRIBUTORS.md**
+  - All contributors listed with roles
+  - Contribution guidelines refreshed
+  - Code of Conduct verified and linked
+- **Documentation consistency pass**
+  - Every `docs/` file reviewed for:
+    - Consistent formatting (headers, code blocks, tables)
+    - Accurate cross-references (no stale links)
+    - Current version numbers and test counts
+    - No TODO/FIXME markers left in published docs
+  - Orphan page detection (pages not linked from anywhere)
+- **CHANGELOG consolidation**
+  - Review all 20 alpha entries for consistency
+  - Ensure every shipped feature is documented
+  - Prepare draft v1.0.0 consolidated changelog
+- **License and legal review**
+  - Apache 2.0 headers in all source files
+  - NOTICE file if required by dependencies
+  - Third-party license compatibility check
+- **Example suite verification**
+  - Every example in `examples/` runs successfully from clean checkout
+  - README quick start tested on Python 3.11, 3.12, 3.13
+  - Example READMEs updated
+
+### Definition of Done:
+- [ ] README reviewed — all tables, links, badges accurate
+- [ ] Acknowledgements section present and appropriate
+- [ ] CONTRIBUTORS.md complete
+- [ ] All docs files pass consistency review (no broken links, no stale content)
+- [ ] CHANGELOG covers all 20 alpha releases consistently
+- [ ] License headers verified in all source files
+- [ ] All examples run from clean checkout
+- [ ] Tests passing, 96%+ coverage
+
+---
+
+## v1.0.20 — Packaging & Publication Infrastructure
 **Focus:** Make EnforceCore installable by anyone in the world with one command.
 
 ### What ships:
@@ -910,7 +1080,7 @@ need to trust that their code won't break on upgrade. This is a one-way door.
 ---
 
 ## v1.0.0 — Stable Release 🎯
-**Focus:** The official stable release. This is what Valérie and the research community sees.
+**Focus:** The official stable release. Production-ready for the world.
 
 ### Why this is a separate release:
 The stable release is not about new features — it's about **confidence**.
@@ -929,7 +1099,7 @@ symbol committed to long-term stability. This is the version we stand behind.
   - "Framework-agnostic" → backed by 3+ framework integration examples
 - **GitHub Release** with complete changelog
 - **CITATION.cff** verified and rendering correctly
-- **Announcement ready** (email to Valérie, social posts, HN/Reddit)
+- **Announcement ready** (social posts, academic channels, HN/Reddit)
 
 ### What a user/researcher can do:
 ```bash
@@ -986,15 +1156,22 @@ v1.0.6a                            CLI       Telemetry            API Docs  Thre
  Polish                            Dry-Run                        Work      Act       Testing
 
                                    Phase 6: Production Readiness
-                                   v1.0.14a  v1.0.15a  v1.0.16a  v1.0.17a  → v1.0.0 STABLE
-                                   Bench-     E2E       API       Packaging   Release
-                                   marks      Examples  Freeze    PyPI
-                                   Repro      Docker    py.typed  Signing
-                                   Profiling  Integ     Versioning Docs Site
+                                   v1.0.14a  v1.0.15a  v1.0.16a
+                                   Bench-     E2E       API
+                                   marks      Examples  Freeze
+                                   Repro      Docker    py.typed
+                                   Profiling  Integ     Versioning
+
+                                   Phase 7: Hardening & Release
+                                   v1.0.17a  v1.0.18a  v1.0.19a  v1.0.20a  → v1.0.0 STABLE
+                                   Adversar-  Security  Pre-Rel   Packaging   Release
+                                   ial Eval   Landscape Polish    PyPI
+                                   Multi-     Defense   Ack &     Signing
+                                   Stage      in-Depth  Community Docs Site
 ```
 
 Each release makes the framework meaningfully more capable and more credible.
-By v1.0.0 stable, EnforceCore is the **complete, rigorously verified, researcher-ready
+By v1.0.0 stable, EnforceCore is the **complete, rigorously verified, production-ready
 runtime enforcement layer** for any Python-based agentic AI system.
 
 ---
@@ -1020,7 +1197,10 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.14a1 | Reproducible Benchmarks & Evaluation | 1090 | ✅ Shipped |
 | v1.0.15a1 | End-to-End Examples & Integration | 1138 | ✅ Shipped |
 | v1.0.16a1 | API Freeze & Stability Audit | 1416 | ✅ Shipped |
-| v1.0.17a1 | Packaging & Publication | — | 📋 Planned |
+| v1.0.17a1 | Adversarial Scenario Expansion | — | 📋 Planned |
+| v1.0.18a1 | Security Landscape & Positioning | — | 📋 Planned |
+| v1.0.19a1 | Pre-Release Polish & Community | — | 📋 Planned |
+| v1.0.20a1 | Packaging & Publication | — | 📋 Planned |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |
 
 ---
