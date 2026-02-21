@@ -22,8 +22,6 @@ import functools
 import inspect
 import threading
 import time
-import warnings
-from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
@@ -31,12 +29,12 @@ import structlog
 
 from enforcecore.core.config import settings
 from enforcecore.core.hardening import (
+    _warn_fail_open,
     check_input_size,
     deep_redact,
     enter_enforcement,
     exit_enforcement,
     validate_tool_name,
-    warn_fail_open,
 )
 from enforcecore.core.policy import Policy, PolicyEngine
 from enforcecore.core.rules import ContentRuleConfig, RuleEngine
@@ -57,7 +55,7 @@ from enforcecore.plugins.hooks import (
 from enforcecore.redactor.engine import Redactor
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import Callable
 
     from enforcecore.auditor.engine import Auditor
     from enforcecore.guard.engine import ResourceGuard
@@ -481,7 +479,7 @@ class Enforcer:
         except EnforceCoreError:
             # Internal error — fail closed by default
             if settings.fail_open:
-                warn_fail_open()
+                _warn_fail_open()
                 logger.error(
                     "enforcement_error_fail_open",
                     tool=resolved_name,
@@ -688,7 +686,7 @@ class Enforcer:
             raise
         except EnforceCoreError:
             if settings.fail_open:
-                warn_fail_open()
+                _warn_fail_open()
                 logger.error(
                     "enforcement_error_fail_open",
                     tool=resolved_name,
@@ -700,81 +698,9 @@ class Enforcer:
         finally:
             exit_enforcement()
 
-    # -- Context managers ---------------------------------------------------
-
-    @contextmanager
-    def guard_sync(
-        self,
-        tool_name: str,
-        *,
-        args: tuple[Any, ...] = (),
-        kwargs: dict[str, Any] | None = None,
-    ) -> Iterator[CallContext]:
-        """Synchronous context manager for enforcement.
-
-        .. warning::
-
-           This context manager only performs pre-call policy evaluation.
-           It does **not** redact inputs/outputs, check resource limits,
-           or record audit entries.  Prefer :meth:`enforce_sync` for full
-           protection.
-
-        Usage::
-
-            with enforcer.guard_sync("my_tool") as ctx:
-                result = do_something()
-        """
-        warnings.warn(
-            "guard_sync() only performs pre-call policy checks. "
-            "Use enforce_sync() for full protection (redaction, audit, resource guards).",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        ctx = CallContext(
-            tool_name=tool_name,
-            args=args,
-            kwargs=kwargs or {},
-        )
-        pre = self._engine.evaluate_pre_call(ctx)
-        self._engine.raise_if_blocked(pre, ctx)
-        yield ctx
-
-    @asynccontextmanager
-    async def guard_async(
-        self,
-        tool_name: str,
-        *,
-        args: tuple[Any, ...] = (),
-        kwargs: dict[str, Any] | None = None,
-    ) -> AsyncIterator[CallContext]:
-        """Asynchronous context manager for enforcement.
-
-        .. warning::
-
-           This context manager only performs pre-call policy evaluation.
-           It does **not** redact inputs/outputs, check resource limits,
-           or record audit entries.  Prefer :meth:`enforce_async` for full
-           protection.
-
-        Usage::
-
-            async with enforcer.guard_async("my_tool") as ctx:
-                result = await do_something()
-        """
-        warnings.warn(
-            "guard_async() only performs pre-call policy checks. "
-            "Use enforce_async() for full protection (redaction, audit, resource guards).",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        ctx = CallContext(
-            tool_name=tool_name,
-            args=args,
-            kwargs=kwargs or {},
-        )
-        pre = self._engine.evaluate_pre_call(ctx)
-        self._engine.raise_if_blocked(pre, ctx)
-        yield ctx
+    # NOTE: guard_sync() and guard_async() were removed in v1.0.16.
+    # They only performed pre-call checks without redaction, audit, or
+    # resource guarding.  Use enforce_sync() / enforce_async() instead.
 
 
 # ---------------------------------------------------------------------------

@@ -16,6 +16,7 @@ from enforcecore.core.hardening import (
     HardeningError,
     InputTooLargeError,
     InvalidToolNameError,
+    _warn_fail_open,
     check_input_size,
     deep_redact,
     enter_enforcement,
@@ -24,7 +25,6 @@ from enforcecore.core.hardening import (
     get_enforcement_depth,
     is_dev_mode,
     validate_tool_name,
-    warn_fail_open,
 )
 
 # ---------------------------------------------------------------------------
@@ -317,7 +317,7 @@ class TestEnforcementScope:
 
 
 class TestDevMode:
-    """Tests for is_dev_mode() and warn_fail_open()."""
+    """Tests for is_dev_mode() and _warn_fail_open()."""
 
     def test_dev_mode_off_by_default(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
@@ -344,13 +344,13 @@ class TestDevMode:
             assert is_dev_mode() is True
 
     def test_warn_fail_open_emits_warning(self) -> None:
-        """Without dev mode, warn_fail_open should emit RuntimeWarning."""
+        """Without dev mode, _warn_fail_open should emit RuntimeWarning."""
         with (
             patch.dict(os.environ, {}, clear=True),
             warnings.catch_warnings(record=True) as caught,
         ):
             warnings.simplefilter("always")
-            warn_fail_open()
+            _warn_fail_open()
             runtime_warns = [w for w in caught if issubclass(w.category, RuntimeWarning)]
             assert len(runtime_warns) >= 1
             assert "SECURITY WARNING" in str(runtime_warns[0].message)
@@ -362,6 +362,6 @@ class TestDevMode:
             warnings.catch_warnings(record=True) as caught,
         ):
             warnings.simplefilter("always")
-            warn_fail_open()
+            _warn_fail_open()
             runtime_warns = [w for w in caught if issubclass(w.category, RuntimeWarning)]
             assert len(runtime_warns) == 0

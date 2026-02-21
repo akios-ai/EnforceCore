@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.16a1] — 2026-02-21
+
+### Added
+
+#### PEP 561 Typed Package
+- `enforcecore/py.typed` marker file — type checkers (mypy, pyright) now
+  automatically discover EnforceCore's type information
+
+#### API Compatibility Test Suite (`tests/api/`)
+- 80+ parametrized tests verifying every symbol in `__all__` is importable
+  and has the expected type (class, function, enum, exception, instance)
+- Exception hierarchy stability tests (parent-child relationships)
+- Enforcer public interface tests (expected methods, removed methods)
+- Policy interface tests (construction methods, fields)
+- Enum member stability tests (Decision, RedactionStrategy, ViolationType)
+- Submodule re-export consistency tests (root ↔ submodule identity)
+- Function signature tests for key public functions
+- Version string PEP 440 format validation
+- Integration adapter importability tests
+
+#### Documentation
+- `docs/versioning.md` — semantic versioning contract, breaking change
+  definition, deprecation policy (2 minor versions), backport policy,
+  compatibility promises for v1.x
+- `docs/migration.md` — alpha → stable migration guide, breaking changes
+  summary, deprecated API alternatives, internal symbols reference
+
+### Removed
+
+#### Deprecated Methods
+- **`Enforcer.guard_sync()`** — removed (deprecated since v1.0.6a1).
+  Use `Enforcer.enforce_sync()` for full enforcement pipeline.
+- **`Enforcer.guard_async()`** — removed (deprecated since v1.0.6a1).
+  Use `Enforcer.enforce_async()` for full enforcement pipeline.
+- These methods only performed pre-call policy checks, silently skipping
+  PII redaction, audit trail recording, content rule checking, rate
+  limiting, and resource guarding. Their removal eliminates attack
+  surface vector A3.
+
+### Changed
+
+#### Internal API Privatized
+- `warn_fail_open()` → `_warn_fail_open()` — renamed to signal internal-only
+  usage (was never in `__all__`, called only by the Enforcer on fail-open)
+- Unused imports cleaned from `enforcecore/core/enforcer.py` (`warnings`,
+  `contextmanager`, `asynccontextmanager`, `Iterator`, `AsyncIterator`)
+
+#### Documentation Updates
+- README: replaced `guard_sync`/`guard_async` examples with `enforce_sync`/
+  `enforce_async`
+- Troubleshooting: updated deprecated method warning to removal notice
+- Attack surface: marked A3 vector as eliminated, removed deprecated entries
+- Quickstart example: simplified to 4 demos (removed context manager demo)
+
+### Meta
+- **Tests:** 1416 passed, 1 skipped (up from 1138)
+- **Quality:** ruff clean, mypy strict clean, 0 issues in 41 source files
+
 ## [1.0.15a1] — 2026-02-21
 
 ### Added

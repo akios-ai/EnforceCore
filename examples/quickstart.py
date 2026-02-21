@@ -4,10 +4,9 @@ Run from the repo root:
 
     python examples/quickstart.py
 
-This example demonstrates the three main ways to use EnforceCore:
+This example demonstrates the two main ways to use EnforceCore:
 1. @enforce() decorator (sync + async)
 2. Enforcer class (direct invocation)
-3. Context managers (guard_sync / guard_async)
 """
 
 from __future__ import annotations
@@ -64,19 +63,6 @@ def demo_enforcer_class() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 3. Context managers — guard a block of code
-# ---------------------------------------------------------------------------
-
-
-def demo_context_manager() -> None:
-    policy = Policy.from_file(POLICY_PATH)
-    enforcer = Enforcer(policy)
-
-    with enforcer.guard_sync("search_web") as ctx:
-        print(f"  guard_sync: call {ctx.call_id[:8]}… for '{ctx.tool_name}' — allowed ✓")
-
-
-# ---------------------------------------------------------------------------
 # Run it
 # ---------------------------------------------------------------------------
 
@@ -102,9 +88,6 @@ def main() -> None:
 
     print("\n4. Enforcer class — direct invocation:")
     demo_enforcer_class()
-
-    print("\n5. Context manager — guard_sync:")
-    demo_context_manager()
 
     print("\n" + "=" * 60)
     print("  All examples completed successfully!")
