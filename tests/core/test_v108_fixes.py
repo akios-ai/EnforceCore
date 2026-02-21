@@ -8,7 +8,6 @@ and output content filtering in the enforcer pipeline.
 from __future__ import annotations
 
 import threading
-import warnings
 
 import pytest
 
@@ -344,31 +343,20 @@ class TestM6MultiBackendAllFail:
 
 
 # ---------------------------------------------------------------------------
-# M-7: DeprecationWarning for guard context managers
+# M-7: guard_sync/guard_async removed (deprecated since v1.0.6, removed v1.0.16)
 # ---------------------------------------------------------------------------
 
 
-class TestM7DeprecationWarning:
-    def test_guard_sync_deprecation(self) -> None:
+class TestM7DeprecatedMethodsRemoved:
+    def test_guard_sync_removed(self) -> None:
         policy = Policy(name="test")
         enforcer = Enforcer(policy)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            with enforcer.guard_sync("test_tool"):
-                pass
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
+        assert not hasattr(enforcer, "guard_sync")
 
-    @pytest.mark.asyncio
-    async def test_guard_async_deprecation(self) -> None:
+    def test_guard_async_removed(self) -> None:
         policy = Policy(name="test")
         enforcer = Enforcer(policy)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            async with enforcer.guard_async("test_tool"):
-                pass
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
+        assert not hasattr(enforcer, "guard_async")
 
 
 # ---------------------------------------------------------------------------

@@ -155,16 +155,11 @@ from enforcecore import Enforcer, Policy
 policy = Policy.from_file("policy.yaml")
 enforcer = Enforcer(policy)
 
-# Direct invocation
+# Direct invocation (sync)
 result = enforcer.enforce_sync(my_tool, arg1, arg2, tool_name="my_tool")
 
-# Context manager
-with enforcer.guard_sync("search_web") as ctx:
-    result = do_search(query)
-
-# Async too
-async with enforcer.guard_async("search_web") as ctx:
-    result = await do_search(query)
+# Direct invocation (async)
+result = await enforcer.enforce_async(my_tool, arg1, tool_name="my_tool")
 ```
 
 > 📖 See [examples/quickstart.py](examples/quickstart.py) for a complete runnable demo.
@@ -261,7 +256,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.13a1** | Formal Verification & Property Testing | ✅ Shipped |
 | **v1.0.14a1** | Reproducible Benchmarks & Evaluation | ✅ Shipped |
 | **v1.0.15a1** | End-to-End Examples & Integration | ✅ Shipped |
-| **v1.0.16a1** | API Freeze & Stability Audit | 📋 Planned |
+| **v1.0.16a1** | API Freeze & Stability Audit | ✅ Shipped |
 | **v1.0.17a1** | Packaging & Publication | 📋 Planned |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 

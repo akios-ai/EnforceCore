@@ -127,22 +127,24 @@ Or optimize the tool to run faster.
 
 ---
 
-### `UserWarning: guard_sync() only performs pre-call policy checks`
+### `AttributeError: 'Enforcer' object has no attribute 'guard_sync'`
 
-**Cause:** You are using `guard_sync()` or `guard_async()` which only
-perform pre-call checks. They do NOT redact PII, enforce resource limits,
-or record audit entries.
+**Cause:** `guard_sync()` and `guard_async()` were removed in v1.0.16.
+They only performed pre-call checks without redaction, audit, or resource
+guards.
 
 **Fix:** Use `enforce_sync()` / `enforce_async()` for full protection:
 
 ```python
-# Instead of this:
-with enforcer.guard_sync("my_tool") as ctx:
-    result = do_something()
+# Instead of this (removed):
+# with enforcer.guard_sync("my_tool") as ctx:
+#     result = do_something()
 
 # Do this:
 result = enforcer.enforce_sync(do_something, tool_name="my_tool")
 ```
+
+See [docs/migration.md](migration.md) for the full migration guide.
 
 ---
 

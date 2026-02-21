@@ -24,13 +24,11 @@ These are the user-facing functions that initiate the enforcement pipeline.
 | `@enforce(policy=...)` decorator | `enforcecore.core.enforcer` | Sync + Async | Primary API |
 | `Enforcer.enforce_sync()` | `enforcecore.core.enforcer` | Sync | Direct invocation |
 | `Enforcer.enforce_async()` | `enforcecore.core.enforcer` | Async | Direct invocation |
-| `Enforcer.guard_sync()` | `enforcecore.core.enforcer` | Sync | ⚠️ Pre-call only (deprecated) |
-| `Enforcer.guard_async()` | `enforcecore.core.enforcer` | Async | ⚠️ Pre-call only (deprecated) |
 
 **Attack vectors:**
 - A1: Call tool without decoration → **No mitigation** (library-level limitation)
 - A2: Pass adversarial arguments → **Mitigated** by content rules + PII redaction
-- A3: Use deprecated `guard_*` to skip redaction/audit → **Mitigated** by DeprecationWarning
+- A3: ~~Use deprecated `guard_*` to skip redaction/audit~~ → **Eliminated** (`guard_sync`/`guard_async` removed in v1.0.16)
 
 ### 2.2 Policy Loading
 

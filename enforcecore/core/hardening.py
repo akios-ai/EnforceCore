@@ -329,12 +329,15 @@ def is_dev_mode() -> bool:
     return os.environ.get("ENFORCECORE_DEV_MODE", "").strip().lower() in ("1", "true", "yes")
 
 
-def warn_fail_open() -> None:
+def _warn_fail_open() -> None:
     """Emit a loud warning if ``fail_open`` is enabled.
 
     In production, ``fail_open`` should never be used because it allows
     enforcement bypass on internal errors.  If dev mode is not enabled,
     this emits a ``RuntimeWarning``.
+
+    .. versionchanged:: 1.0.16
+       Renamed from ``warn_fail_open`` to ``_warn_fail_open`` (internal API).
     """
     if not is_dev_mode():
         warnings.warn(

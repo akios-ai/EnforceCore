@@ -138,29 +138,14 @@ class TestEnforcerFromFile:
         assert enforcer.policy_name == "allow-all"
 
 
-class TestEnforcerContextManagers:
-    def test_sync_guard_allowed(self, allow_all_policy: Policy) -> None:
+class TestEnforcerDeprecatedRemoval:
+    def test_guard_sync_removed(self, allow_all_policy: Policy) -> None:
         enforcer = Enforcer(allow_all_policy)
-        with enforcer.guard_sync("search_web") as ctx:
-            assert ctx.tool_name == "search_web"
+        assert not hasattr(enforcer, "guard_sync")
 
-    def test_sync_guard_blocked(self, deny_all_policy: Policy) -> None:
-        enforcer = Enforcer(deny_all_policy)
-        with pytest.raises(ToolDeniedError), enforcer.guard_sync("any_tool"):
-            pass  # Should never reach here
-
-    @pytest.mark.asyncio
-    async def test_async_guard_allowed(self, allow_all_policy: Policy) -> None:
+    def test_guard_async_removed(self, allow_all_policy: Policy) -> None:
         enforcer = Enforcer(allow_all_policy)
-        async with enforcer.guard_async("search_web") as ctx:
-            assert ctx.tool_name == "search_web"
-
-    @pytest.mark.asyncio
-    async def test_async_guard_blocked(self, deny_all_policy: Policy) -> None:
-        enforcer = Enforcer(deny_all_policy)
-        with pytest.raises(ToolDeniedError):
-            async with enforcer.guard_async("any_tool"):
-                pass
+        assert not hasattr(enforcer, "guard_async")
 
 
 class TestEnforcerLogMode:
