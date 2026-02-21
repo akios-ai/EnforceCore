@@ -1,7 +1,7 @@
 # GDPR — Data Protection Considerations
 
 **Regulation:** Regulation (EU) 2016/679 (General Data Protection Regulation)
-**Mapped against:** EnforceCore v1.0.12a1
+**Mapped against:** EnforceCore v1.0.19a1
 **Last updated:** 2026-02-21
 
 ---

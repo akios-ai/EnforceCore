@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Property-based tests for PolicyEngine — Hypothesis.
 
 These tests verify formal invariants of the policy engine using

@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Audit trail continuity integration tests.
 
 Tests that the Merkle-chained audit trail maintains integrity across

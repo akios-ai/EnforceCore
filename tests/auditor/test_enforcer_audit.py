@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Integration tests: Audit trail in the enforcer pipeline."""
 
 from __future__ import annotations

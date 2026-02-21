@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for multi-stage adversarial scenarios (v1.0.17a1).
 
 Tests cover:

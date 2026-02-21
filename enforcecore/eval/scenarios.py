@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Adversarial scenario suite — tests that attempt to defeat enforcement.
 
 Each scenario is a function that accepts a ``Policy`` and returns a

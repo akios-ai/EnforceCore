@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Shared fixtures for integration tests.
 
 Re-enables audit and provides scenario-specific policies and helpers.

@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.19a1] — 2026-02-21
+
+### Added
+
+#### Pre-Release Polish & Community
+- `CODE_OF_CONDUCT.md` — Contributor Covenant v2.1 with enforcement guidelines
+- `CONTRIBUTORS.md` — contributor list, roles, and acknowledgements of academic
+  and industry prior art
+- `CITATION.cff` updated to current version (v1.0.19a1)
+- Apache 2.0 SPDX license headers added to all 106 Python source files
+  (`enforcecore/` and `tests/`)
+- README: Acknowledgements section (prior art, academic references)
+- README: Code of Conduct link in documentation table
+- README: defense-in-depth and tool-selection guide links
+- `examples/README.md` corrected — removed 3 phantom files
+  (`langgraph_example.py`, `crewai_example.py`, `autogen_example.py`),
+  added `resource_guard.py`, `framework_integrations.py`, and
+  `scenarios/` directory
+
+### Fixed
+
+#### Documentation Consistency Pass
+- `docs/index.md`: scenario count 13 → 20 across 10 threat categories
+- `docs/compliance/eu-ai-act.md`: mapped version 1.0.12a1 → 1.0.19a1,
+  scenario count 26 → 20, benchmarks status `Planned` → `Complete`,
+  formal verification status `Planned` → `Complete`, SBOM planned release
+  updated to `Post-v1.0`
+- `docs/compliance/gdpr.md`: mapped version 1.0.12a1 → 1.0.19a1
+- `docs/api-design.md`: removed `guard_sync`/`guard_async` context manager
+  examples (removed from API in v1.0.16a1)
+- `docs/roadmap.md`: test counts filled for v1.0.17a1 and v1.0.18a1 (1461),
+  v1.0.17 rationale updated to past tense
+- `README.md`: benchmark Python version `3.14` → `3.13`
+
 ## [1.0.18a1] — 2026-02-21
 
 ### Added

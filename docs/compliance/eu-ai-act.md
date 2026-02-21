@@ -1,7 +1,7 @@
 # EU AI Act — Compliance Mapping
 
 **Regulation:** Regulation (EU) 2024/1689 (Artificial Intelligence Act)
-**Mapped against:** EnforceCore v1.0.12a1
+**Mapped against:** EnforceCore v1.0.19a1
 **Last updated:** 2026-02-21
 
 ---
@@ -36,7 +36,7 @@ to runtime enforcement of AI agent behavior.
 | Requirement | EnforceCore Capability | Evidence |
 |---|---|---|
 | Identify and analyse known and foreseeable risks | Policy engine defines allowed/denied tools, content rules, network boundaries | `enforcecore/core/policy.py` — `Policy` model with `allowed_tools`, `denied_tools`, `content_rules` |
-| Estimate and evaluate risks that may emerge | Evaluation suite with 26 adversarial scenarios covering tool abuse, data exfiltration, injection attacks | `enforcecore/eval/` — `ScenarioRunner`, `BenchmarkRunner` |
+| Estimate and evaluate risks that may emerge | Evaluation suite with 20 adversarial scenarios across 10 threat categories covering tool abuse, data exfiltration, injection attacks, ransomware, supply-chain, and collusion | `enforcecore/eval/` — `ScenarioRunner`, `BenchmarkRunner` |
 | Adopt risk management measures | Fail-closed enforcement, PII redaction, cost limits, rate limiting, domain enforcement | `enforcecore/core/enforcer.py` — `enforce_sync()`, `enforce_async()` |
 | Test to identify the most appropriate measures | Dry-run mode replays tool calls against a policy without execution | `enforcecore/cli/` — `enforcecore dry-run` command |
 | Residual risk documentation | Threat model documents known limitations and unmitigated risks | [docs/threat-model.md](threat-model.md) §7 |
@@ -62,7 +62,7 @@ enforcecore dry-run policy.yaml --calls recorded_calls.jsonl
 |---|---|---|
 | Information about capabilities and limitations | Threat model with formal security properties and known limitations | [docs/threat-model.md](threat-model.md) |
 | Intended purpose and foreseeable misuse | Architecture docs with trust boundaries and adversary model | [docs/architecture.md](architecture.md), [docs/threat-model.md](threat-model.md) §3 |
-| Level of accuracy, robustness, cybersecurity | Published benchmarks with statistical methodology (p50/p95/p99) | Planned: [docs/benchmarks.md](benchmarks.md) (v1.0.14) |
+| Level of accuracy, robustness, cybersecurity | Published benchmarks with statistical methodology (p50/p95/p99) | [docs/benchmarks.md](benchmarks.md) |
 | Logging capabilities | Merkle-chained audit trail records every enforcement decision with timestamps, tool names, args hashes, decisions, and timing | `enforcecore/auditor/engine.py` — `Auditor.record()` |
 | Human-interpretable records | CLI inspection of audit trails with filtering and formatting | `enforcecore/cli/` — `enforcecore inspect audit.jsonl --tail 20` |
 
@@ -174,9 +174,9 @@ pytest --cov=enforcecore                # Test suite + coverage
 
 | Gap | Status | Planned Release |
 |---|---|---|
-| Published performance benchmarks (Art. 15) | In progress | v1.0.14a1 |
-| Formal property verification (Art. 15) | Planned | v1.0.13a1 |
-| SBOM for supply chain transparency (Art. 13) | Planned | v1.0.17a1 |
+| Published performance benchmarks (Art. 15) | ✅ Complete | v1.0.14a1 |
+| Formal property verification (Art. 15) | ✅ Complete | v1.0.13a1 |
+| SBOM for supply chain transparency (Art. 13) | Planned | Post-v1.0 |
 | External audit trail root anchoring (Art. 13) | Future | Post-v1.0 |
 
 ---
@@ -185,4 +185,5 @@ pytest --cov=enforcecore                # Test suite + coverage
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.0.19a1 | 2026-02-21 | Updated scenario counts, version header, gaps table |
 | 1.0.12a1 | 2026-02-21 | Initial EU AI Act compliance mapping |

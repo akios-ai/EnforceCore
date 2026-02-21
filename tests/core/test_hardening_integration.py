@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for v1.0.6 hardening wired into the Enforcer and Auditor."""
 
 from __future__ import annotations

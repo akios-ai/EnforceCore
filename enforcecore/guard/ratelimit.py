@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Sliding-window rate limiter for tool call enforcement.
 
 Provides thread-safe per-tool and global rate limiting with a

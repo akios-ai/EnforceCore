@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for v1.0.9 audit fixes and improvements.
 
 Covers:

@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Evaluation types — scenario definitions, results, and threat categories.
 
 All types are plain dataclasses with no external dependencies beyond stdlib.

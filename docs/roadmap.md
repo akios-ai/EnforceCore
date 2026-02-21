@@ -874,7 +874,7 @@ need to trust that their code won't break on upgrade. This is a one-way door.
 **Focus:** Broaden the evaluation suite with sophisticated, multi-stage attack scenarios.
 
 ### Why this matters:
-The current eval suite covers 13 scenarios across 7 threat categories. Real-world attacks
+The eval suite covered 13 scenarios across 7 threat categories before this release. Real-world attacks
 don't consist of a single blocked tool call — they unfold as multi-step campaigns where each
 step is innocuous in isolation but lethal in sequence. The framework's credibility depends on
 demonstrating containment of realistic attack chains, not just individual violations.
@@ -1029,14 +1029,14 @@ Broken links, stale tables, missing credits, inconsistent tone — any of these 
   - Example READMEs updated
 
 ### Definition of Done:
-- [ ] README reviewed — all tables, links, badges accurate
-- [ ] Acknowledgements section present and appropriate
-- [ ] CONTRIBUTORS.md complete
-- [ ] All docs files pass consistency review (no broken links, no stale content)
-- [ ] CHANGELOG covers all 20 alpha releases consistently
-- [ ] License headers verified in all source files
-- [ ] All examples run from clean checkout
-- [ ] Tests passing, 96%+ coverage
+- [x] README reviewed — all tables, links, badges accurate
+- [x] Acknowledgements section present and appropriate
+- [x] CONTRIBUTORS.md complete
+- [x] All docs files pass consistency review (no broken links, no stale content)
+- [x] CHANGELOG covers all alpha releases consistently
+- [x] License headers verified in all source files
+- [x] All examples run from clean checkout
+- [x] Tests passing, 96%+ coverage
 
 ---
 
@@ -1197,9 +1197,9 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.14a1 | Reproducible Benchmarks & Evaluation | 1090 | ✅ Shipped |
 | v1.0.15a1 | End-to-End Examples & Integration | 1138 | ✅ Shipped |
 | v1.0.16a1 | API Freeze & Stability Audit | 1416 | ✅ Shipped |
-| v1.0.17a1 | Adversarial Scenario Expansion | — | ✅ Shipped |
-| v1.0.18a1 | Security Landscape & Positioning | — | ✅ Shipped |
-| v1.0.19a1 | Pre-Release Polish & Community | — | 📋 Planned |
+| v1.0.17a1 | Adversarial Scenario Expansion | 1461 | ✅ Shipped |
+| v1.0.18a1 | Security Landscape & Positioning | 1461 | ✅ Shipped |
+| v1.0.19a1 | Pre-Release Polish & Community | — | ✅ Shipped |
 | v1.0.20a1 | Packaging & Publication | — | 📋 Planned |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |
 

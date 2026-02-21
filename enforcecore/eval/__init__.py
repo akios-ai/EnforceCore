@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """EnforceCore evaluation suite — adversarial scenarios, benchmarks, reports.
 
 Provides a comprehensive evaluation framework for testing EnforceCore's

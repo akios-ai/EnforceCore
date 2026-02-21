@@ -194,13 +194,6 @@ result = enforcer.enforce_sync(search_fn, "query", tool_name="search_web")
 # Async enforcement
 result = await enforcer.enforce_async(search_fn, "query", tool_name="search_web")
 
-# Context managers (pre-call check only)
-with enforcer.guard_sync("search_web") as ctx:
-    result = do_search(query)
-
-async with enforcer.guard_async("search_web") as ctx:
-    result = await do_search(query)
-
 # Properties
 print(enforcer.policy_name)  # "my-policy"
 print(enforcer.policy)       # Policy instance

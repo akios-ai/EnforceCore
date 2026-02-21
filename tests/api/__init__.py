@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """API compatibility tests for EnforceCore.
 
 This module verifies that every symbol in ``enforcecore.__all__`` is

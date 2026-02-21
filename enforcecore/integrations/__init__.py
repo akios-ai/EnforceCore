@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Framework integration adapters for EnforceCore.
 
 Each adapter is a standalone module with no required dependencies beyond

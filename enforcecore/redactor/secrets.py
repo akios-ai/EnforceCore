@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Secret detection for EnforceCore.
 
 Detects API keys, tokens, private keys, and other secrets in text.

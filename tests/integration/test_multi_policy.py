@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Multi-policy composition integration tests.
 
 Tests using multiple policies in the same process, policy merging,

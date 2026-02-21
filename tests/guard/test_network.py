@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for network domain enforcement (enforcecore.guard.network)."""
 
 from __future__ import annotations

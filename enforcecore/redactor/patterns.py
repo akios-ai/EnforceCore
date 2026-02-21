@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Custom PII pattern registry.
 
 Allows users to register domain-specific regex patterns for PII detection

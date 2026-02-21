@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """AutoGen integration adapter.
 
 Provides ``enforced_tool`` — a decorator that creates AutoGen ``FunctionTool``

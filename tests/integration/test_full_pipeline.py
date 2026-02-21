@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Full pipeline integration tests — Policy → Enforcer → Redactor → Guard → Auditor.
 
 No mocks. Real policies, real redaction, real audit files on disk.

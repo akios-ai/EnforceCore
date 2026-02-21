@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Resource Guard engine — time limits, memory limits, cost tracking, KillSwitch.
 
 Provides cross-platform resource enforcement for agentic AI tool calls:

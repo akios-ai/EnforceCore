@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """CrewAI integration adapter.
 
 Provides ``enforced_tool`` — a decorator that creates CrewAI tools with

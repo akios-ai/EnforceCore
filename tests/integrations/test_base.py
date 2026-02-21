@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for enforcecore.integrations._base — shared adapter utilities."""
 
 from __future__ import annotations

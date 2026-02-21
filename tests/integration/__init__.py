@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Integration tests for EnforceCore.
 
 These tests exercise the full enforcement pipeline end-to-end with no mocks.

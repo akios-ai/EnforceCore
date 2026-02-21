@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for enforcecore.redactor.unicode — unicode hardening for PII detection."""
 
 from __future__ import annotations

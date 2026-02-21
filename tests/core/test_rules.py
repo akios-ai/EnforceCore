@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for content rules engine (enforcecore.core.rules)."""
 
 from __future__ import annotations

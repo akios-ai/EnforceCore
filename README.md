@@ -222,7 +222,7 @@ async def search(query: str) -> str:
 
 ## Performance
 
-> Measured with 1 000 iterations + 100 warmup on Apple Silicon (arm64), Python 3.14.
+> Measured with 1 000 iterations + 100 warmup on Apple Silicon (arm64), Python 3.13.
 > Run `python -m benchmarks.run` for your hardware. See [docs/benchmarks.md](docs/benchmarks.md) for methodology.
 
 | Component | P50 (ms) | P99 (ms) |
@@ -265,7 +265,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.16a1** | API Freeze & Stability Audit | ✅ Shipped |
 | **v1.0.17a1** | Adversarial Scenario Expansion | ✅ Shipped |
 | **v1.0.18a1** | Security Landscape & Positioning | ✅ Shipped |
-| **v1.0.19a1** | Pre-Release Polish & Community | 📋 Planned |
+| **v1.0.19a1** | Pre-Release Polish & Community | ✅ Shipped |
 | **v1.0.20a1** | Packaging & Publication | 📋 Planned |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 
@@ -291,7 +291,8 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 | 🔍 [Troubleshooting](docs/troubleshooting.md) | Common errors and debugging tips |
 | 🌍 [Vision](docs/vision.md) | Why EnforceCore exists |
 | 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
-| 🔒 [Security](SECURITY.md) | Vulnerability reporting policy |
+| � [Code of Conduct](CODE_OF_CONDUCT.md) | Community standards |
+| �🔒 [Security](SECURITY.md) | Vulnerability reporting policy |
 
 ---
 
@@ -367,6 +368,22 @@ ruff check . && ruff format --check .
 ```
 
 **Current stats:** 1461 tests · 96% coverage · 0 lint errors
+
+---
+
+## Acknowledgements
+
+EnforceCore builds on a foundation of prior work in computer science and AI safety:
+
+- **Runtime Verification** — Leucker & Schallhart (2009), Havelund & Goldberg (2005)
+- **Reference Monitors** — Anderson (1972) for the tamperproof, always-invoked enforcement model
+- **Information Flow Control** — Sabelfeld & Myers (2003) for the PII boundary model
+- **Audit Integrity** — Merkle (1987), Crosby & Wallach (2009) for hash-chained tamper evidence
+- **Agent Containment** — Armstrong et al. (2012), Babcock et al. (2016) for the containment framing
+- **Microsoft Presidio** — for production-grade PII detection
+- **EU AI Act (2024)** — Articles 9, 13, 14, 15 directly shaped the design
+
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) and [docs/related-work.md](docs/related-work.md) for full citations.
 
 ---
 

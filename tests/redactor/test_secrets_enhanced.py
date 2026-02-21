@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Tests for enhanced secret detection categories (v1.0.10).
 
 Tests the 4 new secret categories added in v1.0.10:

@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Network domain enforcement for EnforceCore.
 
 Extracts domains from URL-like strings in arguments and checks them

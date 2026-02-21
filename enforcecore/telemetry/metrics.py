@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """OpenTelemetry metrics for EnforceCore.
 
 Tracks counters, histograms, and gauges for enforcement operations.

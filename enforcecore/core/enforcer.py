@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Main enforcer — the central coordinator for EnforceCore.
 
 This module provides:

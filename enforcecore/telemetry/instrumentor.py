@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """OpenTelemetry auto-instrumentor for EnforceCore.
 
 Registers hooks into the global :class:`HookRegistry` to emit
@@ -31,7 +33,7 @@ from enforcecore.telemetry.metrics import EnforceCoreMetrics
 logger = structlog.get_logger("enforcecore.telemetry")
 
 _SCOPE_NAME = "enforcecore"
-_SCOPE_VERSION = "1.0.18a1"
+_SCOPE_VERSION = "1.0.19a1"
 
 
 class EnforceCoreInstrumentor:

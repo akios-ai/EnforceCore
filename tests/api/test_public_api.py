@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """API surface compatibility tests.
 
 Guarantees that every symbol in ``enforcecore.__all__`` exists, is importable,

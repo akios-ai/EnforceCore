@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Benchmark suite — measures per-component overhead and end-to-end latency.
 
 Provides reproducible, deterministic benchmarks for:

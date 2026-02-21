@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """LangChain / LangGraph integration adapter.
 
 Provides ``enforced_tool`` — a drop-in replacement for LangChain's ``@tool``

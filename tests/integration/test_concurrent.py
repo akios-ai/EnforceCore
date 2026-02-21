@@ -1,3 +1,5 @@
+# Copyright 2026 AKIOS AI
+# SPDX-License-Identifier: Apache-2.0
 """Concurrent enforcement integration tests.
 
 Tests thread-safety and concurrent access to the enforcement pipeline
