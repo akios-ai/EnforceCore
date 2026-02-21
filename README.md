@@ -367,7 +367,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1461 tests · 96% coverage · 0 lint errors
+**Current stats:** 1472 tests · 95% coverage · 0 lint errors
 
 ---
 
@@ -380,6 +380,7 @@ EnforceCore builds on a foundation of prior work in computer science and AI safe
 - **Information Flow Control** — Sabelfeld & Myers (2003) for the PII boundary model
 - **Audit Integrity** — Merkle (1987), Crosby & Wallach (2009) for hash-chained tamper evidence
 - **Agent Containment** — Armstrong et al. (2012), Babcock et al. (2016) for the containment framing
+- **Evaluation Methodology** — Prof. Valérie Viet Triem Tong (CentraleSupélec, IRISA/PIRAT) for feedback on adversarial evaluation strategies and containment testing
 - **Microsoft Presidio** — for production-grade PII detection
 - **EU AI Act (2024)** — Articles 9, 13, 14, 15 directly shaped the design
 
