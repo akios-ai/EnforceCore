@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-1472_passed-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-1503_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -272,6 +272,8 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.18a1** | Security Landscape & Positioning | ✅ Shipped |
 | **v1.0.19a1** | Pre-Release Polish & Community | ✅ Shipped |
 | **v1.0.20a1** | Packaging & Publication | ✅ Shipped |
+| **v1.0.21a1** | Security Fixes | ✅ Shipped |
+| **v1.0.22a1** | Infrastructure Hardening | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
@@ -372,7 +374,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1472 tests · 95% coverage · 0 lint errors
+**Current stats:** 1503 tests · 95% coverage · 0 lint errors
 
 ---
 

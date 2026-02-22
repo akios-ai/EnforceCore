@@ -4,7 +4,7 @@ Complete runbook for shipping EnforceCore releases to PyPI.
 
 > **One command does everything:**
 > ```bash
-> python scripts/release.py 1.0.21a1 --execute
+> python scripts/release.py 1.0.23a1 --execute
 > ```
 
 ---
@@ -13,11 +13,11 @@ Complete runbook for shipping EnforceCore releases to PyPI.
 
 | Command | What it does |
 |---|---|
-| `python scripts/release.py 1.0.21a1` | Dry-run — shows what would change |
-| `python scripts/release.py 1.0.21a1 --execute` | **Full release** — test, bump, build, push, wait, verify |
-| `python scripts/release.py 1.0.21a1 --execute --local-only` | Local only — no push, no CI wait |
-| `python scripts/release.py 1.0.21a1 --push-only` | Push existing tag + wait for CI + verify |
-| `python scripts/post_release_verify.py 1.0.21a1` | Verify a published release (12 checks) |
+| `python scripts/release.py 1.0.23a1` | Dry-run — shows what would change |
+| `python scripts/release.py 1.0.23a1 --execute` | **Full release** — test, bump, build, push, wait, verify |
+| `python scripts/release.py 1.0.23a1 --execute --local-only` | Local only — no push, no CI wait |
+| `python scripts/release.py 1.0.23a1 --push-only` | Push existing tag + wait for CI + verify |
+| `python scripts/post_release_verify.py 1.0.23a1` | Verify a published release (12 checks) |
 
 ---
 
@@ -52,14 +52,14 @@ Complete runbook for shipping EnforceCore releases to PyPI.
 
 ```bash
 # From repo root, venv activated:
-python scripts/release.py 1.0.21a1 --execute
+python scripts/release.py 1.0.23a1 --execute
 ```
 
 This single command performs ALL 12 steps:
 
 1. ✅ Validates version format
 2. ✅ Checks branch is `main`, tree is clean, remote reachable
-3. ✅ Runs `pytest` (1472+ tests)
+3. ✅ Runs `pytest` (1503+ tests)
 4. ✅ Runs `ruff check .`
 5. ✅ Runs `ruff format --check .` ← **this caught the v1.0.20a1 CI failure**
 6. ✅ Runs `mypy enforcecore/`
@@ -84,14 +84,14 @@ This single command performs ALL 12 steps:
 
 ```bash
 # Delete broken tag locally and on remote:
-git tag -d v1.0.21a1
-git push origin :refs/tags/v1.0.21a1
+git tag -d v1.0.23a1
+git push origin :refs/tags/v1.0.23a1
 
 # Fix the issue, then either:
-python scripts/release.py 1.0.21a1 --execute --skip-tests
+python scripts/release.py 1.0.23a1 --execute --skip-tests
 # or manually:
-git tag -a v1.0.21a1 -m "Release v1.0.21a1"
-python scripts/release.py 1.0.21a1 --push-only
+git tag -a v1.0.23a1 -m "Release v1.0.23a1"
+python scripts/release.py 1.0.23a1 --push-only
 ```
 
 ---
@@ -101,7 +101,7 @@ python scripts/release.py 1.0.21a1 --push-only
 After any release, run:
 
 ```bash
-python scripts/post_release_verify.py 1.0.21a1
+python scripts/post_release_verify.py 1.0.23a1
 ```
 
 This performs **12 independent checks** from a clean venv:
@@ -170,7 +170,7 @@ Every release verifies:
 1. **No `internal/` leakage** — Private `internal/` directory excluded from
    both wheel and sdist
 2. **Clean install** — Fresh venv can install and import all public symbols
-3. **All tests pass** — Full 1472+ test suite green
+3. **All tests pass** — Full 1503+ test suite green
 4. **Type safety** — mypy strict mode on all source files
 5. **Code quality** — ruff lint + format checks
 6. **Functional** — PII redaction, tool denial, audit trail, content rules
