@@ -34,7 +34,7 @@ Specifically:
 ## Limitation of Liability
 
 To the maximum extent permitted by applicable law, in no event shall
-akios-ai, its contributors, or affiliates be liable for:
+AKIOUD AI, SAS, its contributors, or affiliates be liable for:
 
 1. Any **indirect, incidental, special, consequential, or punitive damages**,
    including but not limited to loss of profits, data, business opportunities,
