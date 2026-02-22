@@ -81,9 +81,10 @@ class TestH1FailOpenRedaction:
             return "ok"
 
         enforcer = Enforcer(pii_redaction_policy)
-        # PII embedded in oversized input — would be redacted if _redact_args runs
-        pii = "my email is test@example.com "
-        huge = pii * (10 * 1024 * 1024 // len(pii) + 1)  # > 10 MiB
+        # PII embedded in oversized input — would be redacted if _redact_args runs.
+        # Use mostly padding with a few PII entities to keep redaction fast (<60s).
+        padding = "x" * (10 * 1024 * 1024)  # > 10 MiB of padding
+        huge = padding + " my email is test@example.com "  # just 2 bytes over + 1 PII
 
         result = enforcer.enforce_sync(capturing_tool, huge, tool_name="pii_tool")
         assert result == "ok"
@@ -103,8 +104,9 @@ class TestH1FailOpenRedaction:
             return "ok"
 
         enforcer = Enforcer(pii_redaction_policy)
-        pii = "my email is test@example.com "
-        huge = pii * (10 * 1024 * 1024 // len(pii) + 1)
+        # Mostly padding with a few PII entities to keep redaction fast (<60s).
+        padding = "x" * (10 * 1024 * 1024)
+        huge = padding + " my email is test@example.com "
 
         async def _run() -> str:
             return await enforcer.enforce_async(capturing_tool, huge, tool_name="pii_tool")
