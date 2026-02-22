@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned — v1.0.21a1
+
+- **[H-1]** Fix `fail_open` PII leak: redact args before fallback in `enforce_sync`/`enforce_async`
+- **[M-3]** Log errors from fire-and-forget async hooks instead of silently discarding
+- **[L-3]** Replace `__dataclass_fields__` with `dataclasses.fields()` in `AuditEntry.from_dict`
+
+### Planned — v1.0.22a1
+
+- **[H-3]** Add `stat().st_mtime` to policy cache key for file-change detection
+- **[H-2]** Shared `ThreadPoolExecutor` with daemon threads in `ResourceGuard` to prevent thread leak
+- **[L-4]** Increase audit resume read-back window from 8 KB to 64 KB
+
+### Planned — v1.0.0 Stable
+
+- **[M-2]** Extract shared pipeline from `enforce_sync`/`enforce_async` (DRY)
+- **[M-5]** Unicode normalization offset mapping for accurate PII positions
+- **[L-1]** Curate public API surface (reduce `__init__.py` exports)
+- **[M-4]** Add entropy check to `generic_api_key` secret scanner regex
+- **[M-1]** Reuse thread pool across calls (covered by H-2 fix)
+
 ## [1.0.20a1] — 2026-02-22
 
 ### Added
