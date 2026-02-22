@@ -1,37 +1,50 @@
 #!/usr/bin/env python3
-# Copyright 2026 AKIOUD AI
+# Copyright 2025 AKIOUD AI
 # SPDX-License-Identifier: Apache-2.0
 """EnforceCore release automation script.
 
 Usage:
-    # Dry-run (default) — shows what would change, builds, runs checks:
-    python scripts/release.py 1.0.20a1
+    # Full release (recommended) — checks, bumps, builds, pushes, verifies:
+    python scripts/release.py 1.0.21a1 --execute
 
-    # Execute — actually writes files, commits, tags:
-    python scripts/release.py 1.0.20a1 --execute
+    # Dry-run (default) — shows what would change, no modifications:
+    python scripts/release.py 1.0.21a1
 
     # Skip tests (if you already ran them):
-    python scripts/release.py 1.0.20a1 --execute --skip-tests
+    python scripts/release.py 1.0.21a1 --execute --skip-tests
+
+    # Local only — don't push or verify PyPI:
+    python scripts/release.py 1.0.21a1 --execute --local-only
+
+    # Push only (after a previous --local-only run):
+    python scripts/release.py 1.0.21a1 --push-only
 
 Steps performed:
-    1. Validate new version string
-    2. Run full test suite, ruff, mypy  (unless --skip-tests)
-    3. Bump version in all files
-    4. Update CHANGELOG [Unreleased] → new version
-    5. Build sdist + wheel
-    6. Verify artifacts (no internal/ leakage, clean import)
-    7. (execute mode) Git commit + tag
-    8. Print next steps (push, publish)
+    1. Pre-flight checks (clean tree, branch, remote)
+    2. Validate new version string
+    3. Run full quality gate: pytest, ruff check, ruff format, mypy
+    4. Bump version in all files
+    5. Update CHANGELOG [Unreleased] → new version
+    6. Build sdist + wheel
+    7. Verify artifacts (no internal/ leakage, clean import)
+    8. Git commit + tag
+    9. Push to origin (unless --local-only)
+   10. Wait for GitHub Actions CI to pass
+   11. Wait for PyPI publication
+   12. Run post-release verification from PyPI
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import re
 import subprocess
 import sys
 import tempfile
+import time
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -76,6 +89,49 @@ def validate_version(new: str, old: str) -> None:
         sys.exit(f"Invalid version format: {new!r}  (expected e.g. 1.0.20a1)")
     if new == old:
         sys.exit(f"New version {new!r} is the same as current {old!r}")
+
+
+# ── Step: Pre-flight ──────────────────────────────────────────────────────
+def preflight_checks() -> bool:
+    """Verify the repo is in a releasable state."""
+    ok = True
+
+    # Clean working tree
+    r = run(["git", "status", "--porcelain"])
+    if r.stdout.strip():
+        log("Working tree is dirty — commit or stash changes first", level="err")
+        log(f"  Dirty files:\n{r.stdout}", level="info")
+        ok = False
+    else:
+        log("Working tree: clean", level="ok")
+
+    # On main branch
+    r = run(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+    branch = r.stdout.strip()
+    if branch != "main":
+        log(f"Not on main branch (on '{branch}')", level="warn")
+    else:
+        log("Branch: main", level="ok")
+
+    # Remote is reachable
+    r = run(["git", "ls-remote", "--exit-code", "origin", "HEAD"])
+    if r.returncode != 0:
+        log("Cannot reach origin remote", level="err")
+        ok = False
+    else:
+        log("Remote: origin reachable", level="ok")
+
+    # Up to date with remote
+    run(["git", "fetch", "origin", "main", "--quiet"])
+    r = run(["git", "rev-list", "HEAD..origin/main", "--count"])
+    behind = int(r.stdout.strip() or "0")
+    if behind > 0:
+        log(f"Local is {behind} commits behind origin/main — pull first", level="err")
+        ok = False
+    else:
+        log("Branch: up to date with origin/main", level="ok")
+
+    return ok
 
 
 # ── Step: Quality checks ──────────────────────────────────────────────────
@@ -302,77 +358,275 @@ def git_commit_and_tag(new: str, *, dry_run: bool) -> None:
     log(f"Tagged: v{new}", level="ok")
 
 
+# ── Step: Push ────────────────────────────────────────────────────────────
+def git_push(new: str) -> None:
+    log("Pushing to origin …", level="step")
+    r = run(["git", "push", "origin", "main", "--tags"])
+    if r.returncode != 0:
+        log(f"Push failed:\n{r.stderr}", level="err")
+        sys.exit(1)
+    log(f"Pushed: main + tag v{new}", level="ok")
+
+
+# ── Step: Wait for GitHub Actions ─────────────────────────────────────────
+def wait_for_ci(new: str, *, timeout_minutes: int = 20) -> bool:
+    """Poll GitHub Actions API until the Release workflow completes."""
+    log(f"Waiting for Release workflow (timeout: {timeout_minutes}min) …", level="step")
+
+    api_url = "https://api.github.com/repos/akios-ai/EnforceCore/actions/runs"
+    deadline = time.time() + timeout_minutes * 60
+    run_id = None
+
+    while time.time() < deadline:
+        try:
+            req = urllib.request.Request(
+                f"{api_url}?per_page=5&event=push",
+                headers={"Accept": "application/vnd.github+json"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+
+            for wf_run in data.get("workflow_runs", []):
+                if wf_run["name"] == "Release" and f"v{new}" in wf_run.get("head_branch", ""):
+                    run_id = wf_run["id"]
+                    status = wf_run["status"]
+                    conclusion = wf_run["conclusion"]
+
+                    if status == "completed":
+                        if conclusion == "success":
+                            log(f"Release workflow passed (run {run_id})", level="ok")
+                            return True
+                        else:
+                            log(
+                                f"Release workflow failed: {conclusion} (run {run_id})",
+                                level="err",
+                            )
+                            log(
+                                f"  See: https://github.com/akios-ai/EnforceCore/actions/runs/{run_id}",
+                                level="info",
+                            )
+                            return False
+                    else:
+                        elapsed = int(time.time() - (deadline - timeout_minutes * 60))
+                        log(
+                            f"  … {status} ({elapsed}s elapsed) — run {run_id}",
+                            level="info",
+                        )
+                        break
+
+        except Exception as e:
+            log(f"  … API poll error: {e}", level="warn")
+
+        time.sleep(30)
+
+    log(f"Timeout after {timeout_minutes} minutes", level="err")
+    if run_id:
+        log(
+            f"  Check: https://github.com/akios-ai/EnforceCore/actions/runs/{run_id}",
+            level="info",
+        )
+    return False
+
+
+# ── Step: Wait for PyPI ───────────────────────────────────────────────────
+def wait_for_pypi(new: str, *, timeout_minutes: int = 5) -> bool:
+    """Poll PyPI until the version is available."""
+    log(f"Waiting for v{new} on PyPI …", level="step")
+    deadline = time.time() + timeout_minutes * 60
+
+    while time.time() < deadline:
+        try:
+            url = f"https://pypi.org/pypi/enforcecore/{new}/json"
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                data = json.loads(resp.read())
+                if data.get("info", {}).get("version") == new:
+                    log(f"v{new} is live on PyPI!", level="ok")
+                    return True
+        except Exception:
+            pass
+        time.sleep(15)
+
+    log(f"v{new} not found on PyPI after {timeout_minutes} minutes", level="err")
+    return False
+
+
+# ── Step: Post-release verification ──────────────────────────────────────
+def run_post_verify(new: str) -> bool:
+    """Run the post-release verification script."""
+    log("Running post-release verification …", level="step")
+    script = ROOT / "scripts" / "post_release_verify.py"
+    if not script.exists():
+        log("post_release_verify.py not found — skipping", level="warn")
+        return True
+
+    r = subprocess.run(
+        [sys.executable, str(script), new],
+        cwd=ROOT,
+        text=True,
+    )
+    return r.returncode == 0
+
+
 # ── Main ──────────────────────────────────────────────────────────────────
 def main() -> None:
-    parser = argparse.ArgumentParser(description="EnforceCore release automation")
-    parser.add_argument("version", help="New version (e.g. 1.0.20a1)")
+    parser = argparse.ArgumentParser(
+        description="EnforceCore release automation",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python scripts/release.py 1.0.21a1                    # dry-run
+  python scripts/release.py 1.0.21a1 --execute          # full release
+  python scripts/release.py 1.0.21a1 --execute --local-only  # no push
+  python scripts/release.py 1.0.21a1 --push-only        # push existing tag
+        """,
+    )
+    parser.add_argument("version", help="New version (e.g. 1.0.21a1)")
     parser.add_argument(
-        "--execute", action="store_true", help="Actually write files + commit + tag"
+        "--execute", action="store_true", help="Actually write files + commit + tag + push"
     )
     parser.add_argument("--skip-tests", action="store_true", help="Skip test/lint/type checks")
+    parser.add_argument(
+        "--local-only",
+        action="store_true",
+        help="Don't push, don't wait for CI, don't verify PyPI",
+    )
+    parser.add_argument(
+        "--push-only",
+        action="store_true",
+        help="Just push an existing tag and wait for CI + PyPI",
+    )
+    parser.add_argument(
+        "--ci-timeout",
+        type=int,
+        default=20,
+        help="Minutes to wait for CI (default: 20)",
+    )
     args = parser.parse_args()
 
-    dry_run = not args.execute
+    dry_run = not args.execute and not args.push_only
     new_ver = args.version
     old_ver = current_version()
     today = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d")
 
     print()
-    print("=" * 60)
-    print(f"  EnforceCore Release {'(DRY RUN)' if dry_run else '(EXECUTE)'}")
+    print("=" * 64)
+    mode = "(DRY RUN)" if dry_run else "(PUSH ONLY)" if args.push_only else "(EXECUTE)"
+    print(f"  EnforceCore Release {mode}")
     print(f"  {old_ver} → {new_ver}")
-    print("=" * 60)
+    print("=" * 64)
     print()
+
+    if args.push_only:
+        # ── Push-only mode ────────────────────────────────────────────
+        # Verify the tag exists
+        r = run(["git", "tag", "-l", f"v{new_ver}"])
+        if f"v{new_ver}" not in r.stdout:
+            sys.exit(f"Tag v{new_ver} does not exist locally. Run --execute first.")
+        log(f"Tag v{new_ver} exists locally", level="ok")
+
+        git_push(new_ver)
+        print()
+
+        if wait_for_ci(new_ver, timeout_minutes=args.ci_timeout):
+            print()
+            if wait_for_pypi(new_ver):
+                print()
+                run_post_verify(new_ver)
+        else:
+            log("CI failed — check GitHub Actions for details", level="err")
+            sys.exit(1)
+
+        _print_summary(new_ver, pushed=True)
+        return
+
+    # ── Normal flow ───────────────────────────────────────────────────
 
     # 1. Validate
     validate_version(new_ver, old_ver)
     log(f"Version format valid: {new_ver}", level="ok")
 
-    # 2. Quality checks
+    # 2. Pre-flight
+    if not dry_run:
+        print()
+        log("Pre-flight checks …", level="step")
+        # In execute mode, tree will be clean before we modify anything
+        # but we check remote/branch first
+        r = run(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        branch = r.stdout.strip()
+        if branch != "main":
+            log(f"WARNING: Not on main branch (on '{branch}')", level="warn")
+        else:
+            log("Branch: main", level="ok")
+
+    # 3. Quality checks
     if not args.skip_tests:
+        print()
         if not run_checks():
             sys.exit("\nQuality checks failed. Fix issues before releasing.")
         print()
 
-    # 3. Bump version
+    # 4. Bump version
     bump_version(old_ver, new_ver, today, dry_run=dry_run)
     print()
 
-    # 4. Update CHANGELOG
+    # 5. Update CHANGELOG
     update_changelog(new_ver, today, dry_run=dry_run)
     print()
 
-    # 5. Build
+    # 6-7. Build + verify
     if not dry_run:
         wheel, sdist = build_package()
         print()
 
-        # 6. Verify
         if not verify_artifacts(wheel, sdist):
             sys.exit("\nArtifact verification failed!")
         print()
 
-        # 7. Commit + tag
+        # 8. Commit + tag
         git_commit_and_tag(new_ver, dry_run=dry_run)
+        print()
+
+        # 9-12. Push + CI + PyPI + verify
+        if not args.local_only:
+            git_push(new_ver)
+            print()
+
+            if wait_for_ci(new_ver, timeout_minutes=args.ci_timeout):
+                print()
+                if wait_for_pypi(new_ver):
+                    print()
+                    run_post_verify(new_ver)
+            else:
+                log("CI failed — check GitHub Actions for details", level="err")
+                log("You can fix and re-run with: --push-only", level="info")
     else:
         log("Would build sdist + wheel", level="info")
         log("Would verify artifacts", level="info")
         log("Would git commit + tag", level="info")
+        if not args.local_only:
+            log("Would push to origin", level="info")
+            log("Would wait for CI + PyPI", level="info")
+            log("Would run post-release verification", level="info")
 
-    # 8. Next steps
+    _print_summary(new_ver, pushed=not dry_run and not args.local_only)
+
+
+def _print_summary(new_ver: str, *, pushed: bool) -> None:
     print()
-    print("=" * 60)
-    if dry_run:
-        print("  DRY RUN complete. Re-run with --execute to apply.")
+    print("=" * 64)
+    if pushed:
+        print(f"  Release v{new_ver} — complete!")
+        print()
+        print(f"  PyPI:    https://pypi.org/project/enforcecore/{new_ver}/")
+        print(f"  GitHub:  https://github.com/akios-ai/EnforceCore/releases/tag/v{new_ver}")
+        print(f"  Install: pip install enforcecore=={new_ver}")
     else:
-        print(f"  Release v{new_ver} prepared locally!")
+        print(f"  Release v{new_ver} — prepared locally.")
         print()
         print("  Next steps:")
-        print("    1. git push origin main --tags")
-        print("    2. python -m twine upload dist/*")
-        print("       (or use GitHub Actions release workflow)")
-        print(f"    3. Create GitHub Release for tag v{new_ver}")
-    print("=" * 60)
+        print(f"    python scripts/release.py {new_ver} --push-only")
+        print("    # or: git push origin main --tags")
+    print("=" * 64)
     print()
 
 
