@@ -567,7 +567,7 @@ Currently EnforceCore has none of these. The code is excellent — the packaging
 ### What a user can do after v1.0.11:
 ```bash
 # Browse the API docs
-open https://akios-ai.github.io/EnforceCore/
+open https://akios.ai/enforcecore
 
 # Cite the project in a paper
 # CITATION.cff provides BibTeX automatically
@@ -1114,7 +1114,7 @@ pip install enforcecore[all]
 # See CITATION.cff on GitHub
 
 # Browse API docs:
-# https://akios-ai.github.io/EnforceCore/
+# https://akios.ai/enforcecore
 
 # Run the evaluation suite:
 enforcecore eval --scenarios all

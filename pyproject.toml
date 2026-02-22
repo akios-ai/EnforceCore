@@ -10,7 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
 authors = [
-    { name = "akios-ai", email = "contact@akios.ai" },
+    { name = "AKIOUD AI", email = "contact@akioud.ai" },
 ]
 keywords = [
     "ai",
@@ -82,9 +82,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/akios-ai/EnforceCore"
+Homepage = "https://akios.ai/enforcecore"
 Repository = "https://github.com/akios-ai/EnforceCore"
-Documentation = "https://akios-ai.github.io/EnforceCore/"
+Documentation = "https://akios.ai/enforcecore"
 Issues = "https://github.com/akios-ai/EnforceCore/issues"
 Changelog = "https://github.com/akios-ai/EnforceCore/blob/main/CHANGELOG.md"
 

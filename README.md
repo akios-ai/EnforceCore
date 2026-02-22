@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/logo.svg" alt="EnforceCore" width="280" />
+  <img src="https://raw.githubusercontent.com/akios-ai/EnforceCore/main/.github/assets/logo.svg" alt="EnforceCore" width="280" />
 </p>
 
 <h1 align="center">EnforceCore</h1>
@@ -285,7 +285,7 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 | 📐 [Architecture](docs/architecture.md) | Technical design and component overview |
 | 🗺️ [Roadmap](docs/roadmap.md) | v1.0.x incremental release plan |
 | 🔧 [API Design](docs/api-design.md) | Public API surface and patterns |
-| � [API Reference](https://akios-ai.github.io/EnforceCore/) | Auto-generated docs (MkDocs) |
+| 📚 [API Reference](https://akios.ai/enforcecore) | API documentation |
 | 🛠️ [Developer Guide](docs/dev-guide.md) | Setup, standards, and workflow |
 | 🧪 [Tech Stack](docs/tech-stack.md) | Technology choices and rationale |
 | 📊 [Evaluation](docs/evaluation.md) | Adversarial scenarios, benchmarks, and reports |
@@ -403,5 +403,5 @@ EnforceCore is a **technical tool**, not a compliance certification. Using Enfor
 
 [Apache 2.0](LICENSE) — free for open-source and commercial use.
 
-Copyright 2025–2026 akios-ai. See [LICENSE](LICENSE) for details.
+Copyright 2025–2026 AKIOUD AI, SAS. See [LICENSE](LICENSE) for details.
 
