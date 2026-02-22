@@ -287,7 +287,10 @@ class ResourceGuard:
         )
     """
 
-    __slots__ = ("_cost_tracker", "_kill_switch")
+    __slots__ = ("_cost_tracker", "_kill_switch", "_leaked_thread_count", "_pool")
+
+    # Maximum number of concurrent timeout-guarded calls
+    _POOL_MAX_WORKERS = 4
 
     def __init__(
         self,
@@ -302,9 +305,18 @@ class ResourceGuard:
                 (unlimited budget) tracker if ``None``.
             kill_switch: Kill switch instance. Creates a new
                 (non-tripped) switch if ``None``.
+
+        .. versionchanged:: 1.0.22
+           Uses a shared ``ThreadPoolExecutor`` with daemon threads
+           instead of creating a new pool per call.
         """
         self._cost_tracker = cost_tracker or CostTracker()
         self._kill_switch = kill_switch or KillSwitch()
+        self._pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=self._POOL_MAX_WORKERS,
+            thread_name_prefix="enforcecore-guard",
+        )
+        self._leaked_thread_count = 0
 
     @property
     def cost_tracker(self) -> CostTracker:
@@ -315,6 +327,19 @@ class ResourceGuard:
     def kill_switch(self) -> KillSwitch:
         """The kill switch for this guard."""
         return self._kill_switch
+
+    @property
+    def leaked_thread_count(self) -> int:
+        """Number of timed-out tasks whose threads may still be running.
+
+        CPython cannot forcibly kill threads. When a timeout occurs, the
+        future is cancelled but the underlying thread continues until the
+        function returns naturally. This counter tracks how many such
+        "leaked" threads are outstanding.
+
+        .. versionadded:: 1.0.22
+        """
+        return self._leaked_thread_count
 
     # -- Sync execution -----------------------------------------------------
 
@@ -445,8 +470,8 @@ class ResourceGuard:
 
     # -- Helpers ------------------------------------------------------------
 
-    @staticmethod
     def _execute_with_timeout(
+        self,
         func: Any,
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
@@ -457,28 +482,47 @@ class ResourceGuard:
     ) -> Any:
         """Execute a sync function with a wall-clock timeout.
 
-        Uses ``concurrent.futures.ThreadPoolExecutor`` with a single
-        worker.  If the timeout expires, raises ``ResourceLimitError``.
+        Uses the guard's shared ``ThreadPoolExecutor`` instead of
+        creating a new pool per call (H-2 fix). On timeout, increments
+        ``leaked_thread_count`` and logs a warning.
 
         .. warning::
 
            The worker thread cannot be forcibly terminated.  The function
            may continue running after the timeout.
+
+        .. versionchanged:: 1.0.22
+           Uses shared pool; tracks leaked threads; no longer static.
         """
-        pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        future = pool.submit(func, *args, **kwargs)
+        future = self._pool.submit(func, *args, **kwargs)
         try:
             return future.result(timeout=timeout)
         except concurrent.futures.TimeoutError:
             future.cancel()
+            self._leaked_thread_count += 1
+            if self._leaked_thread_count >= self._POOL_MAX_WORKERS:
+                logger.warning(
+                    "thread_leak_critical",
+                    leaked=self._leaked_thread_count,
+                    max_workers=self._POOL_MAX_WORKERS,
+                    tool=tool_name,
+                    message=(
+                        "All pool workers may be occupied by leaked threads. "
+                        "New timeout-guarded calls may block until threads complete."
+                    ),
+                )
+            else:
+                logger.warning(
+                    "thread_leak",
+                    leaked=self._leaked_thread_count,
+                    tool=tool_name,
+                )
             raise ResourceLimitError(
                 "time",
                 f"{timeout}s",
                 tool_name=tool_name,
                 policy_name=policy_name,
             ) from None
-        finally:
-            pool.shutdown(wait=False, cancel_futures=True)
 
     @staticmethod
     def platform_info() -> dict[str, Any]:

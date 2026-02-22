@@ -7,20 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned — v1.0.22a1
+### Planned — v1.0.23a1
 
-- **[H-3]** Add `stat().st_mtime` to policy cache key for file-change detection
-- **[H-2]** Shared `ThreadPoolExecutor` with daemon threads in `ResourceGuard` to prevent thread leak
-- **[L-4]** Increase audit resume read-back window from 8 KB to 64 KB
-- **[A-3]** Cap `_background_tasks` set size in hook system
+- **[A-4]** Tighten `AuditEntry.to_dict()` serialisation (reject non-JSON-safe extras)
+- **[M-4]** Add entropy check to `generic_api_key` secret scanner regex
+- **[A-5]** Enforce minimum `max_input_bytes` floor (e.g. 64) to prevent misconfiguration
 
 ### Planned — v1.0.0 Stable
 
 - **[M-2]** Extract shared pipeline from `enforce_sync`/`enforce_async` (DRY)
 - **[M-5]** Unicode normalization offset mapping for accurate PII positions
 - **[L-1]** Curate public API surface (reduce `__init__.py` exports)
-- **[M-4]** Add entropy check to `generic_api_key` secret scanner regex
-- **[M-1]** Reuse thread pool across calls (covered by H-2 fix)
+
+## [1.0.22a1] — 2026-02-22
+
+### Security
+
+- **[H-3]** `_resolve_policy()`: policy cache now stores `(Policy, mtime)` tuples
+  and checks `path.stat().st_mtime` on every lookup. Stale entries are
+  automatically evicted and reloaded, preventing enforcement of outdated
+  rules when policy files change on disk.
+- **[H-2]** `ResourceGuard`: replaced per-call `ThreadPoolExecutor` creation
+  with a shared instance (`max_workers=4`, daemon threads, prefix
+  `enforcecore-guard`). Eliminates thread leak on every guarded call.
+  New `leaked_thread_count` property tracks threads abandoned due to
+  timeout. Critical warning logged when leaked count ≥ pool capacity.
+
+### Fixed
+
+- **[L-4]** `Auditor._resume_chain()`: switched from text-mode `seek()` to
+  binary-mode with a 64 KB read-back window and `decode("utf-8",
+  errors="replace")`. Retry with doubled window on parse failure.
+  Fixes undefined behaviour of `seek()` on text streams and handles
+  multi-byte characters correctly.
+- **[A-3]** `_run_async_hook()`: `_background_tasks` set is now capped at
+  1 000 entries. When at capacity, a `background_tasks_limit_reached`
+  warning is logged and the new task reference is not tracked (the task
+  still runs but may be garbage-collected early).
+
+### Tests
+
+- Added 16 regression tests in `tests/core/test_v1022_fixes.py` covering
+  all four fixes: H-3 mtime cache invalidation (4 tests), H-2 shared
+  thread pool (6 tests), L-4 binary-mode audit resume (3 tests),
+  A-3 background tasks cap (3 tests).
 
 ## [1.0.21a1] — 2026-02-22
 

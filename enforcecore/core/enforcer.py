@@ -753,8 +753,9 @@ class Enforcer:
 
 # Cache of loaded policies to avoid re-parsing YAML on every call.
 # FIFO-bounded: oldest entry evicted when cache exceeds max size.
+# Each entry stores (Policy, mtime) so file changes are detected.
 _POLICY_CACHE_MAX_SIZE = 64
-_policy_cache: dict[str, Policy] = {}
+_policy_cache: dict[str, tuple[Policy, float]] = {}
 _policy_cache_lock = threading.Lock()
 
 
@@ -769,31 +770,24 @@ def clear_policy_cache() -> int:
 def _resolve_policy(
     policy: str | Path | Policy | None,
 ) -> Policy:
-    """Resolve a policy argument to a ``Policy`` instance."""
+    """Resolve a policy argument to a ``Policy`` instance.
+
+    File-backed policies are cached with their ``st_mtime``. If the file
+    has been modified since it was cached, the cache entry is evicted and
+    the file is re-loaded automatically.
+
+    .. versionchanged:: 1.0.22
+       Cache now tracks file mtime; stale entries are evicted on access.
+    """
     if isinstance(policy, Policy):
         return policy
 
     if isinstance(policy, (str, Path)):
-        key = str(policy)
-        with _policy_cache_lock:
-            if key not in _policy_cache:
-                if len(_policy_cache) >= _POLICY_CACHE_MAX_SIZE:
-                    # Evict oldest entry (FIFO)
-                    oldest = next(iter(_policy_cache))
-                    del _policy_cache[oldest]
-                _policy_cache[key] = Policy.from_file(key)
-            return _policy_cache[key]
+        return _load_and_cache(str(policy))
 
     # Fall back to default from settings
     if settings.default_policy is not None:
-        key = str(settings.default_policy)
-        with _policy_cache_lock:
-            if key not in _policy_cache:
-                if len(_policy_cache) >= _POLICY_CACHE_MAX_SIZE:
-                    oldest = next(iter(_policy_cache))
-                    del _policy_cache[oldest]
-                _policy_cache[key] = Policy.from_file(key)
-            return _policy_cache[key]
+        return _load_and_cache(str(settings.default_policy))
 
     from enforcecore.core.types import PolicyLoadError
 
@@ -801,6 +795,43 @@ def _resolve_policy(
         "No policy provided and ENFORCECORE_DEFAULT_POLICY is not set. "
         "Pass a policy path to @enforce(policy=...) or set the env var."
     )
+
+
+def _load_and_cache(key: str) -> Policy:
+    """Load a policy from *key* (file path), caching by (path, mtime).
+
+    If the file's ``st_mtime`` has changed since the cached entry was
+    stored, the entry is evicted and the file is re-parsed.
+    """
+    path = Path(key)
+    try:
+        current_mtime = path.stat().st_mtime
+    except OSError:
+        # File may not exist yet — let Policy.from_file raise a clear error
+        current_mtime = 0.0
+
+    with _policy_cache_lock:
+        cached = _policy_cache.get(key)
+        if cached is not None:
+            cached_policy, cached_mtime = cached
+            if cached_mtime == current_mtime:
+                return cached_policy
+            # mtime changed → evict stale entry
+            logger.info(
+                "policy_cache_invalidated",
+                path=key,
+                old_mtime=cached_mtime,
+                new_mtime=current_mtime,
+            )
+            del _policy_cache[key]
+
+        # Load and cache
+        if len(_policy_cache) >= _POLICY_CACHE_MAX_SIZE:
+            oldest = next(iter(_policy_cache))
+            del _policy_cache[oldest]
+        loaded = Policy.from_file(key)
+        _policy_cache[key] = (loaded, current_mtime)
+        return loaded
 
 
 @overload
