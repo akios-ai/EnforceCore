@@ -7,17 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned — v1.0.21a1
-
-- **[H-1]** Fix `fail_open` PII leak: redact args before fallback in `enforce_sync`/`enforce_async`
-- **[M-3]** Log errors from fire-and-forget async hooks instead of silently discarding
-- **[L-3]** Replace `__dataclass_fields__` with `dataclasses.fields()` in `AuditEntry.from_dict`
-
 ### Planned — v1.0.22a1
 
 - **[H-3]** Add `stat().st_mtime` to policy cache key for file-change detection
 - **[H-2]** Shared `ThreadPoolExecutor` with daemon threads in `ResourceGuard` to prevent thread leak
 - **[L-4]** Increase audit resume read-back window from 8 KB to 64 KB
+- **[A-3]** Cap `_background_tasks` set size in hook system
 
 ### Planned — v1.0.0 Stable
 
@@ -26,6 +21,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **[L-1]** Curate public API surface (reduce `__init__.py` exports)
 - **[M-4]** Add entropy check to `generic_api_key` secret scanner regex
 - **[M-1]** Reuse thread pool across calls (covered by H-2 fix)
+
+## [1.0.21a1] — 2026-02-22
+
+### Security
+
+- **[H-1]** `enforce_sync` / `enforce_async`: when `fail_open=True` and an
+  `EnforceCoreError` occurs *before* the normal `_redact_args()` step (e.g.,
+  during `check_input_size`), the fail-open fallback now explicitly calls
+  `_redact_args()` before executing `func()`. Previously, raw un-redacted
+  PII could leak to the tool. If even redaction itself fails, a nuclear
+  fallback replaces all string arguments with `[REDACTED]`.
+
+### Fixed
+
+- **[M-3]** `_on_background_task_done()`: fire-and-forget async hook tasks
+  now log exceptions via `logger.warning("async_hook_error", ...)` instead
+  of silently discarding them.
+- **[L-3]** `AuditEntry.from_dict()`: replaced private `cls.__dataclass_fields__`
+  access with the public `dataclasses.fields(cls)` API.
+- **[A-1]** `_warn_fail_open()`: now accepts `tool_name` and `error` keyword
+  arguments. Both the `RuntimeWarning` message and the structured log entry
+  include the failing tool name and error type for diagnostics.
+- **[A-2]** `_record_audit()`: when audit recording fails and `fail_open=True`,
+  a `logger.critical("audit_trail_incomplete", ...)` message is now emitted
+  warning that the tamper-proof audit trail has a gap for this call.
+
+### Tests
+
+- Added 15 regression tests in `tests/core/test_v1021_fixes.py` covering
+  all five fixes: H-1 PII redaction in fail-open (sync, async, nuclear
+  fallback), M-3 async hook error logging, L-3 public API usage,
+  A-1 warning context, A-2 audit failure logging.
 
 ## [1.0.20a1] — 2026-02-22
 

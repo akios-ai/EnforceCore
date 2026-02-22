@@ -452,10 +452,30 @@ def _run_async_hook(hook: HookCallable, ctx: Any) -> None:
         # Schedule the coroutine — store reference so it isn't GC'd.
         task = loop.create_task(hook(ctx))
         _background_tasks.add(task)
-        task.add_done_callback(_background_tasks.discard)
+        task.add_done_callback(_on_background_task_done)
     else:
         # No running loop: create one and run to completion.
         asyncio.run(hook(ctx))
+
+
+def _on_background_task_done(task: asyncio.Task[Any]) -> None:
+    """Callback for fire-and-forget async hook tasks.
+
+    Removes the task from the strong-reference set and logs any exception
+    that occurred during execution (M-3 fix: prevents silent failures).
+    """
+    _background_tasks.discard(task)
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.warning(
+            "async_hook_error",
+            hook_task=task.get_name(),
+            error_type=type(exc).__name__,
+            error=str(exc),
+            exc_info=exc,
+        )
 
 
 # Set of strong references to prevent fire-and-forget tasks from being GC'd.
