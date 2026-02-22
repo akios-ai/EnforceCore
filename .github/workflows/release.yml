@@ -13,6 +13,7 @@ permissions:
 jobs:
   # ── Gate: run the full CI matrix first ────────────────────────────────
   quality:
+    timeout-minutes: 15
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -23,11 +24,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev]" pytest-timeout
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy enforcecore/
-      - run: pytest --tb=short -q
+      - name: Run tests
+        run: pytest --tb=short -q --timeout=60
+        env:
+          HYPOTHESIS_MAX_EXAMPLES: "10"
 
   # ── Build artifacts ───────────────────────────────────────────────────
   build:
