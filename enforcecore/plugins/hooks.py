@@ -450,6 +450,16 @@ def _run_async_hook(hook: HookCallable, ctx: Any) -> None:
     if loop is not None and loop.is_running():
         # We are inside a running event loop but in sync code.
         # Schedule the coroutine — store reference so it isn't GC'd.
+        if len(_background_tasks) >= _MAX_BACKGROUND_TASKS:
+            logger.warning(
+                "background_tasks_limit_reached",
+                count=len(_background_tasks),
+                limit=_MAX_BACKGROUND_TASKS,
+                message=(
+                    "Too many pending async hook tasks. "
+                    "New hook will still run but its reference may be GC'd."
+                ),
+            )
         task = loop.create_task(hook(ctx))
         _background_tasks.add(task)
         task.add_done_callback(_on_background_task_done)
@@ -479,4 +489,7 @@ def _on_background_task_done(task: asyncio.Task[Any]) -> None:
 
 
 # Set of strong references to prevent fire-and-forget tasks from being GC'd.
+# Capped at _MAX_BACKGROUND_TASKS to prevent unbounded growth under high
+# concurrency with slow hooks (A-3 fix).
+_MAX_BACKGROUND_TASKS = 1000
 _background_tasks: set[asyncio.Task[Any]] = set()

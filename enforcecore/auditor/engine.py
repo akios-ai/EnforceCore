@@ -212,32 +212,56 @@ class Auditor:
     def _resume_chain(self) -> None:
         """Read the last entry from an existing file to resume the chain.
 
-        Uses reverse seeking for efficiency on large files.
+        Uses reverse seeking for efficiency on large files. Reads in
+        binary mode to avoid undefined behavior with text-mode ``seek()``,
+        then decodes to UTF-8.
+
+        .. versionchanged:: 1.0.22
+           Increased read-back window from 8 KB to 64 KB; uses binary
+           mode for seeking; retries with doubled window on failure.
         """
         assert self._output_path is not None  # Guarded by caller
+        window = 65536  # 64 KB
         try:
-            # Count entries and find last line by seeking from end
             last_line = ""
             count = 0
             file_size = self._output_path.stat().st_size
 
-            with self._output_path.open("r", encoding="utf-8") as f:
-                if file_size > 8192:
-                    # For large files, seek near the end to find the last line
-                    f.seek(max(0, file_size - 8192))
-                    f.readline()  # Discard partial line
-                    for line in f:
+            with self._output_path.open("rb") as fb:
+                if file_size > window:
+                    # Seek near the end in binary mode (well-defined behavior)
+                    seek_pos = max(0, file_size - window)
+                    fb.seek(seek_pos)
+                    fb.readline()  # Discard partial line
+                    tail_bytes = fb.read()
+                    tail_text = tail_bytes.decode("utf-8", errors="replace")
+
+                    # Find the last non-empty line
+                    found = False
+                    for line in tail_text.splitlines():
                         line = line.strip()
                         if line:
                             last_line = line
+                            found = True
+
+                    # Retry with doubled window if no valid line found
+                    if not found and file_size > window * 2:
+                        fb.seek(max(0, file_size - window * 2))
+                        fb.readline()
+                        tail_bytes = fb.read()
+                        tail_text = tail_bytes.decode("utf-8", errors="replace")
+                        for line in tail_text.splitlines():
+                            line = line.strip()
+                            if line:
+                                last_line = line
 
                     # Count entries separately (still need total count)
-                    f.seek(0)
-                    count = sum(1 for ln in f if ln.strip())
+                    fb.seek(0)
+                    count = sum(1 for ln in fb if ln.strip())
                 else:
                     # Small file — read all lines
-                    for line in f:
-                        line = line.strip()
+                    for raw_line in fb:
+                        line = raw_line.decode("utf-8", errors="replace").strip()
                         if line:
                             last_line = line
                             count += 1
