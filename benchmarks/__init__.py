@@ -1,3 +1,5 @@
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """Benchmark CLI package for EnforceCore.
 
 Run benchmarks from the command line::

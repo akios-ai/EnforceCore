@@ -1,4 +1,4 @@
-# Copyright 2026 AKIOS AI
+# Copyright 2026 AKIOUD AI
 # SPDX-License-Identifier: Apache-2.0
 """Unit tests for the Resource Guard engine.
 

@@ -1,3 +1,5 @@
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """Multi-Framework — Same policy across LangGraph, CrewAI, AutoGen, and plain Python.
 
 Demonstrates that EnforceCore's enforcement is completely framework-agnostic:

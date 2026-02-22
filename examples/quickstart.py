@@ -1,3 +1,5 @@
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """EnforceCore Quickstart — see enforcement in action.
 
 Run from the repo root:

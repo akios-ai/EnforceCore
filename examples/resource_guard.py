@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """Resource Guard — EnforceCore v1.0.3 demo.
 
 Demonstrates resource limits, cost tracking, KillSwitch, and how

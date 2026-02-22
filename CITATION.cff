@@ -3,7 +3,7 @@ message: "If you use EnforceCore in your research, please cite it using these me
 title: "EnforceCore: Runtime Enforcement Layer for Agentic AI Systems"
 type: software
 authors:
-  - name: "AKIOS AI"
+  - name: "AKIOUD AI"
     website: "https://github.com/akios-ai"
 repository-code: "https://github.com/akios-ai/EnforceCore"
 url: "https://akios-ai.github.io/EnforceCore/"

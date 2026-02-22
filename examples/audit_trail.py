@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """Merkle-chained Audit Trail — EnforceCore v1.0.2 demo.
 
 Demonstrates the cryptographic audit trail that records every

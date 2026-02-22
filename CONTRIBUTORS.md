@@ -8,7 +8,7 @@ Thank you to everyone who has contributed to EnforceCore.
 
 | Contributor | Role |
 |---|---|
-| **AKIOS AI** | Project creator, architecture, core implementation |
+| **AKIOUD AI** | Project creator, architecture, core implementation |
 
 ---
 

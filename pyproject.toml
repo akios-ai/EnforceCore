@@ -98,6 +98,7 @@ packages = ["enforcecore"]
 exclude = [
     "internal/",
     ".github/",
+    "examples/",
 ]
 
 # --- Ruff ---

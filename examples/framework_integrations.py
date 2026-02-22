@@ -1,3 +1,5 @@
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """EnforceCore Framework Integration Examples.
 
 Demonstrates how to add EnforceCore policy enforcement to popular

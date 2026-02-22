@@ -13,8 +13,8 @@
   <a href="https://github.com/akios-ai/EnforceCore/actions"><img src="https://img.shields.io/github/actions/workflow/status/akios-ai/EnforceCore/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
-  <img src="https://img.shields.io/badge/coverage-96%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-1461_passed-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square" alt="Coverage" />
+  <img src="https://img.shields.io/badge/tests-1472_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -24,6 +24,11 @@
   <a href="docs/api-design.md">API Reference</a> ·
   <a href="docs/contributing.md">Contributing</a>
 </p>
+
+> **⚠️ Disclaimer:** EnforceCore is provided "as is", without warranty of any kind, express or
+> implied. It is a technical enforcement tool — **not a compliance certification**. Using EnforceCore
+> does not guarantee regulatory compliance with any standard or law.
+> See [DISCLAIMER.md](DISCLAIMER.md) and [LICENSE](LICENSE) for full legal terms.
 
 ---
 
@@ -318,7 +323,7 @@ problem of AI agent safety. We welcome academic collaboration.
 ```bibtex
 @software{enforcecore2026,
   title  = {EnforceCore: Runtime Enforcement Layer for Agentic AI Systems},
-  author = {{AKIOS AI}},
+  author = {{AKIOUD AI}},
   year   = {2026},
   url    = {https://github.com/akios-ai/EnforceCore},
   license = {Apache-2.0}
