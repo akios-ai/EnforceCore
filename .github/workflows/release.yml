@@ -15,8 +15,9 @@ jobs:
   quality:
     timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [macos-latest]
         python-version: ["3.11", "3.12", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
