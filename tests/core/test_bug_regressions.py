@@ -78,9 +78,7 @@ class TestBug1x1SyncFailOpenUnboundLocal:
             settings.fail_open = True
             # Before fix: UnboundLocalError
             # After fix: should execute and return "ok"
-            result = enforcer.enforce_sync(
-                identity_tool, huge, tool_name="identity_tool"
-            )
+            result = enforcer.enforce_sync(identity_tool, huge, tool_name="identity_tool")
             assert result == "ok"
         finally:
             settings.fail_open = original_fail_open
@@ -95,9 +93,7 @@ class TestBug1x1SyncFailOpenUnboundLocal:
         try:
             settings.fail_open = False
             with pytest.raises(InputTooLargeError):
-                enforcer.enforce_sync(
-                    identity_tool, huge, tool_name="identity_tool"
-                )
+                enforcer.enforce_sync(identity_tool, huge, tool_name="identity_tool")
         finally:
             settings.fail_open = original_fail_open
 
@@ -128,9 +124,7 @@ class TestBug1x1SyncFailOpenUnboundLocal:
         # Normal-sized input — redaction will succeed, so r_args will be
         # assigned before any potential EnforceCoreError later.
         # This test verifies the normal path still works.
-        result = enforcer.enforce_sync(
-            identity_tool, "hello", tool_name="identity_tool"
-        )
+        result = enforcer.enforce_sync(identity_tool, "hello", tool_name="identity_tool")
         assert result == "ok"
 
 
@@ -231,9 +225,7 @@ class TestBug6x1DepthErrorStateCorruption:
         enter_enforcement("outer_tool", max_depth=2)
 
         # This should work (depth becomes 2)
-        result = enforcer.enforce_sync(
-            identity_tool, "arg", tool_name="inner_tool"
-        )
+        result = enforcer.enforce_sync(identity_tool, "arg", tool_name="inner_tool")
         assert result == "ok"
 
         # After the enforce_sync returns, depth should be back to 1
@@ -264,9 +256,7 @@ class TestBug6x1DepthErrorStateCorruption:
         enter_enforcement("outer_tool", max_depth=2)
 
         async def _run() -> str:
-            return await enforcer.enforce_async(
-                async_identity_tool, "arg", tool_name="inner_async"
-            )
+            return await enforcer.enforce_async(async_identity_tool, "arg", tool_name="inner_async")
 
         result = asyncio.run(_run())
         assert result == "ok"
@@ -310,9 +300,7 @@ class TestBugInteraction:
             settings.fail_open = True
             # With depth limit enforcement inside the enforcer, this
             # should work fine since we're at depth 2 (well under 10)
-            result = enforcer.enforce_sync(
-                identity_tool, "test", tool_name="inner"
-            )
+            result = enforcer.enforce_sync(identity_tool, "test", tool_name="inner")
             assert result == "ok"
         finally:
             settings.fail_open = original_fail_open
