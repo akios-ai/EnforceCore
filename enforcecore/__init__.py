@@ -137,7 +137,7 @@ from enforcecore.redactor.unicode import (
 )
 from enforcecore.telemetry import EnforceCoreInstrumentor, EnforceCoreMetrics
 
-__version__ = "1.0.19a1"
+__version__ = "1.0.20a1"
 
 __all__ = [
     "AuditBackend",
