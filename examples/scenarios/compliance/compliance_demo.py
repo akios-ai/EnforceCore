@@ -1,3 +1,5 @@
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """Compliance Demo — EU AI Act scenario with full enforcement pipeline.
 
 Demonstrates:

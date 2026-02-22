@@ -1,4 +1,4 @@
-# Copyright 2026 AKIOS AI
+# Copyright 2026 AKIOUD AI
 # SPDX-License-Identifier: Apache-2.0
 """
 EnforceCore — The runtime enforcement layer for agentic AI systems.
@@ -15,6 +15,10 @@ Basic usage::
         return await api.search(query)
 
 See https://github.com/akios-ai/EnforceCore for documentation.
+
+DISCLAIMER: This software is provided "AS IS", without warranty of any kind.
+It is a technical enforcement tool, not a compliance certification.
+See DISCLAIMER.md and LICENSE for full terms.
 """
 
 from enforcecore.auditor.backends import (

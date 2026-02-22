@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 AKIOUD AI
+# SPDX-License-Identifier: Apache-2.0
 """PII Redaction — EnforceCore v1.0.1 demo.
 
 Demonstrates automatic PII detection and redaction in the enforcement

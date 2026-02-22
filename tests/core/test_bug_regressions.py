@@ -1,4 +1,4 @@
-# Copyright 2026 AKIOS AI
+# Copyright 2026 AKIOUD AI
 # SPDX-License-Identifier: Apache-2.0
 """Regression tests for bugs found during pre-release deep audit.
 
@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 
@@ -58,7 +57,7 @@ async def async_identity_tool(*args: object, **kwargs: object) -> str:
 # ---------------------------------------------------------------------------
 
 
-class TestBug1_1_SyncFailOpenUnboundLocal:
+class TestBug1x1SyncFailOpenUnboundLocal:
     """Regression: sync fail_open with InputTooLargeError before redaction.
 
     Before the fix, if ``check_input_size()`` raised ``InputTooLargeError``
@@ -76,7 +75,7 @@ class TestBug1_1_SyncFailOpenUnboundLocal:
 
         original_fail_open = settings.fail_open
         try:
-            settings.fail_open = True  # noqa: FBT003
+            settings.fail_open = True
             # Before fix: UnboundLocalError
             # After fix: should execute and return "ok"
             result = enforcer.enforce_sync(
@@ -94,7 +93,7 @@ class TestBug1_1_SyncFailOpenUnboundLocal:
 
         original_fail_open = settings.fail_open
         try:
-            settings.fail_open = False  # noqa: FBT003
+            settings.fail_open = False
             with pytest.raises(InputTooLargeError):
                 enforcer.enforce_sync(
                     identity_tool, huge, tool_name="identity_tool"
@@ -109,7 +108,7 @@ class TestBug1_1_SyncFailOpenUnboundLocal:
 
         original_fail_open = settings.fail_open
         try:
-            settings.fail_open = True  # noqa: FBT003
+            settings.fail_open = True
 
             async def _run() -> str:
                 return await enforcer.enforce_async(
@@ -140,7 +139,7 @@ class TestBug1_1_SyncFailOpenUnboundLocal:
 # ---------------------------------------------------------------------------
 
 
-class TestBug6_1_DepthErrorStateCorruption:
+class TestBug6x1DepthErrorStateCorruption:
     """Regression: enter_enforcement() left corrupted state after depth error.
 
     Before the fix:
@@ -308,7 +307,7 @@ class TestBugInteraction:
 
         original_fail_open = settings.fail_open
         try:
-            settings.fail_open = True  # noqa: FBT003
+            settings.fail_open = True
             # With depth limit enforcement inside the enforcer, this
             # should work fine since we're at depth 2 (well under 10)
             result = enforcer.enforce_sync(

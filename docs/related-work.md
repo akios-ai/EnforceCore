@@ -370,7 +370,7 @@ If you use EnforceCore in your research, please cite:
 ```bibtex
 @software{enforcecore2026,
   title = {EnforceCore: Runtime Enforcement Layer for Agentic AI Systems},
-  author = {{AKIOS AI}},
+  author = {{AKIOUD AI}},
   year = {2026},
   url = {https://github.com/akios-ai/EnforceCore},
   license = {Apache-2.0}

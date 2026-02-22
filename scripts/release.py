@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 AKIOS AI
+# Copyright 2026 AKIOUD AI
 # SPDX-License-Identifier: Apache-2.0
 """EnforceCore release automation script.
 
