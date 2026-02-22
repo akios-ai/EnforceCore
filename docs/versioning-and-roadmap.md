@@ -15,9 +15,9 @@ Here's what each part means:
   1  .  0  .  20  a1
   │     │     │   │
   │     │     │   └── Pre-release tag: "a" = alpha, "b" = beta, "rc" = release candidate
-  │     │     └────── Patch number: increments with each release in a series
-  │     └──────────── Minor version: new features (backward-compatible)
-  └────────────────── Major version: breaking changes
+  │     │     └────── Patch number: increments with each release
+  │     └──────────── Minor version: stays at 0 for all v1.0.x releases
+  └────────────────── Major version: stays at 1
 ```
 
 ### The Four Stages of a Release

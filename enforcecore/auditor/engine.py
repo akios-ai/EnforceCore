@@ -38,7 +38,7 @@ import hashlib
 import json
 import threading
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -115,7 +115,8 @@ class AuditEntry:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AuditEntry:
         """Deserialize from a dictionary."""
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+        valid_names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in valid_names})
 
     def to_json(self) -> str:
         """Serialize to a single JSON line (no trailing newline)."""

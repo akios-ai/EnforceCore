@@ -273,7 +273,21 @@ class Enforcer:
             )
         except Exception:
             logger.error("audit_record_failed", tool=tool_name, exc_info=True)
-            if not settings.fail_open:
+            if settings.fail_open:
+                # A-2 fix: explicitly warn that the audit trail is now incomplete.
+                # The call will succeed but there will be no record of it.
+                logger.critical(
+                    "audit_trail_incomplete",
+                    tool=tool_name,
+                    call_id=call_id,
+                    decision=decision,
+                    message=(
+                        "SECURITY: fail_open=True allowed this call to proceed "
+                        "but the audit entry could not be written. The tamper-proof "
+                        "audit trail is now incomplete for this call."
+                    ),
+                )
+            else:
                 raise
 
     # -- Sync enforcement ---------------------------------------------------
@@ -308,6 +322,7 @@ class Enforcer:
         input_redactions = 0
         r_args: tuple[Any, ...] = args
         r_kwargs: dict[str, Any] = dict(kwargs)
+        redaction_applied = False
 
         # Track enforcement nesting (inside try so exit_enforcement runs on error)
         enter_enforcement(resolved_name)
@@ -362,6 +377,7 @@ class Enforcer:
 
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+            redaction_applied = True
 
             # Fire redaction hooks if redactions occurred
             if input_redactions > 0:
@@ -480,15 +496,27 @@ class Enforcer:
                 violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
             )
             raise
-        except EnforceCoreError:
+        except EnforceCoreError as exc:
             # Internal error — fail closed by default
             if settings.fail_open:
-                _warn_fail_open()
+                _warn_fail_open(tool_name=resolved_name, error=exc)
                 logger.error(
                     "enforcement_error_fail_open",
                     tool=resolved_name,
                     exc_info=True,
                 )
+                # Ensure PII is redacted even if the error occurred before
+                # the normal redaction step (H-1 fix: defense-in-depth).
+                if not redaction_applied:
+                    try:
+                        r_args, r_kwargs, _ = self._redact_args(args, kwargs)
+                    except Exception:
+                        # Redaction itself failed — nuclear fallback:
+                        # replace all string values to prevent PII leakage.
+                        r_args = tuple("[REDACTED]" if isinstance(a, str) else a for a in args)
+                        r_kwargs = {
+                            k: "[REDACTED]" if isinstance(v, str) else v for k, v in kwargs.items()
+                        }
                 # Use redacted args if available to prevent PII leakage
                 return func(*r_args, **r_kwargs)
             raise
@@ -517,6 +545,7 @@ class Enforcer:
         input_redactions = 0
         r_args: tuple[Any, ...] = args
         r_kwargs: dict[str, Any] = dict(kwargs)
+        redaction_applied = False
 
         # Track enforcement nesting (inside try so exit_enforcement runs on error)
         enter_enforcement(resolved_name)
@@ -571,6 +600,7 @@ class Enforcer:
 
             # Redact inputs
             r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+            redaction_applied = True
 
             # Fire redaction hooks for input redactions
             if input_redactions > 0:
@@ -688,14 +718,24 @@ class Enforcer:
                 violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
             )
             raise
-        except EnforceCoreError:
+        except EnforceCoreError as exc:
             if settings.fail_open:
-                _warn_fail_open()
+                _warn_fail_open(tool_name=resolved_name, error=exc)
                 logger.error(
                     "enforcement_error_fail_open",
                     tool=resolved_name,
                     exc_info=True,
                 )
+                # Ensure PII is redacted even if the error occurred before
+                # the normal redaction step (H-1 fix: defense-in-depth).
+                if not redaction_applied:
+                    try:
+                        r_args, r_kwargs, _ = self._redact_args(args, kwargs)
+                    except Exception:
+                        r_args = tuple("[REDACTED]" if isinstance(a, str) else a for a in args)
+                        r_kwargs = {
+                            k: "[REDACTED]" if isinstance(v, str) else v for k, v in kwargs.items()
+                        }
                 # Use redacted args if available to prevent PII leakage
                 return await func(*r_args, **r_kwargs)
             raise

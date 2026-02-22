@@ -337,26 +337,42 @@ def is_dev_mode() -> bool:
     return os.environ.get("ENFORCECORE_DEV_MODE", "").strip().lower() in ("1", "true", "yes")
 
 
-def _warn_fail_open() -> None:
+def _warn_fail_open(
+    *,
+    tool_name: str | None = None,
+    error: BaseException | None = None,
+) -> None:
     """Emit a loud warning if ``fail_open`` is enabled.
 
     In production, ``fail_open`` should never be used because it allows
     enforcement bypass on internal errors.  If dev mode is not enabled,
     this emits a ``RuntimeWarning``.
 
+    Args:
+        tool_name: The tool whose enforcement failed (for diagnostics).
+        error: The exception that triggered the fail-open path.
+
     .. versionchanged:: 1.0.16
        Renamed from ``warn_fail_open`` to ``_warn_fail_open`` (internal API).
+    .. versionchanged:: 1.0.21
+       Added *tool_name* and *error* parameters for diagnostic context.
     """
+    error_type = type(error).__name__ if error else "unknown"
+    error_msg = str(error) if error else ""
     if not is_dev_mode():
         warnings.warn(
             "SECURITY WARNING: fail_open is enabled without ENFORCECORE_DEV_MODE=1. "
             "In production, fail_open allows complete enforcement bypass on internal errors. "
-            "Set ENFORCECORE_DEV_MODE=1 to acknowledge this risk, or disable fail_open.",
+            "Set ENFORCECORE_DEV_MODE=1 to acknowledge this risk, or disable fail_open."
+            + (f" [tool={tool_name}, error={error_type}: {error_msg}]" if tool_name else ""),
             RuntimeWarning,
             stacklevel=3,
         )
     logger.warning(
         "fail_open_enabled",
         dev_mode=is_dev_mode(),
+        tool=tool_name,
+        error_type=error_type,
+        error_message=error_msg,
         message="Enforcement errors will fall through to unprotected execution",
     )
