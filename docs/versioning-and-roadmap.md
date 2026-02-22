@@ -8,11 +8,11 @@
 
 ## How Version Numbers Work
 
-Every EnforceCore release has a version number like **`1.0.20a1`**.
+Every EnforceCore release has a version number like **`1.0.22a1`**.
 Here's what each part means:
 
 ```
-  1  .  0  .  20  a1
+  1  .  0  .  22  a1
   │     │     │   │
   │     │     │   └── Pre-release tag: "a" = alpha, "b" = beta, "rc" = release candidate
   │     │     └────── Patch number: increments with each release
@@ -26,7 +26,7 @@ Think of it like building a house:
 
 | Stage | Version Example | What It Means | Who Should Use It |
 |-------|-----------------|---------------|-------------------|
-| **Alpha** (`a`) | `1.0.20a1` | 🏗️ **Under construction.** Core features work, but things may change. Expect rough edges. | Developers who want early access and don't mind occasional breakage |
+| **Alpha** (`a`) | `1.0.22a1` | 🏗️ **Under construction.** Core features work, but things may change. Expect rough edges. | Developers who want early access and don't mind occasional breakage |
 | **Beta** (`b`) | `1.0.25b1` | 🏠 **Walls are up.** All planned features are done. We're fixing bugs, not adding features. | Early adopters who want to test before everyone else |
 | **Release Candidate** (`rc`) | `1.0.28rc1` | 🏡 **Final inspection.** We believe it's ready. If no bugs are found, this becomes the stable release. | Teams preparing for production deployment |
 | **Stable** | `1.0.0` | ✅ **Move-in ready.** Fully tested, documented, and supported. Safe for production. | Everyone |
@@ -44,7 +44,7 @@ Think of it like building a house:
 
 ## Where EnforceCore Is Today
 
-**Current version: `1.0.20a1` (Alpha)**
+**Current version: `1.0.22a1` (Alpha)**
 **Published:** February 22, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
 
 ### What "Alpha" Means for You
@@ -58,7 +58,7 @@ Think of it like building a house:
 - Audit trail with Merkle-chain verification
 - Policy-as-YAML configuration
 - Async support
-- 1,472 tests passing, 95%+ code coverage
+- 1,503 tests passing, 95%+ code coverage
 
 ⚠️ **What may change before stable:**
 - Some internal APIs may be renamed or reorganized
@@ -81,8 +81,8 @@ Here's the plan, release by release:
 
 | Release | Focus | Key Changes |
 |---------|-------|-------------|
-| **v1.0.21a1** | 🔒 Security quick wins | Fix PII leak on fail_open path, log async hook errors, use public dataclass API |
-| **v1.0.22a1** | 🏗️ Infrastructure | Policy cache with mtime invalidation, shared thread pool (no more per-call pools), larger audit seek window |
+| **v1.0.21a1** | ✅ Security quick wins | Fix PII leak on fail_open path, log async hook errors, use public dataclass API |
+| **v1.0.22a1** | ✅ Infrastructure | Policy cache with mtime invalidation, shared thread pool (no more per-call pools), larger audit seek window |
 | **v1.0.23a1** | 🛡️ New audit findings | Fix pre-hook PII exposure, audit failure handling in fail_open, entropy check for API key detection |
 | **v1.0.24a1** | ⚡ Architecture | Refactor sync/async enforcement into shared pipeline, fix unicode normalization offset mapping |
 
@@ -135,12 +135,12 @@ Once stable, version numbers follow [Semantic Versioning](https://semver.org/):
 ### Alpha → Beta Checklist
 
 - [ ] All known security findings from audit are fixed
-- [ ] No known data leaks (PII, secrets) under any code path
-- [ ] Thread safety verified under concurrent load
-- [ ] Policy cache properly invalidates on file changes
+- [x] No known data leaks (PII, secrets) under any code path
+- [x] Thread safety verified under concurrent load
+- [x] Policy cache properly invalidates on file changes
 - [ ] Sync and async paths share a single enforcement pipeline
 - [ ] Unicode evasion fully mitigated
-- [ ] All 1,472+ tests pass on Python 3.11, 3.12, 3.13
+- [x] All 1,503+ tests pass on Python 3.11, 3.12, 3.13
 
 ### Beta → Release Candidate Checklist
 
@@ -165,7 +165,7 @@ Once stable, version numbers follow [Semantic Versioning](https://semver.org/):
 ## FAQ
 
 **Q: Can I use the alpha in my project today?**
-A: Yes, but pin the exact version (`enforcecore==1.0.20a1`) and be prepared
+A: Yes, but pin the exact version (`enforcecore==1.0.22a1`) and be prepared
 to update your code when the API stabilizes.
 
 **Q: Will my code break when you release beta?**

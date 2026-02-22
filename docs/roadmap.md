@@ -1081,6 +1081,43 @@ Broken links, stale tables, missing credits, inconsistent tone — any of these 
 
 ---
 
+## v1.0.21 — Security Fixes
+**Focus:** Address high-severity findings from deep re-audit of fail-open paths, async hooks, and internal APIs.
+
+### What shipped:
+- **[H-1]** `enforce_sync`/`enforce_async`: when `fail_open=True` and an `EnforceCoreError` fires before `_redact_args()`, the fail-open path now calls `_redact_args()` before executing `func()`. Nuclear fallback replaces all string args with `[REDACTED]` if redaction itself fails.
+- **[M-3]** `_on_background_task_done()`: fire-and-forget async hook tasks now log exceptions via `logger.warning("async_hook_error")` instead of silently discarding them.
+- **[L-3]** `AuditEntry.from_dict()`: replaced private `cls.__dataclass_fields__` with `dataclasses.fields(cls)`.
+- **[A-1]** `_warn_fail_open()`: accepts `tool_name` and `error` kwargs for richer diagnostics.
+- **[A-2]** `_record_audit()`: emits `logger.critical("audit_trail_incomplete")` when audit fails under `fail_open=True`.
+- **15 regression tests** in `tests/core/test_v1021_fixes.py`
+
+### Definition of Done:
+- [x] All 5 security findings fixed
+- [x] 15 regression tests passing
+- [x] 1487 total tests passing
+- [x] Published to PyPI
+
+---
+
+## v1.0.22 — Infrastructure Hardening
+**Focus:** Harden caching, threading, and audit infrastructure based on audit findings.
+
+### What shipped:
+- **[H-3]** Policy cache stores `(Policy, mtime)` tuples; checks `path.stat().st_mtime` on every lookup. Stale entries auto-evicted.
+- **[H-2/M-1]** `ResourceGuard` uses a shared `ThreadPoolExecutor(max_workers=4)` with daemon threads instead of per-call pool creation. `leaked_thread_count` property tracks timeout leaks.
+- **[L-4]** `Auditor._resume_chain()` uses binary-mode `seek()` with 64KB window and `decode("utf-8", errors="replace")`. Retry with doubled window on parse failure.
+- **[A-3]** `_background_tasks` set capped at 1,000 entries with `background_tasks_limit_reached` warning.
+- **16 regression tests** in `tests/core/test_v1022_fixes.py`
+
+### Definition of Done:
+- [x] All 4 infrastructure findings fixed
+- [x] 16 regression tests passing
+- [x] 1503 total tests passing
+- [x] Published to PyPI
+
+---
+
 ## v1.0.0 — Stable Release 🎯
 **Focus:** The official stable release. Production-ready for the world.
 
@@ -1165,11 +1202,15 @@ v1.0.6a                            CLI       Telemetry            API Docs  Thre
                                    Profiling  Integ     Versioning
 
                                    Phase 7: Hardening & Release
-                                   v1.0.17a  v1.0.18a  v1.0.19a  v1.0.20a  → v1.0.0 STABLE
-                                   Adversar-  Security  Pre-Rel   Packaging   Release
+                                   v1.0.17a  v1.0.18a  v1.0.19a  v1.0.20a
+                                   Adversar-  Security  Pre-Rel   Packaging
                                    ial Eval   Landscape Polish    PyPI
                                    Multi-     Defense   Ack &     Signing
                                    Stage      in-Depth  Community Docs Site
+
+                                   v1.0.21a  v1.0.22a  → v1.0.0 STABLE
+                                   Security  Infra       Release
+                                   Fixes     Hardening
 ```
 
 Each release makes the framework meaningfully more capable and more credible.
@@ -1203,6 +1244,8 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.18a1 | Security Landscape & Positioning | 1461 | ✅ Shipped |
 | v1.0.19a1 | Pre-Release Polish & Community | 1461 | ✅ Shipped |
 | v1.0.20a1 | Packaging & Publication | 1461 | ✅ Shipped |
+| v1.0.21a1 | Security Fixes | 1487 | ✅ Shipped |
+| v1.0.22a1 | Infrastructure Hardening | 1503 | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |
 
 ---
