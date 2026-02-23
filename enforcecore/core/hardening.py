@@ -39,6 +39,15 @@ MAX_TOOL_NAME_LENGTH: int = 256
 MAX_INPUT_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
 """Default maximum input payload size (sum of string/bytes args)."""
 
+MIN_INPUT_SIZE_BYTES: int = 64
+"""Minimum allowed value for ``max_bytes`` in :func:`check_input_size`.
+
+Setting ``max_bytes`` below this floor (e.g. 0 or -1) would silently disable
+input-size checking.  The floor prevents accidental misconfiguration.
+
+.. versionadded:: 1.0.24
+"""
+
 MAX_ENFORCEMENT_DEPTH: int = 10
 """Maximum nested enforcement depth before raising ``EnforcementDepthError``."""
 
@@ -122,14 +131,25 @@ def check_input_size(
     Args:
         args: Positional arguments.
         kwargs: Keyword arguments.
-        max_bytes: Maximum allowed total size in bytes.
+        max_bytes: Maximum allowed total size in bytes.  Must be at least
+            :data:`MIN_INPUT_SIZE_BYTES` (64) to prevent accidental disabling.
 
     Returns:
         The measured size in bytes.
 
     Raises:
+        HardeningError: If *max_bytes* is below the minimum floor.
         InputTooLargeError: If the total exceeds *max_bytes*.
+
+    .. versionchanged:: 1.0.24
+       Added minimum floor enforcement for *max_bytes*.
     """
+    if max_bytes < MIN_INPUT_SIZE_BYTES:
+        raise HardeningError(
+            f"max_bytes ({max_bytes}) is below the minimum floor "
+            f"({MIN_INPUT_SIZE_BYTES}). This would silently disable "
+            f"input-size checking."
+        )
     total = 0
     for a in args:
         if isinstance(a, str):

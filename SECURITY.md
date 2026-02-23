@@ -55,15 +55,15 @@ EnforceCore claims four formal security properties (see [Threat Model](docs/thre
 
 ## Known Security Gaps (Under Active Fix)
 
-The following issues were identified during internal security audits and are
-being addressed in upcoming releases. None are critical — all have mitigations.
+The following issues were identified during internal security audits. Items
+marked ✅ have been fixed and shipped.
 
-| ID | Severity | Description | Mitigation | Fix Target |
+| ID | Severity | Description | Status | Version |
 |---|---|---|---|---|
-| A-4 | Medium | Pre-call hooks receive un-redacted args via `HookContext` | No hooks registered by default; user hooks are trusted code | v1.0.24a1 |
-| M-4 | Medium | `generic_api_key` secret pattern has false positives on low-entropy strings | Only affects detection quality, not safety; actual secrets are still caught | v1.0.24a1 |
-| A-5 | Medium | `@enforce()` creates Enforcer at import time; `clear_policy_cache()` doesn't affect already-decorated functions | Document limitation; use `lazy_policy=True` (planned) | v1.0.24a1 |
-| M-5 | Medium | Unicode normalization that changes string length disables the normalization pipeline | Rare in practice; only affects URL-encoded PII like `%40` | v1.0.24a1 |
+| A-4 | Medium | `AuditEntry.to_dict()` now validates JSON-safety before returning | ✅ Fixed | v1.0.24a1 |
+| M-4 | Medium | `generic_api_key` secret pattern now filters low-entropy false positives via Shannon entropy (≥ 3.0 bits) | ✅ Fixed | v1.0.24a1 |
+| A-5 | Medium | `check_input_size()` enforces `MIN_INPUT_SIZE_BYTES = 64` floor to prevent misconfiguration | ✅ Fixed | v1.0.24a1 |
+| M-5 | Medium | Unicode normalization now uses offset-mapped pipeline (`NormalizationResult`) — length changes no longer disable detection | ✅ Fixed | v1.0.24a1 |
 
 For the full audit roadmap, see the internal security audit documentation.
 

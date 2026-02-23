@@ -239,3 +239,119 @@ class TestPrepareForDetection:
         result1 = prepare_for_detection(text)
         result2 = prepare_for_detection(result1)
         assert result1 == result2
+
+
+# ---------------------------------------------------------------------------
+# M-5: Offset-mapped normalization (v1.0.24a1)
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizationResult:
+    """Tests for prepare_for_detection_mapped and NormalizationResult."""
+
+    def test_no_change_identity_map(self) -> None:
+        """Plain ASCII text should have identity offset map."""
+        from enforcecore.redactor.unicode import prepare_for_detection_mapped
+
+        result = prepare_for_detection_mapped("hello world")
+        assert result.text == "hello world"
+        assert result.length_changed is False
+        assert result.offset_map == list(range(11))
+
+    def test_zero_width_stripped_with_offsets(self) -> None:
+        """Zero-width chars should be stripped with correct offset mapping."""
+        from enforcecore.redactor.unicode import prepare_for_detection_mapped
+
+        text = "j\u200bohn@example.com"
+        result = prepare_for_detection_mapped(text)
+        assert result.text == "john@example.com"
+        assert result.length_changed is True
+        # 'j' at idx 0 maps to original 0
+        # 'o' at idx 1 maps to original 2 (zero-width at 1 was stripped)
+        assert result.offset_map[0] == 0
+        assert result.offset_map[1] == 2
+
+    def test_url_decode_with_offsets(self) -> None:
+        """URL-decoded %40 → @ should have correct offset mapping."""
+        from enforcecore.redactor.unicode import prepare_for_detection_mapped
+
+        text = "john%40example.com"
+        result = prepare_for_detection_mapped(text)
+        assert result.text == "john@example.com"
+        assert result.length_changed is True
+
+    def test_map_span_roundtrip(self) -> None:
+        """map_span should correctly map normalized positions to original."""
+        from enforcecore.redactor.unicode import prepare_for_detection_mapped
+
+        text = "j\u200bohn@example.com"
+        result = prepare_for_detection_mapped(text)
+        # The email "john@example.com" starts at 0 in normalized text
+        orig_start, orig_end = result.map_span(0, 16)
+        assert orig_start == 0
+        # Original text has the zero-width char, so end should be 17
+        assert orig_end == 17
+
+    def test_homoglyph_preserves_length(self) -> None:
+        """Homoglyph replacement is 1:1 so length shouldn't change."""
+        from enforcecore.redactor.unicode import prepare_for_detection_mapped
+
+        text = "j\u043ehn@example.com"  # Cyrillic o
+        result = prepare_for_detection_mapped(text)
+        assert result.text == "john@example.com"
+        assert result.length_changed is False
+
+    def test_mixed_normalization_with_offsets(self) -> None:
+        """Combined zero-width + homoglyph + URL-encode should all work."""
+        from enforcecore.redactor.unicode import prepare_for_detection_mapped
+
+        text = "\u200bj\u043ehn%40example.com"
+        result = prepare_for_detection_mapped(text)
+        assert result.text == "john@example.com"
+        assert result.length_changed is True
+
+    def test_empty_string(self) -> None:
+        from enforcecore.redactor.unicode import prepare_for_detection_mapped
+
+        result = prepare_for_detection_mapped("")
+        assert result.text == ""
+        assert result.offset_map == []
+        assert result.length_changed is False
+
+
+class TestM5RedactorIntegration:
+    """M-5 fix: Redactor should detect PII through unicode evasion."""
+
+    def test_zero_width_email_detected(self) -> None:
+        """Email with zero-width chars should still be detected and redacted."""
+        from enforcecore.redactor.engine import Redactor
+
+        r = Redactor()
+        result = r.redact("Contact j\u200bohn@example.com please")
+        assert "john" not in result.text
+        assert result.count >= 1
+
+    def test_url_encoded_email_detected(self) -> None:
+        """Email with %40 should still be detected."""
+        from enforcecore.redactor.engine import Redactor
+
+        r = Redactor()
+        result = r.redact("Email john%40example.com")
+        assert result.count >= 1
+
+    def test_homoglyph_email_detected(self) -> None:
+        """Email with Cyrillic 'o' should still be detected."""
+        from enforcecore.redactor.engine import Redactor
+
+        r = Redactor()
+        result = r.redact("Email j\u043ehn@example.com")
+        assert result.count >= 1
+
+    def test_mixed_evasion_email_detected(self) -> None:
+        """Email with zero-width + URL-encode + homoglyph."""
+        from enforcecore.redactor.engine import Redactor
+
+        r = Redactor()
+        text = "\u200bj\u043ehn%40example.com"
+        result = r.redact(text)
+        assert result.count >= 1

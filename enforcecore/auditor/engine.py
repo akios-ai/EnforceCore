@@ -109,8 +109,21 @@ class AuditEntry:
         return self
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to a dictionary (for JSON output)."""
-        return asdict(self)
+        """Serialize to a dictionary (for JSON output).
+
+        Validates that the resulting dict is JSON-serializable.  If any
+        field contains a non-serializable value (``datetime``, ``bytes``,
+        ``set``, custom object), raises :class:`AuditError`.
+
+        .. versionchanged:: 1.0.24
+           Added JSON-safety validation.
+        """
+        d = asdict(self)
+        try:
+            json.dumps(d, sort_keys=True)
+        except (TypeError, ValueError) as exc:
+            raise AuditError(f"AuditEntry contains non-JSON-safe data: {exc}") from exc
+        return d
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AuditEntry:
