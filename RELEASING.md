@@ -46,7 +46,34 @@ Complete runbook for shipping EnforceCore releases to PyPI.
 
 ---
 
-## Full Release Process
+## CI Parity — Local ≡ CI
+
+> **Lesson learned from v1.0.21a1:** The release script ran pytest without
+> `--timeout=60` or `HYPOTHESIS_MAX_EXAMPLES=10`. Tests passed locally (no
+> timeout) but failed in CI (60s timeout killed slow tests). The tag was
+> pushed, CI failed, and v1.0.21a1 never reached PyPI. **This was only
+> discovered a day later by manually checking GitHub Actions.**
+
+The release script now enforces **exact CI parity**:
+
+| Setting | CI (`release.yml`) | Local (`release.py`) | Status |
+|---|---|---|---|
+| `--timeout=60` | ✅ | ✅ (since v1.0.23a1) | **Fixed** |
+| `HYPOTHESIS_MAX_EXAMPLES=10` | ✅ | ✅ (since v1.0.23a1) | **Fixed** |
+| `pytest-timeout` installed | ✅ (`pip install … pytest-timeout`) | ✅ (auto-installed + in `[dev]`) | **Fixed** |
+| `ruff check` | ✅ | ✅ | Already matched |
+| `ruff format --check` | ✅ | ✅ | Already matched |
+| `mypy enforcecore/` | ✅ | ✅ | Already matched |
+
+**If you change any CI test flags, update these constants in `scripts/release.py`:**
+
+```python
+_CI_PYTEST_TIMEOUT = "60"       # must match release.yml --timeout
+_CI_HYPOTHESIS_MAX = "10"       # must match release.yml HYPOTHESIS_MAX_EXAMPLES
+_CI_REQUIRED_PACKAGES = ["pytest-timeout"]  # must match release.yml pip install
+```
+
+---
 
 ### The Automated Way (recommended)
 
@@ -157,9 +184,11 @@ quality (macOS × 3.11/3.12/3.13)
 
 | Issue | Cause | Solution |
 |---|---|---|
+| **Local tests pass, CI fails (v1.0.21a1)** | `release.py` ran pytest without `--timeout=60` — CI enforces it | Fixed: release.py now uses identical CI flags |
 | Ubuntu pytest hangs | RLIMIT_AS memory tests + hypothesis on slow runners | macOS-only for release gate; `pytest-timeout=60` added |
 | `ruff format --check` fails | Formatting not checked locally before push | Release script now checks this automatically |
 | OIDC publish fails | Missing `pypi` environment or trusted publisher | Check repo Settings → Environments |
+| Tag points to broken commit | Tag pushed before fix was committed | Always verify tests pass with CI flags *before* tagging |
 
 ---
 
@@ -167,13 +196,15 @@ quality (macOS × 3.11/3.12/3.13)
 
 Every release verifies:
 
-1. **No `internal/` leakage** — Private `internal/` directory excluded from
+1. **CI parity** — Local quality gate runs with identical flags as CI
+   (`--timeout=60`, `HYPOTHESIS_MAX_EXAMPLES=10`, same packages)
+2. **No `internal/` leakage** — Private `internal/` directory excluded from
    both wheel and sdist
-2. **Clean install** — Fresh venv can install and import all public symbols
-3. **All tests pass** — Full 1503+ test suite green
-4. **Type safety** — mypy strict mode on all source files
-5. **Code quality** — ruff lint + format checks
-6. **Functional** — PII redaction, tool denial, audit trail, content rules
+3. **Clean install** — Fresh venv can install and import all public symbols
+4. **All tests pass** — Full 1503+ test suite green with 60s/test timeout
+5. **Type safety** — mypy strict mode on all source files
+6. **Code quality** — ruff lint + format checks
+7. **Functional** — PII redaction, tool denial, audit trail, content rules
    all work from the published package
 
 ---
@@ -189,6 +220,39 @@ Every release verifies:
 
 Pre-release versions are automatically marked as such on both PyPI and
 GitHub Releases.
+
+---
+
+## Release History & Lessons Learned
+
+### v1.0.21a1 — CI Failure (never published to PyPI)
+
+**What happened:** H-1 tests used dense PII data (10 MB of repeated emails).
+Tests passed locally (no timeout) but exceeded the 60-second CI timeout.
+The tag was pushed, CI failed, and the version never reached PyPI. The failure
+was discovered a day later by manually checking GitHub Actions.
+
+**Root cause:** `scripts/release.py` ran `pytest -q --tb=short` but CI ran
+`pytest --timeout=60` with `HYPOTHESIS_MAX_EXAMPLES=10`. The local quality
+gate was strictly weaker than CI.
+
+**Fix (applied in v1.0.23a1):**
+1. `release.py` now uses `--timeout=60` and sets `HYPOTHESIS_MAX_EXAMPLES=10`
+2. `pytest-timeout` added to `[dev]` dependencies
+3. `release.py` auto-installs CI-required packages if missing
+4. CI parity constants documented in `release.py` with comments pointing to
+   `release.yml`
+
+**v1.0.21a1 status:** Tag exists on GitHub pointing to commit `0659cb9`
+(broken). v1.0.22a1 supersedes it with the same fixes + sparse PII tests.
+The PyPI gap (1.0.20a1 → 1.0.22a1) is intentional and documented.
+
+### v1.0.20a1 — ruff format CI failure
+
+**What happened:** `ruff format --check` failed in CI because formatting
+wasn't checked locally before push.
+
+**Fix:** Release script added `ruff format --check` to the local quality gate.
 
 ---
 

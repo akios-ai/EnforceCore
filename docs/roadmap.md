@@ -1244,9 +1244,13 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.18a1 | Security Landscape & Positioning | 1461 | ✅ Shipped |
 | v1.0.19a1 | Pre-Release Polish & Community | 1461 | ✅ Shipped |
 | v1.0.20a1 | Packaging & Publication | 1461 | ✅ Shipped |
-| v1.0.21a1 | Security Fixes | 1487 | ✅ Shipped |
+| v1.0.21a1 | Security Fixes | 1487 | ⚠️ Code shipped, not on PyPI* |
 | v1.0.22a1 | Infrastructure Hardening | 1503 | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |
+
+> *v1.0.21a1 code changes are included in v1.0.22a1. The v1.0.21a1 tag
+> failed CI (test timeout) and was never published to PyPI. See RELEASING.md
+> for the full post-mortem.
 
 ---
 
