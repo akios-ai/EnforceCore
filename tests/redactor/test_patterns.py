@@ -269,7 +269,6 @@ class TestPatternMatching:
         assert not p.regex.search("Employee EMP-12345 is active")
 
     def test_case_insensitive_regex(self):
-
         PatternRegistry.register("code", r"(?i)CODE-[A-Z]{4}")
         p = PatternRegistry.get("code")
         assert p is not None

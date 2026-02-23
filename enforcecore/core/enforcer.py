@@ -782,7 +782,7 @@ def _resolve_policy(
     if isinstance(policy, Policy):
         return policy
 
-    if isinstance(policy, (str, Path)):
+    if isinstance(policy, str | Path):
         return _load_and_cache(str(policy))
 
     # Fall back to default from settings

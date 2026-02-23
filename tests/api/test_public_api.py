@@ -316,9 +316,9 @@ class TestEnforcerInterface:
     @pytest.mark.parametrize("method", sorted(REMOVED_METHODS))
     def test_removed_method(self, method: str) -> None:
         """Deprecated methods must NOT be present."""
-        assert not hasattr(enforcecore.Enforcer, method), (
-            f"Enforcer.{method} should have been removed in v1.0.16"
-        )
+        assert not hasattr(
+            enforcecore.Enforcer, method
+        ), f"Enforcer.{method} should have been removed in v1.0.16"
 
 
 # ---------------------------------------------------------------------------
@@ -492,9 +492,9 @@ class TestVersionString:
         import re
 
         pattern = r"^\d+\.\d+\.\d+(a\d+|b\d+|rc\d+)?$"
-        assert re.match(pattern, enforcecore.__version__), (
-            f"Version {enforcecore.__version__!r} does not match PEP 440 pattern"
-        )
+        assert re.match(
+            pattern, enforcecore.__version__
+        ), f"Version {enforcecore.__version__!r} does not match PEP 440 pattern"
 
 
 # ---------------------------------------------------------------------------
