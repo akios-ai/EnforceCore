@@ -325,11 +325,11 @@ def inspect(
         dec = entry.get("decision", "?")
         dec_color = "green" if dec == "allowed" else "red"
         duration = entry.get("call_duration_ms") or entry.get("duration_ms")
-        dur_str = f"{duration:.1f}ms" if isinstance(duration, (int, float)) else "?"
+        dur_str = f"{duration:.1f}ms" if isinstance(duration, int | float) else "?"
         redactions = entry.get("input_redactions", 0)
         out_redactions = entry.get("output_redactions", 0)
-        redact_in = int(redactions) if isinstance(redactions, (int, float)) else 0
-        redact_out = int(out_redactions) if isinstance(out_redactions, (int, float)) else 0
+        redact_in = int(redactions) if isinstance(redactions, int | float) else 0
+        redact_out = int(out_redactions) if isinstance(out_redactions, int | float) else 0
         total_redactions = redact_in + redact_out
 
         table.add_row(
