@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.24a1] — 2026-02-24
+
+### Security
+
+- **[A-4]** `AuditEntry.to_dict()` now validates JSON-safety via `json.dumps()`
+  before returning. Non-serialisable extras raise `AuditError` immediately
+  instead of silently producing corrupt audit data.
+- **[M-4]** `SecretScanner.detect()` applies a Shannon entropy filter
+  (`_GENERIC_KEY_MIN_ENTROPY = 3.0`) to `generic_api_key` matches. Low-entropy
+  false positives (e.g. `key=aaaaaabbbbbb`) are now suppressed.
+- **[A-5]** `check_input_size()` enforces `MIN_INPUT_SIZE_BYTES = 64` floor.
+  Passing `max_bytes < 64` now raises `HardeningError`, preventing
+  misconfiguration that could silently block all inputs.
+- **[M-5]** Unicode normalization pipeline rewritten with offset mapping.
+  New `NormalizationResult` dataclass tracks position changes through all 5
+  normalization steps (NFC, zero-width strip, homoglyph, URL-decode,
+  HTML-decode). `Redactor.detect()` now runs regex on normalised text and
+  maps entity positions back to the original string via `map_span()`.
+  Previously, length-changing normalisations (e.g. `%40` → `@`) disabled
+  the entire pipeline, allowing Unicode evasion of PII detection.
+
+### Changed
+
+- **[A-8]** `Redactor.detect()` and `SecretScanner.detect()` now return
+  entities in ascending order by start position (was descending).
+  `Redactor.redact()` internally uses `reversed()` for right-to-left
+  replacement. No double-reverse in `RedactionResult.entities`.
+- **[M-2]** `Enforcer` refactored: extracted 7 shared helper methods
+  (`_prepare_call`, `_validate_pre_call`, `_redact_and_check_budget`,
+  `_process_result`, `_log_and_audit_allowed`, `_handle_enforcement_violation`,
+  `_fail_open_redact_fallback`) from `enforce_sync`/`enforce_async`.
+  Eliminates ~130 lines of duplication. Both paths now call identical
+  validation logic, differing only at async boundaries.
+
+### Tests
+
+- Added 15 new tests: 4 for A-5 minimum floor, 8 for M-5 offset mapping
+  (`TestNormalizationResult`), 4 for M-5 end-to-end Redactor integration
+  (`TestM5RedactorIntegration`). Updated A-8 sort-order test to ascending.
+
 ## [1.0.23a1] — 2026-02-23
 
 ### Fixed
@@ -25,12 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added "Known Security Gaps" section to `SECURITY.md` documenting A-4, M-4,
   A-5, M-5 audit findings with mitigations and fix targets.
 - Added CI Parity section and v1.0.21a1 post-mortem to `RELEASING.md`.
-
-### Planned — Next Releases
-
-- **[A-4]** Tighten `AuditEntry.to_dict()` serialisation (reject non-JSON-safe extras)
-- **[M-4]** Add entropy check to `generic_api_key` secret scanner regex
-- **[A-5]** Enforce minimum `max_input_bytes` floor (e.g. 64) to prevent misconfiguration
 
 ## [1.0.22a1] — 2026-02-22
 

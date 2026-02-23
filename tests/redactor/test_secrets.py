@@ -282,16 +282,16 @@ class TestOverlapRemoval:
 
 
 # ---------------------------------------------------------------------------
-# Descending sort order
+# Ascending sort order (changed in v1.0.24a1 from descending)
 # ---------------------------------------------------------------------------
 
 
 class TestSortOrder:
-    def test_results_sorted_descending_by_start(self, scanner: SecretScanner):
+    def test_results_sorted_ascending_by_start(self, scanner: SecretScanner):
         text = "first AKIAIOSFODNN7EXAMPLE then ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij"
         secrets = scanner.detect(text)
         if len(secrets) >= 2:
-            assert secrets[0].start >= secrets[1].start
+            assert secrets[0].start <= secrets[1].start
 
 
 # ---------------------------------------------------------------------------

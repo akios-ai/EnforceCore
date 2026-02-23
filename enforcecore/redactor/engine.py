@@ -37,7 +37,9 @@ from enforcecore.redactor.secrets import (
     get_secret_mask,
     get_secret_placeholder,
 )
-from enforcecore.redactor.unicode import prepare_for_detection
+from enforcecore.redactor.unicode import (
+    prepare_for_detection_mapped,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -213,17 +215,22 @@ class Redactor:
     def detect(self, text: str) -> list[DetectedEntity]:
         """Detect PII entities in text without redacting.
 
-        Returns entities sorted by start position (descending) for safe
-        replacement from right to left.
+        Returns entities sorted by start position (ascending, left-to-right).
 
         Includes built-in PII patterns, custom patterns from the
         PatternRegistry, and secret patterns if enabled.
+
+        .. versionchanged:: 1.0.24
+           Entities now returned in ascending order (was descending).
+           Callers that iterate for replacement should use ``reversed()``.
+           Now always uses normalized text for detection with offset
+           mapping back to original positions (M-5 fix).
         """
-        # Apply unicode normalization to defeat evasion techniques.
-        # If normalization changes text length, fall back to original to
-        # avoid position mismatch when slicing for replacement.
-        normalized = prepare_for_detection(text)
-        use_text = text if len(normalized) != len(text) else normalized
+        # Apply unicode normalization with offset mapping (M-5).
+        # Always use normalized text for regex — the offset map lets us
+        # translate positions back to the original text.
+        norm = prepare_for_detection_mapped(text)
+        use_text = norm.text
         entities: list[DetectedEntity] = []
 
         # Built-in PII patterns
@@ -274,11 +281,23 @@ class Redactor:
                     )
                 )
 
+        # Map entity positions from normalized text back to original text
+        if norm.length_changed:
+            entities = [
+                DetectedEntity(
+                    category=e.category,
+                    start=norm.map_span(e.start, e.end)[0],
+                    end=norm.map_span(e.start, e.end)[1],
+                    text=text[norm.map_span(e.start, e.end)[0] : norm.map_span(e.start, e.end)[1]],
+                )
+                for e in entities
+            ]
+
         # Remove overlapping entities (keep longer match)
         entities = self._remove_overlaps(entities)
 
-        # Sort by start position descending for safe right-to-left replacement
-        entities.sort(key=lambda e: e.start, reverse=True)
+        # Sort by start position ascending (left-to-right, natural order)
+        entities.sort(key=lambda e: e.start)
         return entities
 
     # -- Redaction ------------------------------------------------------------
@@ -300,7 +319,7 @@ class Redactor:
         events: list[RedactionEvent] = []
 
         # Replace from right to left to preserve positions
-        for entity in entities:
+        for entity in reversed(entities):
             replacement = self._get_replacement(entity)
             result_text = result_text[: entity.start] + replacement + result_text[entity.end :]
             events.append(
@@ -322,8 +341,8 @@ class Redactor:
         return RedactionResult(
             text=result_text,
             original_text=text,
-            entities=list(reversed(entities)),  # Return in left-to-right order
-            events=list(reversed(events)),
+            entities=entities,  # Already in ascending order
+            events=list(reversed(events)),  # Events in left-to-right order
         )
 
     # -- Strategy implementation ----------------------------------------------

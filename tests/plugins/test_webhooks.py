@@ -25,7 +25,7 @@ class _WebhookHandler(BaseHTTPRequestHandler):
     received: ClassVar[list[dict[str, Any]]] = []
     status_code: ClassVar[int] = 200
 
-    def do_POST(self) -> None:  # noqa: N802
+    def do_POST(self) -> None:
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         _WebhookHandler.received.append(json.loads(body))

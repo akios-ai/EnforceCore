@@ -122,9 +122,29 @@ class TestCheckInputSize:
         assert size == len(b"hello") + 5 + len(b"val")
 
     def test_exceeds_limit_raises(self) -> None:
-        big = "x" * 100
+        big = "x" * 200
         with pytest.raises(InputTooLargeError, match="exceeds limit"):
-            check_input_size((big,), {}, max_bytes=50)
+            check_input_size((big,), {}, max_bytes=100)
+
+    def test_min_floor_zero_raises(self) -> None:
+        """A-5: max_bytes=0 should raise HardeningError, not silently pass."""
+        with pytest.raises(HardeningError, match="below the minimum floor"):
+            check_input_size((), {}, max_bytes=0)
+
+    def test_min_floor_negative_raises(self) -> None:
+        """A-5: max_bytes=-1 should raise HardeningError."""
+        with pytest.raises(HardeningError, match="below the minimum floor"):
+            check_input_size((), {}, max_bytes=-1)
+
+    def test_min_floor_63_raises(self) -> None:
+        """A-5: max_bytes=63 (just below floor) should raise."""
+        with pytest.raises(HardeningError, match="below the minimum floor"):
+            check_input_size((), {}, max_bytes=63)
+
+    def test_min_floor_64_ok(self) -> None:
+        """A-5: max_bytes=64 (exactly at floor) should work."""
+        size = check_input_size(("hello",), {}, max_bytes=64)
+        assert size == 5
 
     def test_exactly_at_limit_ok(self) -> None:
         data = "x" * 100

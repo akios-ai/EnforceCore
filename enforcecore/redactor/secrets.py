@@ -23,12 +23,40 @@ Thread-safe: pattern compilation at import time, stateless detection.
 
 from __future__ import annotations
 
+import math
 import re
+from collections import Counter
 from dataclasses import dataclass
 
 import structlog
 
 logger = structlog.get_logger("enforcecore.secrets")
+
+# ---------------------------------------------------------------------------
+# Shannon entropy helper (for generic_api_key false-positive filtering)
+# ---------------------------------------------------------------------------
+
+_GENERIC_KEY_MIN_ENTROPY: float = 3.0
+"""Minimum Shannon entropy (bits/char) for a ``generic_api_key`` match.
+
+Real API keys have entropy > 3.5 bits/char.  Placeholder values like
+``YOUR_KEY_HERE`` (~2.8) or ``aaaaaaaaaaaaaaaa`` (0.0) are filtered out.
+
+.. versionadded:: 1.0.24
+"""
+
+
+def _shannon_entropy(s: str) -> float:
+    """Calculate Shannon entropy in bits per character.
+
+    Returns 0.0 for empty strings.  Real API keys typically have
+    entropy > 3.5 bits/char; placeholders are below 3.0.
+    """
+    if not s:
+        return 0.0
+    counts = Counter(s)
+    length = len(s)
+    return -sum((c / length) * math.log2(c / length) for c in counts.values())
 
 
 # ---------------------------------------------------------------------------
@@ -216,12 +244,31 @@ class SecretScanner:
 
         Returns a list of DetectedSecret objects sorted by start position
         (descending) for safe right-to-left replacement.
+
+        For ``generic_api_key`` matches, a Shannon entropy check filters
+        out low-entropy placeholder values (e.g. ``YOUR_KEY_HERE``).
+
+        .. versionchanged:: 1.0.24
+           Added Shannon entropy filtering for ``generic_api_key``.
         """
         secrets: list[DetectedSecret] = []
 
         for cat in self._categories:
             pattern = _SECRET_PATTERNS[cat]
             for match in pattern.finditer(text):
+                # M-4: filter low-entropy generic_api_key matches
+                if cat == "generic_api_key" and match.lastindex:
+                    key_value = match.group(1)
+                    entropy = _shannon_entropy(key_value)
+                    if entropy < _GENERIC_KEY_MIN_ENTROPY:
+                        logger.debug(
+                            "generic_api_key_low_entropy",
+                            value_preview=key_value[:8] + "...",
+                            entropy=round(entropy, 2),
+                            threshold=_GENERIC_KEY_MIN_ENTROPY,
+                        )
+                        continue
+
                 secrets.append(
                     DetectedSecret(
                         category=cat,
@@ -234,8 +281,9 @@ class SecretScanner:
         # Remove overlaps (keep longer match)
         secrets = _remove_overlaps(secrets)
 
-        # Sort descending for right-to-left replacement
-        secrets.sort(key=lambda s: s.start, reverse=True)
+        # Sort ascending by start position (left-to-right, natural order)
+        # Callers that need right-to-left replacement should use reversed().
+        secrets.sort(key=lambda s: s.start)
         return secrets
 
     def scan_and_report(self, text: str) -> dict[str, int]:

@@ -15,6 +15,11 @@ These functions are applied *before* the regex-based PII detection in
 adversarial evasion techniques.
 
 .. versionadded:: 1.0.6
+.. versionchanged:: 1.0.24
+   Added :class:`NormalizationResult` with offset mapping so that entity
+   positions on normalized text can be mapped back to the original text.
+   The engine no longer falls back to un-normalized text when normalization
+   changes string length (M-5 fix).
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ from __future__ import annotations
 import html
 import re
 import unicodedata
+from dataclasses import dataclass, field
 from urllib.parse import unquote
 
 # ---------------------------------------------------------------------------
@@ -126,6 +132,52 @@ _URL_ENCODED_RE = re.compile(r"%[0-9a-fA-F]{2}")
 
 
 # ---------------------------------------------------------------------------
+# Offset-mapped normalization result (M-5)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class NormalizationResult:
+    """Result of unicode normalization with offset mapping.
+
+    The ``offset_map`` allows mapping positions in the normalized text
+    back to positions in the original text.  ``offset_map[i]`` is the
+    index in the original text that corresponds to ``text[i]``.
+
+    .. versionadded:: 1.0.24
+    """
+
+    text: str
+    """The normalized text, ready for PII regex matching."""
+
+    offset_map: list[int] = field(default_factory=list)
+    """``offset_map[i]`` = original-text index of ``text[i]``."""
+
+    length_changed: bool = False
+    """Whether normalization changed the string length."""
+
+    def map_span(self, start: int, end: int) -> tuple[int, int]:
+        """Map a span in normalized text back to original text positions.
+
+        Args:
+            start: Start index in normalized text.
+            end: End index in normalized text (exclusive).
+
+        Returns:
+            ``(orig_start, orig_end)`` in original text coordinates.
+        """
+        if not self.offset_map or not self.length_changed:
+            return start, end
+        orig_start = self.offset_map[start] if start < len(self.offset_map) else start
+        # end is exclusive — map end-1 then +1
+        if end <= 0:
+            return orig_start, orig_start
+        last = min(end - 1, len(self.offset_map) - 1)
+        orig_end = self.offset_map[last] + 1
+        return orig_start, orig_end
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -218,7 +270,122 @@ def prepare_for_detection(text: str) -> str:
 
     Returns:
         Fully normalized text ready for PII regex matching.
+
+    .. deprecated:: 1.0.24
+       Use :func:`prepare_for_detection_mapped` for offset-aware normalization.
     """
     text = normalize_unicode(text)
     text = normalize_homoglyphs(text)
     return decode_encoded_pii(text)
+
+
+def prepare_for_detection_mapped(text: str) -> NormalizationResult:
+    """Apply all normalization steps with offset mapping.
+
+    Like :func:`prepare_for_detection` but returns a
+    :class:`NormalizationResult` with an ``offset_map`` that allows
+    mapping entity positions on the normalized text back to the original.
+
+    This fixes the M-5 vulnerability: the engine can now *always* run
+    regex on fully normalized text, even when normalization changes the
+    string length (e.g. stripping zero-width chars, URL-decoding
+    ``%40`` → ``@``).
+
+    Args:
+        text: Raw input text.
+
+    Returns:
+        A :class:`NormalizationResult` with normalized text and offset map.
+
+    .. versionadded:: 1.0.24
+    """
+    # Build identity offset map: offset_map[i] = i
+    offset_map = list(range(len(text)))
+    current = text
+
+    # Step 1: NFC normalization (usually length-preserving)
+    nfc = unicodedata.normalize("NFC", current)
+    if len(nfc) != len(current):
+        # NFC changed length — rebuild offset map character by character
+        new_map: list[int] = []
+        for src_idx, _ in enumerate(nfc):
+            if src_idx < len(offset_map):
+                new_map.append(offset_map[src_idx])
+            else:
+                # Composition reduced chars — map to last known position
+                new_map.append(offset_map[-1] if offset_map else 0)
+        offset_map = new_map
+    current = nfc
+
+    # Step 2: Strip zero-width / invisible characters
+    if _ZERO_WIDTH_RE.search(current):
+        new_text: list[str] = []
+        new_map = []
+        for i, ch in enumerate(current):
+            if ch not in _ZERO_WIDTH_CHARS:
+                new_text.append(ch)
+                new_map.append(offset_map[i] if i < len(offset_map) else i)
+        current = "".join(new_text)
+        offset_map = new_map
+
+    # Step 3: Homoglyph replacement (1:1, length-preserving)
+    if _CONFUSABLE_RE.search(current):
+        chars = list(current)
+        for i, ch in enumerate(chars):
+            replacement = _CONFUSABLE_MAP.get(ch)
+            if replacement is not None:
+                chars[i] = replacement
+        current = "".join(chars)
+        # offset_map unchanged — 1:1 replacement
+
+    # Step 4: URL-decode (%XX → single char, 3→1 collapse)
+    if _URL_ENCODED_RE.search(current):
+        new_text = []
+        new_map = []
+        i = 0
+        while i < len(current):
+            if (
+                i + 2 < len(current)
+                and current[i] == "%"
+                and _is_hex(current[i + 1])
+                and _is_hex(current[i + 2])
+            ):
+                # Decode %XX → single character
+                decoded = chr(int(current[i + 1 : i + 3], 16))
+                new_text.append(decoded)
+                new_map.append(offset_map[i] if i < len(offset_map) else i)
+                i += 3  # Skip %XX
+            else:
+                new_text.append(current[i])
+                new_map.append(offset_map[i] if i < len(offset_map) else i)
+                i += 1
+        current = "".join(new_text)
+        offset_map = new_map
+
+    # Step 5: HTML entity decode
+    if "&" in current:
+        decoded_html = html.unescape(current)
+        if len(decoded_html) != len(current):
+            # HTML entities changed length — approximate offset mapping
+            new_map = []
+            src_idx = 0
+            for _ in decoded_html:
+                if src_idx < len(offset_map):
+                    new_map.append(offset_map[src_idx])
+                else:
+                    new_map.append(offset_map[-1] if offset_map else 0)
+                src_idx += 1
+            offset_map = new_map
+        current = decoded_html
+
+    length_changed = len(current) != len(text)
+    return NormalizationResult(
+        text=current,
+        offset_map=offset_map,
+        length_changed=length_changed,
+    )
+
+
+def _is_hex(c: str) -> bool:
+    """Check if a character is a hexadecimal digit."""
+    return c in "0123456789abcdefABCDEF"

@@ -232,6 +232,206 @@ class Enforcer:
         res = self._redactor.redact(result)
         return res.text, res.count
 
+    # -- Shared enforcement helpers (M-2 refactor) --------------------------
+
+    def _prepare_call(
+        self,
+        func: Callable[..., Any],
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+        tool_name: str | None,
+    ) -> tuple[str, CallContext, HookContext]:
+        """Resolve tool name, create call + hook contexts.
+
+        Returns ``(resolved_name, call_ctx, hook_ctx)``.
+
+        .. versionadded:: 1.0.24
+        """
+        resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
+        resolved_name = validate_tool_name(resolved_name)
+        ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
+        hook_ctx = HookContext(
+            call_id=ctx.call_id,
+            tool_name=resolved_name,
+            policy_name=self.policy_name,
+            args=args,
+            kwargs=kwargs,
+        )
+        return resolved_name, ctx, hook_ctx
+
+    def _validate_pre_call(
+        self,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+        resolved_name: str,
+        ctx: CallContext,
+    ) -> None:
+        """Run all pre-call checks: input size, policy, content rules,
+        network, rate limiting.
+
+        Raises on any violation.  All checks are synchronous.
+
+        .. versionadded:: 1.0.24
+        """
+        check_input_size(args, kwargs)
+        pre = self._engine.evaluate_pre_call(ctx)
+        self._engine.raise_if_blocked(pre, ctx)
+
+        if self._rule_engine is not None:
+            violations = self._rule_engine.check_args(args, kwargs)
+            if violations:
+                v = violations[0]
+                raise ContentViolationError(
+                    v.rule_name,
+                    v.description,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
+
+        if self._domain_checker is not None:
+            self._domain_checker.check_args(
+                args,
+                kwargs,
+                tool_name=resolved_name,
+                policy_name=self.policy_name,
+            )
+
+        if self._rate_limiter is not None:
+            self._rate_limiter.acquire(resolved_name, self.policy_name)
+
+    def _redact_and_check_budget(
+        self,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+        resolved_name: str,
+    ) -> tuple[tuple[Any, ...], dict[str, Any], int]:
+        """Redact inputs and check cost budget.
+
+        Returns ``(r_args, r_kwargs, input_redactions)``.
+
+        .. versionadded:: 1.0.24
+        """
+        r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+
+        limits = self._engine.policy.rules.resource_limits
+        self._guard.cost_tracker.check_budget(
+            resolved_name,
+            self.policy_name,
+            per_call_budget=limits.max_cost_usd,
+        )
+
+        return r_args, r_kwargs, input_redactions
+
+    def _process_result(
+        self,
+        result: Any,
+        ctx: CallContext,
+        resolved_name: str,
+    ) -> tuple[Any, int]:
+        """Redact output, check content rules, evaluate post-call policy.
+
+        Returns ``(processed_result, output_redactions)``.
+
+        .. versionadded:: 1.0.24
+        """
+        result, output_redactions = self._redact_output(result)
+
+        if self._rule_engine is not None and isinstance(result, str):
+            out_violations = self._rule_engine.check(result)
+            if out_violations:
+                v = out_violations[0]
+                raise ContentViolationError(
+                    v.rule_name,
+                    f"output: {v.description}",
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
+
+        post = self._engine.evaluate_post_call(ctx, result)
+        self._engine.raise_if_blocked(post, ctx)
+
+        return result, output_redactions
+
+    def _log_and_audit_allowed(
+        self,
+        *,
+        resolved_name: str,
+        call_id: str,
+        t0: float,
+        call_duration: float,
+        input_redactions: int,
+        output_redactions: int,
+    ) -> None:
+        """Log and audit a successful (allowed) call.
+
+        .. versionadded:: 1.0.24
+        """
+        overhead = (time.perf_counter() - t0) * 1000 - call_duration
+
+        logger.info(
+            "call_enforced",
+            tool=resolved_name,
+            decision="allowed",
+            overhead_ms=round(overhead, 2),
+            call_ms=round(call_duration, 2),
+            input_redactions=input_redactions,
+            output_redactions=output_redactions,
+        )
+
+        self._record_audit(
+            tool_name=resolved_name,
+            call_id=call_id,
+            decision="allowed",
+            overhead_ms=round(overhead, 2),
+            call_duration_ms=round(call_duration, 2),
+            input_redactions=input_redactions,
+            output_redactions=output_redactions,
+        )
+
+    def _handle_enforcement_violation(
+        self,
+        exc: EnforcementViolation,
+        *,
+        resolved_name: str,
+        call_id: str,
+        t0: float,
+        input_redactions: int,
+    ) -> None:
+        """Audit a blocked call.  Does NOT fire hooks (sync/async differ).
+
+        .. versionadded:: 1.0.24
+        """
+        elapsed = (time.perf_counter() - t0) * 1000
+        self._record_audit(
+            tool_name=resolved_name,
+            call_id=call_id,
+            decision="blocked",
+            overhead_ms=round(elapsed, 2),
+            call_duration_ms=0.0,
+            input_redactions=input_redactions,
+            output_redactions=0,
+            violation_type=exc.violation_type if hasattr(exc, "violation_type") else None,
+            violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
+        )
+
+    def _fail_open_redact_fallback(
+        self,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> tuple[tuple[Any, ...], dict[str, Any]]:
+        """Attempt PII redaction as fail-open fallback.
+
+        If redaction itself fails, replaces all strings with ``[REDACTED]``.
+
+        .. versionadded:: 1.0.24
+        """
+        try:
+            r_args, r_kwargs, _ = self._redact_args(args, kwargs)
+        except Exception:
+            r_args = tuple("[REDACTED]" if isinstance(a, str) else a for a in args)
+            r_kwargs = {k: "[REDACTED]" if isinstance(v, str) else v for k, v in kwargs.items()}
+        return r_args, r_kwargs
+
     @staticmethod
     def _build_auditor() -> Auditor | None:
         """Create an Auditor from global settings, if audit is enabled."""
@@ -312,10 +512,11 @@ class Enforcer:
 
         Raises:
             EnforcementViolation: If the call is blocked by policy.
+
+        .. versionchanged:: 1.0.24
+           Refactored to use shared enforcement helpers (M-2).
         """
-        resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
-        resolved_name = validate_tool_name(resolved_name)
-        ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
+        resolved_name, ctx, hook_ctx = self._prepare_call(func, args, kwargs, tool_name)
 
         t0 = time.perf_counter()
         hooks = HookRegistry.global_registry()
@@ -324,17 +525,9 @@ class Enforcer:
         r_kwargs: dict[str, Any] = dict(kwargs)
         redaction_applied = False
 
-        # Track enforcement nesting (inside try so exit_enforcement runs on error)
         enter_enforcement(resolved_name)
         try:
-            # Fire pre-call hooks
-            hook_ctx = HookContext(
-                call_id=ctx.call_id,
-                tool_name=resolved_name,
-                policy_name=self.policy_name,
-                args=args,
-                kwargs=kwargs,
-            )
+            # Fire pre-call hooks (sync)
             hooks.fire_pre_call(hook_ctx)
             if hook_ctx.abort:
                 raise EnforcementViolation(
@@ -343,43 +536,16 @@ class Enforcer:
                     policy_name=self.policy_name,
                 )
 
-            # Check input size before processing
-            check_input_size(args, kwargs)
+            # Shared pre-call validation
+            self._validate_pre_call(args, kwargs, resolved_name, ctx)
 
-            # Pre-call
-            pre = self._engine.evaluate_pre_call(ctx)
-            self._engine.raise_if_blocked(pre, ctx)
-
-            # Content rule inspection on arguments
-            if self._rule_engine is not None:
-                violations = self._rule_engine.check_args(args, kwargs)
-                if violations:
-                    v = violations[0]
-                    raise ContentViolationError(
-                        v.rule_name,
-                        v.description,
-                        tool_name=resolved_name,
-                        policy_name=self.policy_name,
-                    )
-
-            # Network domain enforcement on arguments
-            if self._domain_checker is not None:
-                self._domain_checker.check_args(
-                    args,
-                    kwargs,
-                    tool_name=resolved_name,
-                    policy_name=self.policy_name,
-                )
-
-            # Rate limiting
-            if self._rate_limiter is not None:
-                self._rate_limiter.acquire(resolved_name, self.policy_name)
-
-            # Redact inputs
-            r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+            # Redact inputs + cost budget
+            r_args, r_kwargs, input_redactions = self._redact_and_check_budget(
+                args, kwargs, resolved_name
+            )
             redaction_applied = True
 
-            # Fire redaction hooks if redactions occurred
+            # Fire input redaction hooks (sync)
             if input_redactions > 0:
                 hooks.fire_redaction(
                     RedactionHookContext(
@@ -390,15 +556,8 @@ class Enforcer:
                     )
                 )
 
-            # Check cost budget before execution
+            # Execute with resource guards
             limits = self._engine.policy.rules.resource_limits
-            self._guard.cost_tracker.check_budget(
-                resolved_name,
-                self.policy_name,
-                per_call_budget=limits.max_cost_usd,
-            )
-
-            # Execute with resource guards (time/memory limits)
             call_t0 = time.perf_counter()
             result: T = self._guard.execute_sync(
                 func,
@@ -411,22 +570,10 @@ class Enforcer:
             )
             call_duration = (time.perf_counter() - call_t0) * 1000
 
-            # Redact outputs
-            result, output_redactions = self._redact_output(result)
+            # Shared post-call processing
+            result, output_redactions = self._process_result(result, ctx, resolved_name)
 
-            # Content rule inspection on output
-            if self._rule_engine is not None and isinstance(result, str):
-                out_violations = self._rule_engine.check(result)
-                if out_violations:
-                    v = out_violations[0]
-                    raise ContentViolationError(
-                        v.rule_name,
-                        f"output: {v.description}",
-                        tool_name=resolved_name,
-                        policy_name=self.policy_name,
-                    )
-
-            # Fire redaction hooks for output redactions
+            # Fire output redaction hooks (sync)
             if output_redactions > 0:
                 hooks.fire_redaction(
                     RedactionHookContext(
@@ -437,34 +584,17 @@ class Enforcer:
                     )
                 )
 
-            # Post-call
-            post = self._engine.evaluate_post_call(ctx, result)
-            self._engine.raise_if_blocked(post, ctx)
-
-            overhead = (time.perf_counter() - t0) * 1000 - call_duration
-
-            # Fire post-call hooks
+            # Fire post-call hooks (sync)
             hook_ctx.result = result
             hook_ctx.duration_ms = round(call_duration, 2)
             hooks.fire_post_call(hook_ctx)
 
-            logger.info(
-                "call_enforced",
-                tool=resolved_name,
-                decision="allowed",
-                overhead_ms=round(overhead, 2),
-                call_ms=round(call_duration, 2),
-                input_redactions=input_redactions,
-                output_redactions=output_redactions,
-            )
-
-            # Audit
-            self._record_audit(
-                tool_name=resolved_name,
+            # Log + audit
+            self._log_and_audit_allowed(
+                resolved_name=resolved_name,
                 call_id=ctx.call_id,
-                decision="allowed",
-                overhead_ms=round(overhead, 2),
-                call_duration_ms=round(call_duration, 2),
+                t0=t0,
+                call_duration=call_duration,
                 input_redactions=input_redactions,
                 output_redactions=output_redactions,
             )
@@ -472,7 +602,7 @@ class Enforcer:
             return result
 
         except EnforcementViolation as exc:
-            # Fire violation hooks
+            # Fire violation hooks (sync)
             hooks.fire_violation(
                 ViolationHookContext(
                     call_id=ctx.call_id,
@@ -482,22 +612,15 @@ class Enforcer:
                     violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
                 )
             )
-            # Record blocked calls too (preserve any redaction count)
-            elapsed = (time.perf_counter() - t0) * 1000
-            self._record_audit(
-                tool_name=resolved_name,
+            self._handle_enforcement_violation(
+                exc,
+                resolved_name=resolved_name,
                 call_id=ctx.call_id,
-                decision="blocked",
-                overhead_ms=round(elapsed, 2),
-                call_duration_ms=0.0,
+                t0=t0,
                 input_redactions=input_redactions,
-                output_redactions=0,
-                violation_type=exc.violation_type if hasattr(exc, "violation_type") else None,
-                violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
             )
             raise
         except EnforceCoreError as exc:
-            # Internal error — fail closed by default
             if settings.fail_open:
                 _warn_fail_open(tool_name=resolved_name, error=exc)
                 logger.error(
@@ -505,19 +628,8 @@ class Enforcer:
                     tool=resolved_name,
                     exc_info=True,
                 )
-                # Ensure PII is redacted even if the error occurred before
-                # the normal redaction step (H-1 fix: defense-in-depth).
                 if not redaction_applied:
-                    try:
-                        r_args, r_kwargs, _ = self._redact_args(args, kwargs)
-                    except Exception:
-                        # Redaction itself failed — nuclear fallback:
-                        # replace all string values to prevent PII leakage.
-                        r_args = tuple("[REDACTED]" if isinstance(a, str) else a for a in args)
-                        r_kwargs = {
-                            k: "[REDACTED]" if isinstance(v, str) else v for k, v in kwargs.items()
-                        }
-                # Use redacted args if available to prevent PII leakage
+                    r_args, r_kwargs = self._fail_open_redact_fallback(args, kwargs)
                 return func(*r_args, **r_kwargs)
             raise
         finally:
@@ -535,10 +647,11 @@ class Enforcer:
         """Enforce an asynchronous call.
 
         Same semantics as :meth:`enforce_sync` but awaits *func*.
+
+        .. versionchanged:: 1.0.24
+           Refactored to use shared enforcement helpers (M-2).
         """
-        resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
-        resolved_name = validate_tool_name(resolved_name)
-        ctx = CallContext(tool_name=resolved_name, args=args, kwargs=kwargs)
+        resolved_name, ctx, hook_ctx = self._prepare_call(func, args, kwargs, tool_name)
 
         t0 = time.perf_counter()
         hooks = HookRegistry.global_registry()
@@ -547,17 +660,9 @@ class Enforcer:
         r_kwargs: dict[str, Any] = dict(kwargs)
         redaction_applied = False
 
-        # Track enforcement nesting (inside try so exit_enforcement runs on error)
         enter_enforcement(resolved_name)
         try:
             # Fire pre-call hooks (async)
-            hook_ctx = HookContext(
-                call_id=ctx.call_id,
-                tool_name=resolved_name,
-                policy_name=self.policy_name,
-                args=args,
-                kwargs=kwargs,
-            )
             await hooks.fire_pre_call_async(hook_ctx)
             if hook_ctx.abort:
                 raise EnforcementViolation(
@@ -566,43 +671,16 @@ class Enforcer:
                     policy_name=self.policy_name,
                 )
 
-            # Check input size before processing
-            check_input_size(args, kwargs)
+            # Shared pre-call validation
+            self._validate_pre_call(args, kwargs, resolved_name, ctx)
 
-            # Pre-call
-            pre = self._engine.evaluate_pre_call(ctx)
-            self._engine.raise_if_blocked(pre, ctx)
-
-            # Content rule inspection on arguments
-            if self._rule_engine is not None:
-                violations = self._rule_engine.check_args(args, kwargs)
-                if violations:
-                    v = violations[0]
-                    raise ContentViolationError(
-                        v.rule_name,
-                        v.description,
-                        tool_name=resolved_name,
-                        policy_name=self.policy_name,
-                    )
-
-            # Network domain enforcement on arguments
-            if self._domain_checker is not None:
-                self._domain_checker.check_args(
-                    args,
-                    kwargs,
-                    tool_name=resolved_name,
-                    policy_name=self.policy_name,
-                )
-
-            # Rate limiting
-            if self._rate_limiter is not None:
-                self._rate_limiter.acquire(resolved_name, self.policy_name)
-
-            # Redact inputs
-            r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
+            # Redact inputs + cost budget
+            r_args, r_kwargs, input_redactions = self._redact_and_check_budget(
+                args, kwargs, resolved_name
+            )
             redaction_applied = True
 
-            # Fire redaction hooks for input redactions
+            # Fire input redaction hooks (async)
             if input_redactions > 0:
                 await hooks.fire_redaction_async(
                     RedactionHookContext(
@@ -613,15 +691,8 @@ class Enforcer:
                     )
                 )
 
-            # Check cost budget before execution
+            # Execute with resource guards
             limits = self._engine.policy.rules.resource_limits
-            self._guard.cost_tracker.check_budget(
-                resolved_name,
-                self.policy_name,
-                per_call_budget=limits.max_cost_usd,
-            )
-
-            # Execute with resource guards (time/memory limits)
             call_t0 = time.perf_counter()
             result = await self._guard.execute_async(
                 func,
@@ -634,22 +705,10 @@ class Enforcer:
             )
             call_duration = (time.perf_counter() - call_t0) * 1000
 
-            # Redact outputs
-            result, output_redactions = self._redact_output(result)
+            # Shared post-call processing
+            result, output_redactions = self._process_result(result, ctx, resolved_name)
 
-            # Content rule inspection on output
-            if self._rule_engine is not None and isinstance(result, str):
-                out_violations = self._rule_engine.check(result)
-                if out_violations:
-                    v = out_violations[0]
-                    raise ContentViolationError(
-                        v.rule_name,
-                        f"output: {v.description}",
-                        tool_name=resolved_name,
-                        policy_name=self.policy_name,
-                    )
-
-            # Fire redaction hooks for output redactions
+            # Fire output redaction hooks (async)
             if output_redactions > 0:
                 await hooks.fire_redaction_async(
                     RedactionHookContext(
@@ -660,34 +719,17 @@ class Enforcer:
                     )
                 )
 
-            # Post-call
-            post = self._engine.evaluate_post_call(ctx, result)
-            self._engine.raise_if_blocked(post, ctx)
-
-            overhead = (time.perf_counter() - t0) * 1000 - call_duration
-
             # Fire post-call hooks (async)
             hook_ctx.result = result
             hook_ctx.duration_ms = round(call_duration, 2)
             await hooks.fire_post_call_async(hook_ctx)
 
-            logger.info(
-                "call_enforced",
-                tool=resolved_name,
-                decision="allowed",
-                overhead_ms=round(overhead, 2),
-                call_ms=round(call_duration, 2),
-                input_redactions=input_redactions,
-                output_redactions=output_redactions,
-            )
-
-            # Audit
-            self._record_audit(
-                tool_name=resolved_name,
+            # Log + audit
+            self._log_and_audit_allowed(
+                resolved_name=resolved_name,
                 call_id=ctx.call_id,
-                decision="allowed",
-                overhead_ms=round(overhead, 2),
-                call_duration_ms=round(call_duration, 2),
+                t0=t0,
+                call_duration=call_duration,
                 input_redactions=input_redactions,
                 output_redactions=output_redactions,
             )
@@ -705,17 +747,12 @@ class Enforcer:
                     violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
                 )
             )
-            elapsed = (time.perf_counter() - t0) * 1000
-            self._record_audit(
-                tool_name=resolved_name,
+            self._handle_enforcement_violation(
+                exc,
+                resolved_name=resolved_name,
                 call_id=ctx.call_id,
-                decision="blocked",
-                overhead_ms=round(elapsed, 2),
-                call_duration_ms=0.0,
+                t0=t0,
                 input_redactions=input_redactions,
-                output_redactions=0,
-                violation_type=exc.violation_type if hasattr(exc, "violation_type") else None,
-                violation_reason=exc.reason if hasattr(exc, "reason") else str(exc),
             )
             raise
         except EnforceCoreError as exc:
@@ -726,17 +763,8 @@ class Enforcer:
                     tool=resolved_name,
                     exc_info=True,
                 )
-                # Ensure PII is redacted even if the error occurred before
-                # the normal redaction step (H-1 fix: defense-in-depth).
                 if not redaction_applied:
-                    try:
-                        r_args, r_kwargs, _ = self._redact_args(args, kwargs)
-                    except Exception:
-                        r_args = tuple("[REDACTED]" if isinstance(a, str) else a for a in args)
-                        r_kwargs = {
-                            k: "[REDACTED]" if isinstance(v, str) else v for k, v in kwargs.items()
-                        }
-                # Use redacted args if available to prevent PII leakage
+                    r_args, r_kwargs = self._fail_open_redact_fallback(args, kwargs)
                 return await func(*r_args, **r_kwargs)
             raise
         finally:
