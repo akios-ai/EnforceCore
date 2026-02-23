@@ -1,6 +1,6 @@
 # EnforceCore — Formal Threat Model
 
-**Version:** 1.0.23a1
+**Version:** 1.0.0b2
 **Last updated:** 2026-02-23
 **Status:** Active — reviewed with each release
 
@@ -163,7 +163,7 @@ malicious behavior.
 
 **Limitations:**
 - No runtime integrity checking of dependency code
-- No SBOM (Software Bill of Materials) published yet — planned for v1.0.17
+- No SBOM (Software Bill of Materials) published yet — planned post-v1.0
 - Pydantic is a large dependency with compiled extensions (pydantic-core in
   Rust) — compromise would be high-impact
 

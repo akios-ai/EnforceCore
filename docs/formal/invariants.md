@@ -5,6 +5,13 @@ along with the property-based tests that verify them.  Every invariant
 stated here is checked by [Hypothesis](https://hypothesis.readthedocs.io/)
 on every CI run.
 
+> **Note on verification methodology:** These invariants are specified using
+> formal notation and verified *empirically* via property-based testing
+> (Hypothesis), not mechanically proved via theorem provers.  Property-based
+> testing provides high confidence by checking invariants against thousands
+> of randomly generated inputs per CI run, but does not constitute a
+> mathematical proof.
+
 ## Notation
 
 | Symbol | Meaning |

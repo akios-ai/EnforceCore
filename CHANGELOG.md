@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `tests/api/test_public_api.py` with Tier 1/Tier 2 classification.
   Added `test_tier2_symbols_importable` to verify backwards compatibility.
 
-## [1.0.24a1] — 2026-02-24
+## [1.0.24a1] — 2026-02-23
 
 ### Security
 
