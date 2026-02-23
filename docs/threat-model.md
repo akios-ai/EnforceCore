@@ -1,6 +1,6 @@
 # EnforceCore — Formal Threat Model
 
-**Version:** 1.0.0b2
+**Version:** 1.0.0b3
 **Last updated:** 2026-02-23
 **Status:** Active — reviewed with each release
 

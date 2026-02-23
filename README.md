@@ -279,6 +279,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.25a1** | API Pruning (110 → 30 symbols) | ✅ Shipped |
 | **v1.0.0b1** | First Beta (deprecation warnings) | ✅ Shipped |
 | **v1.0.0b2** | Security Fix (from_dict hoisting) | ✅ Shipped |
+| **v1.0.0b3** | Documentation Accuracy Fixes | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
