@@ -310,7 +310,7 @@ def verify_artifacts(wheel: Path, sdist: Path) -> bool:
 
     # Check wheel for internal/ leakage
     log("Checking wheel for internal/ leakage …", level="step")
-    r = run(["python", "-m", "zipfile", "-l", str(wheel)])
+    r = run([sys.executable, "-m", "zipfile", "-l", str(wheel)])
     if "internal/" in r.stdout:
         log("LEAKED: internal/ found in wheel!", level="err")
         ok = False
