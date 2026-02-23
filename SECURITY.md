@@ -53,6 +53,20 @@ EnforceCore claims four formal security properties (see [Threat Model](docs/thre
 | [EU AI Act Mapping](docs/compliance/eu-ai-act.md) | Articles 9, 13, 14, 15, 17 mapped to EnforceCore capabilities |
 | [GDPR Considerations](docs/compliance/gdpr.md) | Data minimisation, storage limitation, data protection by design, right-to-erasure tension |
 
+## Known Security Gaps (Under Active Fix)
+
+The following issues were identified during internal security audits and are
+being addressed in upcoming releases. None are critical — all have mitigations.
+
+| ID | Severity | Description | Mitigation | Fix Target |
+|---|---|---|---|---|
+| A-4 | Medium | Pre-call hooks receive un-redacted args via `HookContext` | No hooks registered by default; user hooks are trusted code | v1.0.23a1 |
+| M-4 | Medium | `generic_api_key` secret pattern has false positives on low-entropy strings | Only affects detection quality, not safety; actual secrets are still caught | v1.0.23a1 |
+| A-5 | Medium | `@enforce()` creates Enforcer at import time; `clear_policy_cache()` doesn't affect already-decorated functions | Document limitation; use `lazy_policy=True` (planned) | v1.0.23a1 |
+| M-5 | Medium | Unicode normalization that changes string length disables the normalization pipeline | Rare in practice; only affects URL-encoded PII like `%40` | v1.0.24a1 |
+
+For the full audit roadmap, see the internal security audit documentation.
+
 ## Scope
 
 The following are in scope for security reports:
