@@ -54,8 +54,8 @@ async def search_web(query: str) -> str:
 | **Layer** | Inside the LLM | Runtime call boundary |
 | **Bypassable?** | Yes (jailbreaks, prompt injection) | No (code-level enforcement) |
 | **Auditable?** | No | Yes (Merkle-chained trails) |
-| **Provable?** | No | Yes (structurally impossible violations) |
-| **EU AI Act ready?** | ❌ | ✅ |
+| **Property-tested?** | No | Yes ([22 Hypothesis properties](docs/formal/invariants.md)) |
+| **EU AI Act aligned?** | ❌ | ✅ (see [disclaimer](#legal)) |
 
 > **EnforceCore vs. OS-level security:** EnforceCore operates at the
 > *application semantic layer* — it understands tool calls, PII, and cost
@@ -143,7 +143,7 @@ async def search_web(query: str) -> str:
 
 @enforce(policy="policy.yaml")
 def calculator(expr: str) -> float:
-    return eval(expr)  # safe because policy-gated
+    return eval(expr)  # policy controls whether this tool can be called
 ```
 
 ### 3. See It Work
@@ -275,6 +275,10 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.21a1** | Security Fixes | ✅ Shipped |
 | **v1.0.22a1** | Infrastructure Hardening | ✅ Shipped |
 | **v1.0.23a1** | Release Infrastructure & CI Fix | ✅ Shipped |
+| **v1.0.24a1** | Security Audit | ✅ Shipped |
+| **v1.0.25a1** | API Pruning (110 → 30 symbols) | ✅ Shipped |
+| **v1.0.0b1** | First Beta (deprecation warnings) | ✅ Shipped |
+| **v1.0.0b2** | Security Fix (from_dict hoisting) | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
@@ -299,8 +303,8 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
 | 🔍 [Troubleshooting](docs/troubleshooting.md) | Common errors and debugging tips |
 | 🌍 [Vision](docs/vision.md) | Why EnforceCore exists |
 | 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
-| � [Code of Conduct](CODE_OF_CONDUCT.md) | Community standards |
-| �🔒 [Security](SECURITY.md) | Vulnerability reporting policy |
+| 📋 [Code of Conduct](CODE_OF_CONDUCT.md) | Community standards |
+| 🔒 [Security](SECURITY.md) | Vulnerability reporting policy |
 
 ---
 
@@ -375,7 +379,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1503 tests · 95% coverage · 0 lint errors
+**Current stats:** 1444 tests · 95% coverage · 0 lint errors
 
 ---
 
@@ -389,7 +393,7 @@ EnforceCore builds on a foundation of prior work in computer science and AI safe
 - **Audit Integrity** — Merkle (1987), Crosby & Wallach (2009) for hash-chained tamper evidence
 - **Agent Containment** — Armstrong et al. (2012), Babcock et al. (2016) for the containment framing
 - **Evaluation Methodology** — Prof. Valérie Viet Triem Tong (CentraleSupélec, IRISA/PIRAT) for feedback on adversarial evaluation strategies and containment testing
-- **Microsoft Presidio** — for production-grade PII detection
+- **Microsoft Presidio** — for design inspiration on PII detection patterns
 - **EU AI Act (2024)** — Articles 9, 13, 14, 15 directly shaped the design
 
 See [CONTRIBUTORS.md](CONTRIBUTORS.md) and [docs/related-work.md](docs/related-work.md) for full citations.
