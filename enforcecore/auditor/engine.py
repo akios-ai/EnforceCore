@@ -180,13 +180,23 @@ class Auditor:
         print(entry.entry_hash)  # "a1b2c3..."
     """
 
-    __slots__ = ("_backend", "_entry_count", "_last_hash", "_lock", "_output_path")
+    __slots__ = (
+        "_backend",
+        "_entry_count",
+        "_immutable",
+        "_last_hash",
+        "_lock",
+        "_output_path",
+        "_witness",
+    )
 
     def __init__(
         self,
         output_path: str | Path | None = None,
         *,
         backend: Any | None = None,
+        witness: Any | None = None,
+        immutable: bool = False,
     ) -> None:
         """Initialize the auditor.
 
@@ -198,10 +208,25 @@ class Auditor:
                 implement ``write(entry_dict)`` and ``close()``. If not
                 provided, defaults to a ``JsonlBackend`` writing to
                 ``output_path``.
+            witness: Optional hash-only witness backend (v1.0.0b4+). Must
+                implement ``publish(record)`` and ``close()``.  The witness
+                receives only entry hashes, not full content.  See
+                :mod:`enforcecore.auditor.witness` for built-in witnesses.
+            immutable: If ``True``, set the OS-level append-only attribute
+                on the audit file after creation (v1.0.0b4+).  Requires
+                ``CAP_LINUX_IMMUTABLE`` on Linux or root on macOS.  In
+                Docker, run with ``--cap-add LINUX_IMMUTABLE``.  If the
+                platform does not support it, a warning is logged but
+                the auditor continues without protection.
+
+        .. versionchanged:: 1.0.0b4
+           Added ``witness`` and ``immutable`` parameters.
         """
         self._lock = threading.Lock()
         self._last_hash = ""
         self._entry_count = 0
+        self._witness = witness
+        self._immutable = immutable
 
         # Set up backend
         if backend is not None:
@@ -221,6 +246,10 @@ class Auditor:
             and self._output_path.stat().st_size > 0
         ):
             self._resume_chain()
+
+        # Apply append-only protection after file creation
+        if self._immutable and self._output_path is not None:
+            self._apply_immutable()
 
     def _resume_chain(self) -> None:
         """Read the last entry from an existing file to resume the chain.
@@ -292,6 +321,40 @@ class Auditor:
             msg = f"Failed to resume audit chain from {self._output_path}: {exc}"
             raise AuditError(msg) from exc
 
+    def _apply_immutable(self) -> None:
+        """Apply OS-level append-only protection to the audit file.
+
+        Logs a warning and continues if the platform doesn't support it
+        or if permissions are insufficient.  Never raises — this is a
+        best-effort hardening measure.
+        """
+        try:
+            from enforcecore.auditor.immutable import (
+                AppendOnlyError,
+                protect_append_only,
+            )
+
+            # Ensure the file exists (create if needed)
+            assert self._output_path is not None  # Guarded by caller
+            self._output_path.parent.mkdir(parents=True, exist_ok=True)
+            if not self._output_path.exists():
+                self._output_path.touch()
+
+            protect_append_only(self._output_path)
+        except AppendOnlyError as exc:
+            logger.warning(
+                "append_only_failed",
+                path=str(self._output_path),
+                error=str(exc),
+                hint="Audit trail will continue without OS-level protection",
+            )
+        except Exception as exc:
+            logger.warning(
+                "append_only_unexpected_error",
+                path=str(self._output_path),
+                error=str(exc),
+            )
+
     @property
     def output_path(self) -> Path | None:
         return self._output_path
@@ -300,6 +363,16 @@ class Auditor:
     def backend(self) -> Any | None:
         """The audit backend, if using pluggable backends."""
         return self._backend
+
+    @property
+    def witness(self) -> Any | None:
+        """The witness backend, if configured."""
+        return self._witness
+
+    @property
+    def immutable(self) -> bool:
+        """Whether append-only protection is enabled."""
+        return self._immutable
 
     @property
     def last_hash(self) -> str:
@@ -366,6 +439,10 @@ class Auditor:
             self._last_hash = entry.entry_hash
             self._entry_count += 1
 
+            # Publish to witness (fail-open — never blocks the audit write)
+            if self._witness is not None:
+                self._publish_to_witness(entry)
+
             logger.debug(
                 "audit_entry_recorded",
                 entry_id=entry.entry_id,
@@ -375,6 +452,33 @@ class Auditor:
             )
 
             return entry
+
+    def _publish_to_witness(self, entry: AuditEntry) -> None:
+        """Send entry hash to the witness backend.
+
+        Never raises — witness failures are logged but do not block
+        the audit write.
+        """
+        witness = self._witness
+        if witness is None:
+            return
+        try:
+            from enforcecore.auditor.witness import WitnessRecord
+
+            record = WitnessRecord(
+                entry_id=entry.entry_id,
+                entry_hash=entry.entry_hash,
+                previous_hash=entry.previous_hash,
+                sequence=self._entry_count,
+                timestamp=entry.timestamp,
+            )
+            witness.publish(record)
+        except Exception as exc:
+            logger.warning(
+                "witness_publish_failed",
+                entry_id=entry.entry_id,
+                error=str(exc),
+            )
 
     def _write_entry(self, entry: AuditEntry) -> None:
         """Append an entry to the backend or JSONL file."""

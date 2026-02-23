@@ -47,6 +47,14 @@ We are grateful to the researchers and practitioners whose work made this possib
 - **Agent Containment** — Armstrong, Sandberg & Bostrom (2012), Babcock et al. (2016)
   for framing the containment problem EnforceCore addresses
 
+### Design Feedback
+
+- **Prof. Dan S. Wallach** (Rice University) — direct design guidance on
+  tamper-evidence mitigations for the audit trail, including OS-enforced
+  append-only files (`chattr +a`) and hash-only remote witnesses. Co-author
+  of Crosby & Wallach (2009), the paper that informs EnforceCore’s Merkle-chained
+  audit engine.
+
 ### Evaluation Methodology
 
 - **Prof. Valérie Viet Triem Tong** (CentraleSupélec, IRISA/PIRAT) — the adversarial
@@ -58,7 +66,7 @@ We are grateful to the researchers and practitioners whose work made this possib
 
 - **Pydantic** — for the policy model and validation layer
 - **structlog** — for structured, machine-readable enforcement logs
-- **Microsoft Presidio** — for production-grade PII detection and anonymization
+- **Microsoft Presidio** — design inspiration for PII detection patterns
 - **OpenTelemetry** — for the observability integration layer
 
 ### Regulatory Guidance
