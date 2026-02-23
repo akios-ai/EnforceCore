@@ -81,7 +81,7 @@ Here's the plan, release by release:
 
 | Release | Focus | Key Changes |
 |---------|-------|-------------|
-| **v1.0.21a1** | ✅ Security quick wins | Fix PII leak on fail_open path, log async hook errors, use public dataclass API |
+| **v1.0.21a1** | ⚠️ Security quick wins | Fix PII leak on fail_open path, log async hook errors, use public dataclass API *(code shipped; not on PyPI — superseded by v1.0.22a1)* |
 | **v1.0.22a1** | ✅ Infrastructure | Policy cache with mtime invalidation, shared thread pool (no more per-call pools), larger audit seek window |
 | **v1.0.23a1** | 🛡️ New audit findings | Fix pre-hook PII exposure, audit failure handling in fail_open, entropy check for API key detection |
 | **v1.0.24a1** | ⚡ Architecture | Refactor sync/async enforcement into shared pipeline, fix unicode normalization offset mapping |
