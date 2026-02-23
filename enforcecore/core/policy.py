@@ -203,9 +203,39 @@ class Policy(BaseModel):
     def from_dict(cls, data: dict[str, Any], *, source: str = "<dict>") -> Policy:
         """Create a policy from a plain dictionary.
 
+        For convenience and safety, any keys that belong to
+        :class:`PolicyRules` (e.g. ``allowed_tools``, ``denied_tools``)
+        will be automatically hoisted into the ``rules`` sub-dict if they
+        appear at the top level.  A :class:`DeprecationWarning` is emitted
+        to encourage the canonical nested format.
+
         Raises:
             PolicyValidationError: If the data does not conform to the schema.
         """
+        data = dict(data)  # shallow copy so we don't mutate caller's dict
+        hoisted: list[str] = []
+        rule_field_names = frozenset(PolicyRules.model_fields)
+        existing_rules = data.get("rules")
+        rules_sub: dict[str, Any] = dict(existing_rules) if isinstance(existing_rules, dict) else {}
+        for key in list(data):
+            if key != "rules" and key in rule_field_names:
+                rules_sub.setdefault(key, data.pop(key))
+                hoisted.append(key)
+        if hoisted:
+            import warnings
+
+            data["rules"] = rules_sub
+            warnings.warn(
+                f"Policy keys {hoisted} belong under 'rules' but were found "
+                f"at the top level.  They have been hoisted automatically.  "
+                f"Please use the nested format: "
+                f'{{"rules": {{{", ".join(repr(k) + ": ..." for k in hoisted)}}}}}. '
+                f"Top-level rule keys will be rejected in v2.0.0.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        elif "rules" not in data:
+            pass  # no rules at all — fine
         try:
             return cls.model_validate(data)
         except Exception as exc:

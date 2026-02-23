@@ -16,7 +16,7 @@ Basic usage::
 
 See https://github.com/akios-ai/EnforceCore for documentation.
 
-**API surface (v1.0.0b1+):** This package exports 30 core symbols (Tier 1).
+**API surface (v1.0.0b2+):** This package exports 30 core symbols (Tier 1).
 Advanced types remain importable for backwards compatibility but emit a
 ``DeprecationWarning`` — migrate to submodule imports::
 
@@ -300,7 +300,7 @@ from enforcecore.telemetry import (
     EnforceCoreMetrics as EnforceCoreMetrics,
 )
 
-__version__ = "1.0.0b1"
+__version__ = "1.0.0b2"
 
 # ── Public API contract ──────────────────────────────────────────────────
 # Only these ~30 symbols are guaranteed stable across minor versions.
