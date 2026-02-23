@@ -5,19 +5,19 @@
 
 Usage:
     # Full release (recommended) — checks, bumps, builds, pushes, verifies:
-    python scripts/release.py 1.0.21a1 --execute
+    python scripts/release.py 1.0.23a1 --execute
 
     # Dry-run (default) — shows what would change, no modifications:
-    python scripts/release.py 1.0.21a1
+    python scripts/release.py 1.0.23a1
 
     # Skip tests (if you already ran them):
-    python scripts/release.py 1.0.21a1 --execute --skip-tests
+    python scripts/release.py 1.0.23a1 --execute --skip-tests
 
-    # Local only — don't push or verify PyPI:
-    python scripts/release.py 1.0.21a1 --execute --local-only
+    # Local only — don’t push or verify PyPI:
+    python scripts/release.py 1.0.23a1 --execute --local-only
 
     # Push only (after a previous --local-only run):
-    python scripts/release.py 1.0.21a1 --push-only
+    python scripts/release.py 1.0.23a1 --push-only
 
 Steps performed:
     1. Pre-flight checks (clean tree, branch, remote)
@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import re
 import subprocess
 import sys
@@ -134,12 +135,50 @@ def preflight_checks() -> bool:
     return ok
 
 
+# ── CI parity constants ───────────────────────────────────────────────────
+# These MUST match .github/workflows/release.yml and ci.yml exactly.
+# If CI changes, update here too — and vice versa.
+_CI_PYTEST_TIMEOUT = "60"  # seconds per test (--timeout=60)
+_CI_HYPOTHESIS_MAX = "10"  # HYPOTHESIS_MAX_EXAMPLES env var
+_CI_REQUIRED_PACKAGES = ["pytest-timeout"]  # CI installs these separately
+
+
+def _ensure_ci_deps() -> None:
+    """Ensure packages that CI installs separately are available locally.
+
+    CI runs: pip install -e ".[dev]" pytest-timeout
+    Local dev venvs only have [dev] — missing pytest-timeout causes
+    silent test-timeout mismatches (root cause of v1.0.21a1 CI failure).
+    """
+    missing = []
+    for pkg in _CI_REQUIRED_PACKAGES:
+        r = run([sys.executable, "-m", "pip", "show", pkg])
+        if r.returncode != 0:
+            missing.append(pkg)
+
+    if missing:
+        log(f"Installing CI-required packages: {', '.join(missing)} …", level="step")
+        r = run([sys.executable, "-m", "pip", "install", "--quiet", *missing])
+        if r.returncode != 0:
+            log(f"Failed to install {missing}: {r.stderr}", level="err")
+            sys.exit(1)
+        log(f"Installed: {', '.join(missing)}", level="ok")
+
+
 # ── Step: Quality checks ──────────────────────────────────────────────────
 def run_checks() -> bool:
     ok = True
 
-    log("Running pytest …", level="step")
-    r = run([sys.executable, "-m", "pytest", "-q", "--tb=short"])
+    # Ensure CI parity — install any missing CI-only packages
+    _ensure_ci_deps()
+
+    log("Running pytest (CI parity: --timeout=60, HYPOTHESIS_MAX_EXAMPLES=10) …", level="step")
+    ci_env = {**os.environ, "HYPOTHESIS_MAX_EXAMPLES": _CI_HYPOTHESIS_MAX}
+    r = run(
+        [sys.executable, "-m", "pytest", "-q", "--tb=short",
+         "--timeout", _CI_PYTEST_TIMEOUT],
+        env=ci_env,
+    )
     if r.returncode != 0:
         log(f"pytest failed:\n{r.stdout}\n{r.stderr}", level="err")
         ok = False
@@ -474,10 +513,10 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python scripts/release.py 1.0.21a1                    # dry-run
-  python scripts/release.py 1.0.21a1 --execute          # full release
-  python scripts/release.py 1.0.21a1 --execute --local-only  # no push
-  python scripts/release.py 1.0.21a1 --push-only        # push existing tag
+  python scripts/release.py 1.0.23a1                    # dry-run
+  python scripts/release.py 1.0.23a1 --execute          # full release
+  python scripts/release.py 1.0.23a1 --execute --local-only  # no push
+  python scripts/release.py 1.0.23a1 --push-only        # push existing tag
         """,
     )
     parser.add_argument("version", help="New version (e.g. 1.0.21a1)")
