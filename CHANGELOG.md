@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0b3] — 2026-02-23
+
+### Fixed
+- **Documentation accuracy** — Corrected false Presidio dependency claim in architecture.md (engine is pure-regex), removed references to deprecated `async with enforce()` context manager API, updated performance benchmarks from estimated 8-20ms to measured ~0.056ms E2E.
+- **README academic credibility** — Replaced "Provable" claim with "Property-tested" (22 Hypothesis properties), fixed misleading `eval()` code comment, repaired corrupted emoji characters.
+- **Formal invariants precision** — Added explicit note distinguishing property-based testing (Hypothesis) from mechanical formal proof in `docs/formal/invariants.md`.
+- **CHANGELOG date** — Corrected v1.0.24a1 date from future 2026-02-24 to 2026-02-23.
+
+### Changed
+- **SECURITY.md** — Updated supported versions table for current beta.
+- **Threat model** — Updated version header to reflect current release.
+- **Audit script** — Applied ruff auto-fixes (import sorting, assert patterns) to `scripts/full_audit.py`.
+
 ## [1.0.0b2] — 2026-02-23
 
 ### Fixed
