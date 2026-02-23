@@ -1,6 +1,6 @@
 # EnforceCore — Formal Threat Model
 
-**Version:** 1.0.0b3
+**Version:** 1.0.0b4
 **Last updated:** 2026-02-23
 **Status:** Active — reviewed with each release
 
@@ -229,12 +229,18 @@ result in the call proceeding. This is documented and gated behind a
 - Chain resumption: a new `Auditor` instance reads the last entry from an
   existing file to continue the chain.
 
-**Caveat:** The chain is symmetric (SHA-256 only). An attacker with write
-access to the audit file **can rebuild the entire chain** from scratch. There
-is no asymmetric signature or external root-hash anchor. This means chain
-integrity protects against accidental corruption and third-party tampering,
-but not against an attacker who controls both the audit file and the
-EnforceCore process.
+**Caveat:** The chain is symmetric (SHA-256 only). Without additional
+hardening, an attacker with write access to the audit file **can rebuild
+the entire chain** from scratch. This means baseline chain integrity
+protects against accidental corruption and third-party tampering, but not
+against an attacker who controls both the audit file and the EnforceCore
+process.
+
+**Mitigations (v1.0.0b4+):**
+- `Auditor(immutable=True)` — OS-enforced append-only prevents chain rebuild
+  (see §5.3)
+- `Auditor(witness=...)` — external hash witness detects chain rebuild even if
+  the attacker has full filesystem control (see §5.3)
 
 **Tests:**
 - `tests/auditor/test_engine.py::test_chain_valid`
@@ -310,17 +316,49 @@ Security-critical settings controllable via environment:
 
 ### 5.3 Audit Trail Storage
 
-**Trust level:** PARTIALLY TRUSTED — integrity is verifiable but not enforced.
+**Trust level:** PARTIALLY TRUSTED — integrity is verifiable, with opt-in
+OS-level enforcement and external witnessing.
 
 The audit file is written as append-only JSONL with Merkle chain hashing.
-`verify_trail()` detects any post-write modification. However:
+`verify_trail()` detects any post-write modification. However, without
+additional hardening, an attacker with filesystem access can rebuild the chain.
 
+**Residual risks (without mitigations):**
 - No encryption at rest — entries are plaintext JSON
 - No asymmetric signature — an attacker with write access can rebuild the chain
 - No external root-hash anchor — chain verification is self-referential
 
-**Future mitigation (planned):** External root-hash publication (e.g., to a
-blockchain or external log) would close the rebuild-attack vector.
+**Mitigation 1 — OS-enforced append-only (v1.0.0b4+):**
+
+`Auditor(immutable=True)` sets the OS-level append-only attribute on the
+audit file via `chattr +a` (Linux) or `chflags uappend` (macOS). This
+prevents truncation, overwrite, or deletion — even by the file owner —
+without first removing the attribute (which requires elevated privileges).
+
+- **Linux:** Requires `CAP_LINUX_IMMUTABLE` (dropped by default in Docker;
+  use `docker run --cap-add LINUX_IMMUTABLE`)
+- **macOS:** Requires root or file owner on HFS+/APFS
+- **Fail-safe:** If the platform does not support it, a warning is logged
+  and the auditor continues without protection
+
+See `enforcecore.auditor.immutable` for `platform_support_info()`.
+
+**Mitigation 2 — Hash-only remote witness (v1.0.0b4+):**
+
+`Auditor(witness=...)` publishes the hash of each audit entry to a
+separate witness backend. Because the witness stores only hashes (~200
+bytes per entry), the data overhead is negligible. If an attacker
+rebuilds the Merkle chain, `verify_with_witness()` detects the mismatch.
+
+Built-in witnesses:
+- `CallbackWitness` — route hashes to any callable (queue, HTTP, database)
+- `FileWitness` — append hashes to a separate JSONL file (different volume/user)
+- `LogWitness` — emit hashes via Python `logging` (routes to syslog/journald)
+
+This design was directly informed by guidance from Prof. Dan S. Wallach
+(Rice University), co-author of Crosby & Wallach (2009).
+
+See `enforcecore.auditor.witness` for `verify_with_witness()`.
 
 ### 5.4 Hook System
 

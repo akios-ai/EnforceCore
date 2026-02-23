@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0b4] — 2026-02-23
+
+### Added
+- **OS-enforced append-only audit files** — `Auditor(immutable=True)` sets the OS-level append-only attribute (`chattr +a` on Linux, `chflags uappend` on macOS), preventing truncation or chain rebuild even by the file owner. Includes container detection and capability checking for Docker (`CAP_LINUX_IMMUTABLE`). Fails safely on unsupported platforms.
+- **Hash-only remote witness** — `Auditor(witness=...)` publishes entry hashes (~200 bytes each) to a witness backend, enabling tamper detection even if an attacker rebuilds the Merkle chain. Built-in witnesses: `CallbackWitness` (queues, HTTP, databases), `FileWitness` (separate JSONL file), `LogWitness` (syslog/journald via Python logging).
+- **Witness verification** — `verify_with_witness()` cross-checks audit trail hashes against witness records, detecting chain-rebuild attacks that `verify_trail()` alone cannot.
+- **Platform support introspection** — `platform_support_info()` returns a dict describing append-only support, container detection, and capability status for the current platform.
+- **48 new tests** — Full coverage for witness backends, append-only protection, Auditor integration, platform detection, and cross-platform mocking.
+
+### Changed
+- **Threat model §5.3 updated** — Audit trail storage section now documents both mitigations (append-only + witness) with specific platform requirements and container guidance.
+- **CONTRIBUTORS.md** — Added Prof. Dan S. Wallach (Rice University) under Design Feedback for direct guidance on tamper-evidence mitigations.
+
 ## [1.0.0b3] — 2026-02-23
 
 ### Fixed
