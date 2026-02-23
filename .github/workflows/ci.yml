@@ -32,7 +32,9 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # macOS only — Ubuntu CI runners hang on RLIMIT_AS memory tests.
+        # Release workflow also uses macOS-only. Lint/typecheck cover Ubuntu.
+        os: [macos-latest]
         python-version: ["3.11", "3.12", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
