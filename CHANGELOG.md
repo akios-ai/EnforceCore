@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0b2] — 2026-02-23
+
+### Fixed
+- **Policy.from_dict() silent rule drop** — Rule-level keys (`denied_tools`, `allowed_tools`, etc.) placed at the top level of a `from_dict()` call were silently ignored by Pydantic, resulting in **no enforcement**. These keys are now automatically hoisted into `rules` with a `DeprecationWarning`.  Top-level rule keys will be rejected in v2.0.0.
+
+### Added
+- **Regression tests** — New tests verifying flat-dict rule hoisting and enforcement.
+
 ## [1.0.0b1] — 2026-02-23
 
 ### Added

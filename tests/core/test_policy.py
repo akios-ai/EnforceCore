@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 import pytest
@@ -120,6 +121,44 @@ class TestPolicyFromDict:
     def test_missing_name(self) -> None:
         with pytest.raises(PolicyValidationError):
             Policy.from_dict({"rules": {}})
+
+    def test_flat_rule_keys_hoisted_with_warning(self) -> None:
+        """Flat rule keys (denied_tools, allowed_tools, etc.) are automatically
+        hoisted into ``rules`` with a DeprecationWarning."""
+        with pytest.warns(DeprecationWarning, match="hoisted"):
+            p = Policy.from_dict(
+                {"name": "hoist-test", "denied_tools": ["shell"], "allowed_tools": ["read"]}
+            )
+        assert p.rules.denied_tools == ["shell"]
+        assert p.rules.allowed_tools == ["read"]
+
+    def test_flat_rule_keys_do_not_overwrite_nested(self) -> None:
+        """When both flat and nested keys exist, nested takes precedence."""
+        with pytest.warns(DeprecationWarning, match="hoisted"):
+            p = Policy.from_dict(
+                {
+                    "name": "precedence",
+                    "denied_tools": ["flat_deny"],
+                    "rules": {"denied_tools": ["nested_deny"]},
+                }
+            )
+        # nested wins (setdefault keeps the existing value)
+        assert p.rules.denied_tools == ["nested_deny"]
+
+    def test_flat_dict_enforce_blocks_denied_tool(self) -> None:
+        """Regression: flat denied_tools must actually block, not be silently dropped."""
+        from enforcecore import ToolDeniedError, enforce
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            policy = Policy.from_dict({"name": "block-test", "denied_tools": ["bad"]})
+
+        @enforce(policy=policy)
+        def bad() -> str:
+            return "should not reach"
+
+        with pytest.raises(ToolDeniedError):
+            bad()
 
 
 class TestPolicyValidateFile:
