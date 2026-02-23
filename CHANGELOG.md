@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0b4] — 2026-02-23
+## [1.0.0b5] — 2026-02-23
+
+## [1.0.0b5] — 2026-02-23
+
+### Added
+- **Settings-driven witness and immutable** — New `audit_immutable` and `audit_witness_file` settings, configurable via `ENFORCECORE_AUDIT_IMMUTABLE=true` and `ENFORCECORE_AUDIT_WITNESS_FILE=/path/to/witness.jsonl` environment variables.  `@enforce()` users now get tamper-evidence hardening without writing code.
+- **API documentation** — New `docs/api/witness.md` and `docs/api/immutable.md` pages documenting all witness backends and append-only file protection.
+- **Edge-case tests** — 18 new tests: `_has_linux_immutable_cap()` multi-branch logic, `is_append_only()` with mocked `lsattr`/`st_flags`, `verify_with_witness()` with empty trails, `CallbackWitness`/`FileWitness` concurrent stress tests, Settings env-var overrides.
+
+### Changed
+- **Witness publish moved outside audit lock** — `_publish_to_witness()` is now called after releasing `self._lock`, preventing slow witness backends (e.g. HTTP callbacks) from blocking subsequent audit writes.
+- **`_build_auditor()` respects new settings** — `Enforcer._build_auditor()` now reads `audit_immutable` and `audit_witness_file` from global settings, enabling tamper-evidence via env vars for `@enforce()` users.
+- **Threat model updated** — §6 Assumption 6 now references `immutable=True` mitigation; §7 Known Limitations table cross-references witness + immutable for the asymmetric signing limitation; §8 Revision History updated with b4 and b5 entries.
+- **Release checklist expanded** — Added witness/immutable checks to §7 Audit Trail (4→10 checks), §12 Config (→5 checks), §14 Submodule Imports (→22 checks), and Quick Reference table.
+- **README** — Fixed test count badge (1503→1492) and body text (1444→1492); enterprise table now highlights append-only + witness features.
+
+### Fixed
+- **`chflags sappend` docstring error** — Module docstring, `platform_support_info()`, and implementation comment in `immutable.py` incorrectly said `chflags sappend` (system-level, root-only) but the code uses `chflags uappend` (user-level).  All 3 occurrences corrected.
+- **`CallbackWitness` blocking-I/O footgun** — Added prominent `.. warning::` to docstring explaining that slow callbacks block audit writes, with a queue-based workaround pattern.
 
 ### Added
 - **OS-enforced append-only audit files** — `Auditor(immutable=True)` sets the OS-level append-only attribute (`chattr +a` on Linux, `chflags uappend` on macOS), preventing truncation or chain rebuild even by the file owner. Includes container detection and capability checking for Docker (`CAP_LINUX_IMMUTABLE`). Fails safely on unsupported platforms.

@@ -439,10 +439,6 @@ class Auditor:
             self._last_hash = entry.entry_hash
             self._entry_count += 1
 
-            # Publish to witness (fail-open — never blocks the audit write)
-            if self._witness is not None:
-                self._publish_to_witness(entry)
-
             logger.debug(
                 "audit_entry_recorded",
                 entry_id=entry.entry_id,
@@ -451,7 +447,12 @@ class Auditor:
                 chain_length=self._entry_count,
             )
 
-            return entry
+        # Publish to witness OUTSIDE the lock so slow witnesses
+        # (e.g. HTTP callbacks) don't block subsequent audit writes.
+        if self._witness is not None:
+            self._publish_to_witness(entry)
+
+        return entry
 
     def _publish_to_witness(self, entry: AuditEntry) -> None:
         """Send entry hash to the witness backend.

@@ -124,6 +124,23 @@ class CallbackWitness(WitnessBackend):
     - Send via HTTP: ``CallbackWitness(post_to_api)``
     - Collect in memory: ``CallbackWitness(my_list.append)``
 
+    .. warning:: **Blocking I/O**
+
+       The callback is invoked **synchronously** on every
+       ``Auditor.record()`` call.  If the callback performs network I/O
+       (e.g. HTTP POST), it will add that latency to every audit entry.
+       For production use with remote witnesses, wrap the callback in a
+       queue-based pattern::
+
+           import queue, threading
+
+           q: queue.Queue[WitnessRecord] = queue.Queue()
+           threading.Thread(target=lambda: [post(q.get()) for _ in iter(int, 1)], daemon=True).start()
+           witness = CallbackWitness(q.put)  # non-blocking
+
+       Alternatively, use :class:`FileWitness` or :class:`LogWitness`
+       which write to local resources with negligible latency.
+
     Example::
 
         hashes = []

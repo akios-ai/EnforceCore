@@ -434,12 +434,33 @@ class Enforcer:
 
     @staticmethod
     def _build_auditor() -> Auditor | None:
-        """Create an Auditor from global settings, if audit is enabled."""
+        """Create an Auditor from global settings, if audit is enabled.
+
+        Reads ``audit_immutable`` and ``audit_witness_file`` from
+        :data:`~enforcecore.core.config.settings` so that users can
+        enable tamper-evidence hardening via environment variables:
+
+        - ``ENFORCECORE_AUDIT_IMMUTABLE=true``
+        - ``ENFORCECORE_AUDIT_WITNESS_FILE=/var/log/ec-witness.jsonl``
+
+        .. versionchanged:: 1.0.0b5
+           Now respects ``audit_immutable`` and ``audit_witness_file``.
+        """
         if not settings.audit_enabled:
             return None
         from enforcecore.auditor.engine import Auditor as _Auditor
 
-        return _Auditor(output_path=settings.audit_path / "trail.jsonl")
+        witness = None
+        if settings.audit_witness_file is not None:
+            from enforcecore.auditor.witness import FileWitness
+
+            witness = FileWitness(settings.audit_witness_file)
+
+        return _Auditor(
+            output_path=settings.audit_path / "trail.jsonl",
+            witness=witness,
+            immutable=settings.audit_immutable,
+        )
 
     def _record_audit(
         self,

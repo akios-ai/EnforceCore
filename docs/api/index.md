@@ -53,6 +53,8 @@ Tamper-proof audit trail system.
 | [Engine](auditor.md) | Merkle-chained audit writer and verifier |
 | [Backends](backends.md) | Pluggable storage backends (JSONL, callback, multi) |
 | [Rotation](rotation.md) | Size-based rotation, retention, and compression |
+| [Witness](witness.md) | Hash-only remote witnesses for tamper detection |
+| [Immutable](immutable.md) | OS-enforced append-only file protection |
 
 ## Guard
 
