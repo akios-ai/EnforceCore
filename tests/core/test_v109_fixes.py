@@ -243,8 +243,8 @@ class TestMissingExports:
     def test_total_exports_count(self) -> None:
         import enforcecore
 
-        # v1.0.9: 105 exports
-        assert len(enforcecore.__all__) >= 105
+        # v1.0.25a1: pruned to 30 Tier 1 symbols (was 105+ in v1.0.9)
+        assert len(enforcecore.__all__) == 30
 
 
 # ---------------------------------------------------------------------------

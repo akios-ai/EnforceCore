@@ -144,14 +144,18 @@ class TestNewSettingsFields:
 
 
 class TestTopLevelExports:
-    """Package should export 110 symbols including v1.0.10 additions."""
+    """Package should export 30 Tier 1 symbols (pruned in v1.0.25a1).
+
+    v1.0.10 additions are still importable but moved to Tier 2.
+    """
 
     def test_total_export_count(self) -> None:
         import enforcecore
 
-        assert len(enforcecore.__all__) == 110
+        assert len(enforcecore.__all__) == 30
 
-    def test_new_v1010_exports(self) -> None:
+    def test_v1010_exports_still_importable(self) -> None:
+        """v1.0.10 symbols moved to Tier 2 — importable but not in __all__."""
         import enforcecore
 
         for name in (
@@ -161,7 +165,6 @@ class TestTopLevelExports:
             "EnforceCoreInstrumentor",
             "EnforceCoreMetrics",
         ):
-            assert name in enforcecore.__all__, f"{name} missing from __all__"
             assert hasattr(enforcecore, name), f"{name} not importable"
 
     def test_imports_resolve(self) -> None:
