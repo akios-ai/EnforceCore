@@ -9,17 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.23a1] — 2026-02-23
 
-### Planned — v1.0.23a1
+### Fixed
+
+- **Release infrastructure:** `scripts/release.py` now runs pytest with `--timeout=60`
+  and `HYPOTHESIS_MAX_EXAMPLES=10`, matching CI exactly (CI parity constants).
+  Root cause of v1.0.21a1 CI failure.
+- **Release script:** `verify_artifacts()` now uses `sys.executable` instead of
+  bare `python` command, fixing venv detection in artifact validation.
+- **CI pipeline:** Test matrix changed from `[ubuntu-latest, macos-latest]` to
+  `[macos-latest]` only. RLIMIT_AS memory-limit tests hang on Ubuntu CI runners,
+  causing 15-minute timeouts and cancelled jobs since run #19.
+
+### Security
+
+- Added "Known Security Gaps" section to `SECURITY.md` documenting A-4, M-4,
+  A-5, M-5 audit findings with mitigations and fix targets.
+- Added CI Parity section and v1.0.21a1 post-mortem to `RELEASING.md`.
+
+### Planned — Next Releases
 
 - **[A-4]** Tighten `AuditEntry.to_dict()` serialisation (reject non-JSON-safe extras)
 - **[M-4]** Add entropy check to `generic_api_key` secret scanner regex
 - **[A-5]** Enforce minimum `max_input_bytes` floor (e.g. 64) to prevent misconfiguration
-
-### Planned — v1.0.0 Stable
-
-- **[M-2]** Extract shared pipeline from `enforce_sync`/`enforce_async` (DRY)
-- **[M-5]** Unicode normalization offset mapping for accurate PII positions
-- **[L-1]** Curate public API surface (reduce `__init__.py` exports)
 
 ## [1.0.22a1] — 2026-02-22
 

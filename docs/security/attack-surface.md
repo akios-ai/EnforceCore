@@ -1,7 +1,7 @@
 # Attack Surface Analysis
 
-**Version:** 1.0.12a1
-**Last updated:** 2026-02-21
+**Version:** 1.0.23a1
+**Last updated:** 2026-02-23
 
 ---
 
@@ -231,4 +231,5 @@ python -c "from enforcecore.core.config import settings; assert not settings.fai
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.0.23a1 | 2026-02-23 | Updated version header to current release |
 | 1.0.12a1 | 2026-02-21 | Initial attack surface analysis |

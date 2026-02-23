@@ -1246,6 +1246,7 @@ runtime enforcement layer** for any Python-based agentic AI system.
 | v1.0.20a1 | Packaging & Publication | 1461 | ✅ Shipped |
 | v1.0.21a1 | Security Fixes | 1487 | ⚠️ Code shipped, not on PyPI* |
 | v1.0.22a1 | Infrastructure Hardening | 1503 | ✅ Shipped |
+| v1.0.23a1 | Release Infrastructure & CI Fix | 1503 | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | — | **🎯 Target** |
 
 > *v1.0.21a1 code changes are included in v1.0.22a1. The v1.0.21a1 tag

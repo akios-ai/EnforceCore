@@ -8,11 +8,11 @@
 
 ## How Version Numbers Work
 
-Every EnforceCore release has a version number like **`1.0.22a1`**.
+Every EnforceCore release has a version number like **`1.0.23a1`**.
 Here's what each part means:
 
 ```
-  1  .  0  .  22  a1
+  1  .  0  .  23  a1
   │     │     │   │
   │     │     │   └── Pre-release tag: "a" = alpha, "b" = beta, "rc" = release candidate
   │     │     └────── Patch number: increments with each release
@@ -26,7 +26,7 @@ Think of it like building a house:
 
 | Stage | Version Example | What It Means | Who Should Use It |
 |-------|-----------------|---------------|-------------------|
-| **Alpha** (`a`) | `1.0.22a1` | 🏗️ **Under construction.** Core features work, but things may change. Expect rough edges. | Developers who want early access and don't mind occasional breakage |
+| **Alpha** (`a`) | `1.0.23a1` | 🏗️ **Under construction.** Core features work, but things may change. Expect rough edges. | Developers who want early access and don't mind occasional breakage |
 | **Beta** (`b`) | `1.0.25b1` | 🏠 **Walls are up.** All planned features are done. We're fixing bugs, not adding features. | Early adopters who want to test before everyone else |
 | **Release Candidate** (`rc`) | `1.0.28rc1` | 🏡 **Final inspection.** We believe it's ready. If no bugs are found, this becomes the stable release. | Teams preparing for production deployment |
 | **Stable** | `1.0.0` | ✅ **Move-in ready.** Fully tested, documented, and supported. Safe for production. | Everyone |
@@ -44,8 +44,8 @@ Think of it like building a house:
 
 ## Where EnforceCore Is Today
 
-**Current version: `1.0.22a1` (Alpha)**
-**Published:** February 22, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
+**Current version: `1.0.23a1` (Alpha)**
+**Published:** February 23, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
 
 ### What "Alpha" Means for You
 
@@ -83,14 +83,14 @@ Here's the plan, release by release:
 |---------|-------|-------------|
 | **v1.0.21a1** | ⚠️ Security quick wins | Fix PII leak on fail_open path, log async hook errors, use public dataclass API *(code shipped; not on PyPI — superseded by v1.0.22a1)* |
 | **v1.0.22a1** | ✅ Infrastructure | Policy cache with mtime invalidation, shared thread pool (no more per-call pools), larger audit seek window |
-| **v1.0.23a1** | 🛡️ New audit findings | Fix pre-hook PII exposure, audit failure handling in fail_open, entropy check for API key detection |
+| **v1.0.23a1** | ✅ Release infra & CI | CI parity in release script, macOS-only test matrix, release.py hardening, security docs |
 | **v1.0.24a1** | ⚡ Architecture | Refactor sync/async enforcement into shared pipeline, fix unicode normalization offset mapping |
 
 ### Phase 2: Beta (Target: April 2026)
 
 | Release | Focus | Key Changes |
 |---------|-------|-------------|
-| **v1.0.25b1** | 📦 API stabilization | Reduce `__all__` from 87 to ~25 core symbols, move specialized types to submodules, add deprecation warnings |
+| **v1.0.25b1** | 📦 API stabilization | Reduce `__all__` from 110 to ~25 core symbols, move specialized types to submodules, add deprecation warnings |
 | **v1.0.26b1** | 📖 Documentation | Complete API reference, migration guide for deprecated imports, integration guides for LangChain/CrewAI/AutoGen |
 | **v1.0.27b1** | 🧪 Extended testing | Fuzz testing, property-based testing expansion, performance regression benchmarks |
 
@@ -165,7 +165,7 @@ Once stable, version numbers follow [Semantic Versioning](https://semver.org/):
 ## FAQ
 
 **Q: Can I use the alpha in my project today?**
-A: Yes, but pin the exact version (`enforcecore==1.0.22a1`) and be prepared
+A: Yes, but pin the exact version (`enforcecore==1.0.23a1`) and be prepared
 to update your code when the API stabilizes.
 
 **Q: Will my code break when you release beta?**
@@ -188,4 +188,4 @@ for details.
 
 ---
 
-*This document is updated with each release. Last updated: February 22, 2026.*
+*This document is updated with each release. Last updated: February 23, 2026.*
