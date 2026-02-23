@@ -5,6 +5,86 @@ upgrading between EnforceCore versions.
 
 ---
 
+## v1.0.0b1 — First Beta (API Frozen)
+
+### What "beta" means
+
+Starting with v1.0.0b1, the public API (`__all__`) is **frozen**.
+No symbols will be added or removed from `__all__` until v2.0.0.
+Only bug fixes and documentation improvements will be made during beta.
+
+### API Surface: Tier 1 vs Tier 2
+
+In v1.0.25a1 the `__all__` was pruned from 110 symbols to 30.
+In v1.0.0b1, the ~80 symbols that were removed from `__all__` now
+emit a **`DeprecationWarning`** when imported from the top-level package.
+
+**Tier 1 (30 symbols) — stable, no warning:**
+
+```python
+from enforcecore import (
+    # Enforcement
+    enforce, Enforcer,
+    # Policy
+    Policy, load_policy,
+    # Redaction
+    Redactor, RedactionResult, RedactionStrategy, SecretScanner,
+    # Audit
+    Auditor, AuditEntry, VerificationResult, verify_trail, load_trail,
+    # Guards
+    ResourceGuard, CostTracker, KillSwitch, RateLimiter,
+    # Core types
+    Decision, EnforcementResult,
+    # Errors
+    EnforceCoreError, EnforcementViolation, ToolDeniedError,
+    ContentViolationError, PolicyError, PolicyLoadError,
+    CostLimitError, ResourceLimitError,
+    # Config
+    Settings, settings,
+)
+```
+
+**Tier 2 (~80 symbols) — use submodule imports:**
+
+```python
+# ❌ Deprecated — emits DeprecationWarning
+from enforcecore import JsonlBackend, RuleEngine, on_pre_call
+
+# ✅ Correct — stable submodule imports
+from enforcecore.auditor.backends import JsonlBackend
+from enforcecore.core.rules import RuleEngine
+from enforcecore.plugins.hooks import on_pre_call
+```
+
+### How to migrate
+
+1. **Search your codebase** for `from enforcecore import` statements
+2. **Check each symbol** against the Tier 1 list above
+3. **Move Tier 2 imports** to their canonical submodule path
+
+The deprecation warning message includes the exact submodule path:
+
+```
+DeprecationWarning: Importing 'JsonlBackend' from 'enforcecore' is deprecated
+and will be removed in v2.0.0. Use 'from enforcecore.auditor.backends import
+JsonlBackend' instead.
+```
+
+### Submodule import reference
+
+| Symbol | Submodule import |
+|--------|-----------------|
+| `RuleEngine`, `ContentRule` | `from enforcecore.core.rules import ...` |
+| `JsonlBackend`, `MultiBackend` | `from enforcecore.auditor.backends import ...` |
+| `on_pre_call`, `on_violation` | `from enforcecore.plugins.hooks import ...` |
+| `ScenarioRunner`, `get_all_scenarios` | `from enforcecore.eval import ...` |
+| `DomainChecker` | `from enforcecore.guard.network import ...` |
+| `EnforceCoreInstrumentor` | `from enforcecore.telemetry import ...` |
+| `validate_tool_name`, `check_input_size` | `from enforcecore.core.hardening import ...` |
+| `CallContext`, `RedactionEvent` | `from enforcecore.core.types import ...` |
+
+---
+
 ## Alpha → Stable (v1.0.xaN → v1.0.0)
 
 If you have been using any alpha release, this section covers everything

@@ -2,7 +2,23 @@
 
 Auto-generated documentation for all public EnforceCore APIs.
 
-EnforceCore exports **110+ public symbols** organized into these modules:
+EnforceCore exports **30 core symbols** (Tier 1) in `__all__`.
+An additional ~80 advanced symbols (Tier 2) remain importable from the
+top-level package for backwards compatibility, but emit a
+`DeprecationWarning` — use submodule imports instead.
+
+!!! tip "Import convention"
+    ```python
+    # ✅ Tier 1 — stable, no warning
+    from enforcecore import enforce, Enforcer, Policy, Redactor, Auditor
+
+    # ✅ Tier 2 — stable via submodule
+    from enforcecore.plugins.hooks import on_pre_call, on_violation
+    from enforcecore.auditor.backends import JsonlBackend
+
+    # ⚠️ Deprecated — emits DeprecationWarning
+    from enforcecore import JsonlBackend  # will be removed in v2.0.0
+    ```
 
 ## Core
 

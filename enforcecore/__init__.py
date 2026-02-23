@@ -16,13 +16,14 @@ Basic usage::
 
 See https://github.com/akios-ai/EnforceCore for documentation.
 
-**API surface (v1.0.25a1+):** This package exports ~30 core symbols.
-Advanced types are available via submodule imports::
+**API surface (v1.0.0b1+):** This package exports 30 core symbols (Tier 1).
+Advanced types remain importable for backwards compatibility but emit a
+``DeprecationWarning`` — migrate to submodule imports::
 
-    # Core (top-level)
+    # Core (top-level — stable)
     from enforcecore import enforce, Enforcer, Policy, Redactor, Auditor
 
-    # Advanced (submodule)
+    # Advanced (submodule — stable path)
     from enforcecore.auditor.backends import JsonlBackend, MultiBackend
     from enforcecore.plugins.hooks import on_pre_call, on_violation
     from enforcecore.eval import ScenarioRunner, get_all_scenarios
@@ -299,7 +300,7 @@ from enforcecore.telemetry import (
     EnforceCoreMetrics as EnforceCoreMetrics,
 )
 
-__version__ = "1.0.25a1"
+__version__ = "1.0.0b1"
 
 # ── Public API contract ──────────────────────────────────────────────────
 # Only these ~30 symbols are guaranteed stable across minor versions.
@@ -345,3 +346,150 @@ __all__ = [
     "settings",
     "verify_trail",
 ]
+
+# ── Tier 2 deprecation machinery ─────────────────────────────────────────
+# Tier 2 symbols are still importable via ``from enforcecore import X`` for
+# backwards compatibility, but emit a DeprecationWarning directing users to
+# the canonical submodule import.  They will be removed from the top-level
+# package in v2.0.0.
+#
+# Implementation: the ``X as X`` imports above eagerly loaded the symbols
+# into the module namespace.  We move them into ``_TIER2_IMPORTS`` and pop
+# them from ``globals()`` so that ``__getattr__`` fires on access.
+
+import importlib as _importlib
+import warnings as _warnings
+
+_TIER2_IMPORTS: dict[str, tuple[str, str]] = {
+    # ── auditor.backends ──
+    "AuditBackend": ("enforcecore.auditor.backends", "AuditBackend"),
+    "CallbackBackend": ("enforcecore.auditor.backends", "CallbackBackend"),
+    "JsonlBackend": ("enforcecore.auditor.backends", "JsonlBackend"),
+    "MultiBackend": ("enforcecore.auditor.backends", "MultiBackend"),
+    "NullBackend": ("enforcecore.auditor.backends", "NullBackend"),
+    # ── auditor.rotation ──
+    "AuditRotator": ("enforcecore.auditor.rotation", "AuditRotator"),
+    # ── core.enforcer ──
+    "clear_policy_cache": ("enforcecore.core.enforcer", "clear_policy_cache"),
+    # ── core.hardening ──
+    "EnforcementDepthError": ("enforcecore.core.hardening", "EnforcementDepthError"),
+    "HardeningError": ("enforcecore.core.hardening", "HardeningError"),
+    "InputTooLargeError": ("enforcecore.core.hardening", "InputTooLargeError"),
+    "InvalidToolNameError": ("enforcecore.core.hardening", "InvalidToolNameError"),
+    "check_input_size": ("enforcecore.core.hardening", "check_input_size"),
+    "deep_redact": ("enforcecore.core.hardening", "deep_redact"),
+    "enter_enforcement": ("enforcecore.core.hardening", "enter_enforcement"),
+    "exit_enforcement": ("enforcecore.core.hardening", "exit_enforcement"),
+    "get_enforcement_chain": ("enforcecore.core.hardening", "get_enforcement_chain"),
+    "get_enforcement_depth": ("enforcecore.core.hardening", "get_enforcement_depth"),
+    "is_dev_mode": ("enforcecore.core.hardening", "is_dev_mode"),
+    "validate_tool_name": ("enforcecore.core.hardening", "validate_tool_name"),
+    # ── core.policy ──
+    "ContentRulesPolicyConfig": ("enforcecore.core.policy", "ContentRulesPolicyConfig"),
+    "NetworkPolicy": ("enforcecore.core.policy", "NetworkPolicy"),
+    "PIIRedactionConfig": ("enforcecore.core.policy", "PIIRedactionConfig"),
+    "PolicyEngine": ("enforcecore.core.policy", "PolicyEngine"),
+    "PolicyRules": ("enforcecore.core.policy", "PolicyRules"),
+    "RateLimitPolicyConfig": ("enforcecore.core.policy", "RateLimitPolicyConfig"),
+    "ResourceLimits": ("enforcecore.core.policy", "ResourceLimits"),
+    # ── core.rules ──
+    "ContentRule": ("enforcecore.core.rules", "ContentRule"),
+    "ContentRuleConfig": ("enforcecore.core.rules", "ContentRuleConfig"),
+    "RuleEngine": ("enforcecore.core.rules", "RuleEngine"),
+    "RuleViolation": ("enforcecore.core.rules", "RuleViolation"),
+    "get_builtin_rules": ("enforcecore.core.rules", "get_builtin_rules"),
+    # ── core.types ──
+    "AuditError": ("enforcecore.core.types", "AuditError"),
+    "CallContext": ("enforcecore.core.types", "CallContext"),
+    "DomainDeniedError": ("enforcecore.core.types", "DomainDeniedError"),
+    "GuardError": ("enforcecore.core.types", "GuardError"),
+    "PolicyValidationError": ("enforcecore.core.types", "PolicyValidationError"),
+    "RedactionError": ("enforcecore.core.types", "RedactionError"),
+    "RedactionEvent": ("enforcecore.core.types", "RedactionEvent"),
+    "ViolationAction": ("enforcecore.core.types", "ViolationAction"),
+    "ViolationType": ("enforcecore.core.types", "ViolationType"),
+    # ── eval ──
+    "BenchmarkRunner": ("enforcecore.eval", "BenchmarkRunner"),
+    "ScenarioRunner": ("enforcecore.eval", "ScenarioRunner"),
+    "generate_benchmark_report": ("enforcecore.eval", "generate_benchmark_report"),
+    "generate_report": ("enforcecore.eval", "generate_report"),
+    "generate_suite_report": ("enforcecore.eval", "generate_suite_report"),
+    "get_all_scenarios": ("enforcecore.eval", "get_all_scenarios"),
+    "get_scenarios_by_category": ("enforcecore.eval", "get_scenarios_by_category"),
+    # ── eval.types ──
+    "BenchmarkResult": ("enforcecore.eval.types", "BenchmarkResult"),
+    "BenchmarkSuite": ("enforcecore.eval.types", "BenchmarkSuite"),
+    "Scenario": ("enforcecore.eval.types", "Scenario"),
+    "ScenarioOutcome": ("enforcecore.eval.types", "ScenarioOutcome"),
+    "ScenarioResult": ("enforcecore.eval.types", "ScenarioResult"),
+    "Severity": ("enforcecore.eval.types", "Severity"),
+    "SuiteResult": ("enforcecore.eval.types", "SuiteResult"),
+    "ThreatCategory": ("enforcecore.eval.types", "ThreatCategory"),
+    # ── guard.network ──
+    "DomainChecker": ("enforcecore.guard.network", "DomainChecker"),
+    # ── guard.ratelimit ──
+    "RateLimit": ("enforcecore.guard.ratelimit", "RateLimit"),
+    "RateLimitError": ("enforcecore.guard.ratelimit", "RateLimitError"),
+    # ── integrations._base ──
+    "require_package": ("enforcecore.integrations._base", "require_package"),
+    "wrap_with_policy": ("enforcecore.integrations._base", "wrap_with_policy"),
+    # ── plugins.hooks ──
+    "HookContext": ("enforcecore.plugins.hooks", "HookContext"),
+    "HookRegistry": ("enforcecore.plugins.hooks", "HookRegistry"),
+    "RedactionHookContext": ("enforcecore.plugins.hooks", "RedactionHookContext"),
+    "ViolationHookContext": ("enforcecore.plugins.hooks", "ViolationHookContext"),
+    "on_post_call": ("enforcecore.plugins.hooks", "on_post_call"),
+    "on_pre_call": ("enforcecore.plugins.hooks", "on_pre_call"),
+    "on_redaction": ("enforcecore.plugins.hooks", "on_redaction"),
+    "on_violation": ("enforcecore.plugins.hooks", "on_violation"),
+    # ── plugins.webhooks ──
+    "WebhookDispatcher": ("enforcecore.plugins.webhooks", "WebhookDispatcher"),
+    "WebhookEvent": ("enforcecore.plugins.webhooks", "WebhookEvent"),
+    # ── redactor.engine ──
+    "DetectedEntity": ("enforcecore.redactor.engine", "DetectedEntity"),
+    # ── redactor.patterns ──
+    "CustomPattern": ("enforcecore.redactor.patterns", "CustomPattern"),
+    "PatternRegistry": ("enforcecore.redactor.patterns", "PatternRegistry"),
+    # ── redactor.secrets ──
+    "DetectedSecret": ("enforcecore.redactor.secrets", "DetectedSecret"),
+    # ── redactor.unicode ──
+    "decode_encoded_pii": ("enforcecore.redactor.unicode", "decode_encoded_pii"),
+    "normalize_homoglyphs": ("enforcecore.redactor.unicode", "normalize_homoglyphs"),
+    "normalize_unicode": ("enforcecore.redactor.unicode", "normalize_unicode"),
+    "prepare_for_detection": ("enforcecore.redactor.unicode", "prepare_for_detection"),
+    # ── telemetry ──
+    "EnforceCoreInstrumentor": ("enforcecore.telemetry", "EnforceCoreInstrumentor"),
+    "EnforceCoreMetrics": ("enforcecore.telemetry", "EnforceCoreMetrics"),
+}
+
+# Remove Tier 2 symbols from the module namespace so __getattr__ fires.
+for _tier2_name in _TIER2_IMPORTS:
+    globals().pop(_tier2_name, None)
+del _tier2_name
+
+
+def __getattr__(name: str) -> object:
+    """Lazy accessor for deprecated Tier 2 symbols.
+
+    Emits a ``DeprecationWarning`` on first access, then caches the value
+    in ``globals()`` so subsequent accesses are zero-cost.
+    """
+    if name in _TIER2_IMPORTS:
+        mod_path, attr_name = _TIER2_IMPORTS[name]
+        mod = _importlib.import_module(mod_path)
+        value = getattr(mod, attr_name)
+        _warnings.warn(
+            f"Importing {name!r} from 'enforcecore' is deprecated and will be "
+            f"removed in v2.0.0. Use 'from {mod_path} import {attr_name}' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        globals()[name] = value
+        return value
+    msg = f"module 'enforcecore' has no attribute {name!r}"
+    raise AttributeError(msg)
+
+
+def __dir__() -> list[str]:
+    """Include both Tier 1 (__all__) and deprecated Tier 2 symbols."""
+    return sorted(set(list(globals()) + list(_TIER2_IMPORTS)))

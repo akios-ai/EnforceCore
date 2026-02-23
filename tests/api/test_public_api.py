@@ -5,26 +5,32 @@
 Guarantees that every symbol in ``enforcecore.__all__`` exists, is importable,
 and has the expected kind (class, function, enum, instance, or string).
 
-As of v1.0.25a1, ``__all__`` contains ~30 core symbols (Tier 1).
+As of v1.0.0b1, ``__all__`` contains 30 core symbols (Tier 1).
 An additional ~80 symbols (Tier 2) remain importable from the top-level
-package but are NOT in ``__all__``.  They are the stable submodule API.
+package but emit a ``DeprecationWarning``.  They are the stable submodule API.
 
 Any failure here means the public API has changed — intentional changes must
 be reflected in ``docs/migration.md`` and the CHANGELOG.
 
 .. versionadded:: 1.0.16
 .. versionchanged:: 1.0.25a1  Pruned __all__ from 110 to 30.
+.. versionchanged:: 1.0.0b1   Tier 2 symbols emit DeprecationWarning.
 """
 
 from __future__ import annotations
 
 import enum
 import inspect
+import warnings
 from typing import ClassVar
 
 import pytest
 
 import enforcecore
+
+# Suppress DeprecationWarnings from Tier 2 access throughout this module.
+# The dedicated test_tier2_deprecation_warning test verifies warnings work.
+pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 
 # ---------------------------------------------------------------------------
 # 1. __all__ completeness — every listed symbol is importable
@@ -277,6 +283,20 @@ class TestSymbolTypes:
             assert hasattr(enforcecore, name), (
                 f"Tier 2 symbol {name} not importable from enforcecore"
             )
+
+    def test_tier2_deprecation_warning(self) -> None:
+        """Accessing a Tier 2 symbol must emit DeprecationWarning."""
+        # Remove a Tier 2 symbol from cache so __getattr__ fires
+        test_name = "NullBackend"
+        enforcecore.__dict__.pop(test_name, None)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            obj = getattr(enforcecore, test_name)
+        assert obj is not None
+        dep_warnings = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        assert len(dep_warnings) == 1
+        assert test_name in str(dep_warnings[0].message)
+        assert "enforcecore.auditor.backends" in str(dep_warnings[0].message)
 
 
 # ---------------------------------------------------------------------------

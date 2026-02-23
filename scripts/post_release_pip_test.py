@@ -1,4 +1,4 @@
-"""Post-release pip install test for enforcecore==1.0.25a1."""
+"""Post-release pip install test for enforcecore==1.0.0b1."""
 
 import sys
 
@@ -21,11 +21,11 @@ def test(name, fn):
 def t0():
     import enforcecore
 
-    assert enforcecore.__version__ == "1.0.25a1", f"Got {enforcecore.__version__}"
+    assert enforcecore.__version__ == "1.0.0b1", f"Got {enforcecore.__version__}"
     assert len(enforcecore.__all__) == 30, f"Got {len(enforcecore.__all__)}"
 
 
-test("Version and API surface (30 symbols)", t0)
+test("Version and API surface (30 symbols, beta)", t0)
 
 
 # Test 1: Policy loading
@@ -198,6 +198,6 @@ test("Integrations importable", t12)
 print()
 print("=" * 55)
 print(f"RESULTS: {passed} passed, {failed} failed")
-print("Package: enforcecore==1.0.25a1 from PyPI")
+print("Package: enforcecore==1.0.0b1 from PyPI")
 print("=" * 55)
 sys.exit(1 if failed else 0)

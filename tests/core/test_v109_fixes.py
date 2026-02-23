@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import threading
 
+import pytest
+
 from enforcecore.core.rules import ContentRule, RuleEngine
 from enforcecore.core.types import ViolationType
 from enforcecore.guard.ratelimit import RateLimitError
@@ -205,6 +207,8 @@ class TestM8ViolationTypes:
 
 
 class TestMissingExports:
+    pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+
     def test_clear_policy_cache_exported(self) -> None:
         from enforcecore import clear_policy_cache
 
