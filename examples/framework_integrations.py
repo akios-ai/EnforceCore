@@ -245,7 +245,7 @@ def main() -> None:
     print(
         dedent("""
     ╔══════════════════════════════════════════════════════════╗
-    ║  EnforceCore v1.0.4a1 — Framework Integration Examples  ║
+    ║  EnforceCore v1.0.0b1 — Framework Integration Examples  ║
     ╚══════════════════════════════════════════════════════════╝
     """)
     )

@@ -13,6 +13,8 @@ Covers:
 
 from __future__ import annotations
 
+import pytest
+
 # ---------------------------------------------------------------------------
 # H-1: CLI inspect field name compat
 # ---------------------------------------------------------------------------
@@ -148,6 +150,8 @@ class TestTopLevelExports:
 
     v1.0.10 additions are still importable but moved to Tier 2.
     """
+
+    pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 
     def test_total_export_count(self) -> None:
         import enforcecore

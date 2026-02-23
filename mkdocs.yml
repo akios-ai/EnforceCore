@@ -112,7 +112,9 @@ nav:
   - Guides:
     - Developer Guide: dev-guide.md
     - Contributing: contributing.md
+    - Migration: migration.md
     - Evaluation Suite: evaluation.md
+    - Benchmarks: benchmarks.md
   - Research:
     - Vision: vision.md
     - Related Work: related-work.md

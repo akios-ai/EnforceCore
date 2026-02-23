@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0b1] — 2026-02-23
+
+### Added
+
+- **[Deprecation Warnings]** Tier 2 symbols (~80 advanced types) now emit a
+  `DeprecationWarning` when imported from the top-level `enforcecore` package.
+  The warning message includes the canonical submodule import path.  These
+  symbols will be removed from the top-level package in v2.0.0.
+
+- **[Migration Guide]** Added `docs/migration.md` section covering the
+  Tier 1/Tier 2 split, deprecation warnings, and how to migrate imports.
+
+- **[Integration Guides]** Expanded `docs/api/integrations.md` with full
+  documentation for LangGraph, CrewAI, and AutoGen adapters including
+  usage examples and custom adapter guidance.
+
+### Changed
+
+- **[Beta Status]** Development status upgraded from Alpha to Beta.
+  The 30-symbol public API (`__all__`) is now **frozen** — no additions
+  or removals until v2.0.0.  Only bug fixes during the beta period.
+
+- **[API Docs]** Updated `docs/api/index.md` to reflect the Tier 1/Tier 2
+  split and import conventions.
+
+- **[Docs Navigation]** Added Migration Guide and Benchmarks to
+  mkdocs.yml navigation.
+
 ## [1.0.25a1] — 2026-02-23
 
 ### Changed
