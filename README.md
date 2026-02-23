@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-1503_passed-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-1510_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -281,6 +281,7 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.0b2** | Security Fix (from_dict hoisting) | ✅ Shipped |
 | **v1.0.0b3** | Documentation Accuracy Fixes | ✅ Shipped |
 | **v1.0.0b4** | Tamper-Evidence (append-only + witness) | ✅ Shipped |
+| **v1.0.0b5** | Settings Integration + Docs + Edge-Case Tests | ✅ Shipped |
 | **v1.0.0** | **Stable Release** | 🎯 Target |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
@@ -347,7 +348,7 @@ EnforceCore is designed for production deployment in regulated environments.
 
 | Concern | EnforceCore Feature |
 |---|---|
-| **Audit compliance** | Merkle-chained, tamper-evident audit trails |
+| **Audit compliance** | Merkle-chained, tamper-evident audit trails with OS-enforced append-only and hash-only remote witnesses |
 | **Data protection** | Real-time PII redaction (11 categories) |
 | **Cost control** | Per-call and cumulative cost budgets |
 | **Access governance** | Declarative tool allow/deny policies |
@@ -381,7 +382,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1444 tests · 95% coverage · 0 lint errors
+**Current stats:** 1510 tests · 95% coverage · 0 lint errors
 
 ---
 

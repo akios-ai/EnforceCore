@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""EnforceCore v1.0.0b4 — Corrected Full Release Audit.
+"""EnforceCore v1.0.0b5 — Corrected Full Release Audit.
 
 Run from the local dev venv to test the from_dict fix + correct API usage.
 """

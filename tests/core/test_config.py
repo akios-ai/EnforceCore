@@ -49,3 +49,25 @@ class TestSettings:
         from enforcecore.core.config import settings
 
         assert isinstance(settings, Settings)
+
+    def test_audit_immutable_default(self) -> None:
+        s = Settings()
+        assert s.audit_immutable is False
+
+    def test_audit_witness_file_default(self) -> None:
+        s = Settings()
+        assert s.audit_witness_file is None
+
+    def test_audit_immutable_env_override(self) -> None:
+        with patch.dict(os.environ, {"ENFORCECORE_AUDIT_IMMUTABLE": "true"}, clear=False):
+            s = Settings()
+            assert s.audit_immutable is True
+
+    def test_audit_witness_file_env_override(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"ENFORCECORE_AUDIT_WITNESS_FILE": "/tmp/witness.jsonl"},
+            clear=False,
+        ):
+            s = Settings()
+            assert s.audit_witness_file == Path("/tmp/witness.jsonl")

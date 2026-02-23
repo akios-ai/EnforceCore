@@ -1,6 +1,6 @@
 # EnforceCore — Formal Threat Model
 
-**Version:** 1.0.0b4
+**Version:** 1.0.0b5
 **Last updated:** 2026-02-23
 **Status:** Active — reviewed with each release
 
@@ -410,7 +410,9 @@ The following must hold for EnforceCore's security properties to apply:
 
 6. **The filesystem is not adversarially controlled.** Audit trail integrity
    assumes the attacker cannot freely write to the audit file. If they can,
-   chain rebuild is possible (see §4 Property S3 caveat).
+   chain rebuild is possible (see §4 Property S3 caveat). **Partial mitigation
+   (v1.0.0b4+):** ``Auditor(immutable=True)`` sets the OS-level append-only
+   attribute, preventing truncation even with filesystem access (see §5.3).
 
 ---
 
@@ -426,9 +428,9 @@ We explicitly document what EnforceCore does **not** protect against:
 | **Binary/image PII** | Only text strings are scanned for PII |
 | **Person name detection** | Too noisy for regex — not supported without NLP |
 | **IPv6 detection** | Not included in PII patterns |
-| **Asymmetric audit signing** | Merkle chain is symmetric — rebuild attack is possible |
+| **Asymmetric audit signing** | Merkle chain is symmetric — rebuild attack is possible. **Mitigated (v1.0.0b4+):** ``immutable=True`` prevents chain rebuild via OS-enforced append-only; ``witness=`` detects rebuild via hash comparison. See §5.3. |
 | **Encryption at rest** | Audit entries are plaintext JSONL |
-| **Multi-process enforcement** | Each process has its own Enforcer — no cross-process coordination |
+| **Multi-process enforcement** | Each process has its own Enforcer — no cross-process coordination. Pattern: use a shared audit file with a witness on a separate volume. |
 | **Side-channel leaks** | Timing, error messages, and log content may leak information |
 | **DNS-level enforcement** | Domain checking is syntactic (string matching), not DNS-resolved |
 
@@ -438,5 +440,7 @@ We explicitly document what EnforceCore does **not** protect against:
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.0.0b5 | 2026-02-23 | Updated §6 Assumption 6, §7 Limitations table, and §8 with b4 mitigation cross-references |
+| 1.0.0b4 | 2026-02-23 | §5.3 rewritten: append-only files + hash-only witnesses; Property S3 caveat updated |
 | 1.0.23a1 | 2026-02-23 | Updated version header to current release |
 | 1.0.12a1 | 2026-02-21 | Initial formal threat model |

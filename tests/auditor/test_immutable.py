@@ -53,6 +53,154 @@ class TestPlatformDetection:
 
 
 # =========================================================================
+# Capability detection
+# =========================================================================
+
+
+class TestCapabilityDetection:
+    """Test _has_linux_immutable_cap multi-branch logic."""
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Linux")
+    @patch("enforcecore.auditor.immutable.subprocess.run")
+    def test_capsh_detects_capability(self, mock_run: MagicMock) -> None:
+        """capsh --print path detects CAP_LINUX_IMMUTABLE."""
+        from enforcecore.auditor.immutable import _has_linux_immutable_cap
+
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Current: =ep cap_linux_immutable+ep\nBounding set: ...\n",
+        )
+        assert _has_linux_immutable_cap() is True
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Linux")
+    @patch("enforcecore.auditor.immutable.subprocess.run")
+    def test_capsh_no_capability(self, mock_run: MagicMock) -> None:
+        """capsh --print path: capability absent."""
+        from enforcecore.auditor.immutable import _has_linux_immutable_cap
+
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Current: =ep\nBounding set: ...\n",
+        )
+        # capsh says no, /proc won't exist in test → falls through to False
+        assert _has_linux_immutable_cap() is False
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Linux")
+    @patch("enforcecore.auditor.immutable.subprocess.run", side_effect=FileNotFoundError)
+    @patch("enforcecore.auditor.immutable.Path")
+    def test_proc_status_fallback(self, mock_path: MagicMock, mock_run: MagicMock) -> None:
+        """Falls back to /proc/self/status when capsh is absent."""
+        from enforcecore.auditor.immutable import _has_linux_immutable_cap
+
+        # Bit 9 set → CAP_LINUX_IMMUTABLE present
+        # 0x200 = 1 << 9 = 512
+        mock_status_path = MagicMock()
+        mock_status_path.read_text.return_value = "Name:\ttest\nCapEff:\t0000000000000200\n"
+
+        def path_factory(p: str) -> MagicMock:
+            if "proc" in str(p) and "status" in str(p):
+                return mock_status_path
+            m = MagicMock()
+            m.exists.return_value = False
+            return m
+
+        mock_path.side_effect = path_factory
+        assert _has_linux_immutable_cap() is True
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Linux")
+    @patch("enforcecore.auditor.immutable.subprocess.run", side_effect=FileNotFoundError)
+    @patch("enforcecore.auditor.immutable.Path")
+    def test_proc_status_no_cap(self, mock_path: MagicMock, mock_run: MagicMock) -> None:
+        """Bit 9 not set → no capability."""
+        from enforcecore.auditor.immutable import _has_linux_immutable_cap
+
+        # 0x100 = bit 8, not bit 9
+        mock_status_path = MagicMock()
+        mock_status_path.read_text.return_value = "Name:\ttest\nCapEff:\t0000000000000100\n"
+
+        def path_factory(p: str) -> MagicMock:
+            if "proc" in str(p) and "status" in str(p):
+                return mock_status_path
+            m = MagicMock()
+            m.exists.return_value = False
+            return m
+
+        mock_path.side_effect = path_factory
+        assert _has_linux_immutable_cap() is False
+
+
+# =========================================================================
+# is_append_only — macOS st_flags path
+# =========================================================================
+
+
+class TestIsAppendOnlyMacOS:
+    """Test is_append_only with mocked macOS st_flags."""
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Darwin")
+    @patch("enforcecore.auditor.immutable.os.stat")
+    def test_uf_append_flag_set(self, mock_stat: MagicMock, tmp_path: Path) -> None:
+        """Detects UF_APPEND (0x4) via st_flags."""
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("data\n")
+        mock_stat.return_value = MagicMock(st_flags=0x00000004)  # UF_APPEND
+        assert is_append_only(test_file) is True
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Darwin")
+    @patch("enforcecore.auditor.immutable.os.stat")
+    def test_uf_append_flag_not_set(self, mock_stat: MagicMock, tmp_path: Path) -> None:
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("data\n")
+        mock_stat.return_value = MagicMock(st_flags=0x00000000)
+        assert is_append_only(test_file) is False
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Darwin")
+    @patch("enforcecore.auditor.immutable.os.stat", side_effect=OSError("no stat"))
+    def test_stat_failure_returns_false(self, mock_stat: MagicMock, tmp_path: Path) -> None:
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("data\n")
+        assert is_append_only(test_file) is False
+
+
+# =========================================================================
+# Linux lsattr mocking
+# =========================================================================
+
+
+class TestIsAppendOnlyLinux:
+    """Test is_append_only with mocked Linux lsattr."""
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Linux")
+    @patch("enforcecore.auditor.immutable.subprocess.run")
+    def test_lsattr_detects_append_only(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("data\n")
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=f"-----a---------- {test_file}\n",
+        )
+        assert is_append_only(test_file) is True
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Linux")
+    @patch("enforcecore.auditor.immutable.subprocess.run")
+    def test_lsattr_no_append_only(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("data\n")
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=f"---------------- {test_file}\n",
+        )
+        assert is_append_only(test_file) is False
+
+    @patch("enforcecore.auditor.immutable._SYSTEM", "Linux")
+    @patch("enforcecore.auditor.immutable.subprocess.run", side_effect=FileNotFoundError)
+    def test_lsattr_not_found(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("data\n")
+        assert is_append_only(test_file) is False
+
+
+# =========================================================================
 # protect_append_only
 # =========================================================================
 

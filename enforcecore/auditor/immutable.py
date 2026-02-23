@@ -16,7 +16,7 @@ Platform support:
 - **Linux**: ``chattr +a`` via ``ioctl(FS_IOC_SETFLAGS, FS_APPEND_FL)``
   (requires ``CAP_LINUX_IMMUTABLE`` capability; dropped in Docker by
   default — use ``--cap-add LINUX_IMMUTABLE``).
-- **macOS**: ``chflags sappend`` via ``os.chflags(UF_APPEND)``
+- **macOS**: ``chflags uappend`` via ``os.chflags(UF_APPEND)``
   (requires root or file owner on HFS+/APFS).
 - **Other**: Not supported — logs a warning but does not fail.
 
@@ -205,7 +205,7 @@ def platform_support_info() -> dict[str, object]:
                 )
     elif _is_macos():
         info["supported"] = True
-        info["notes"] = "macOS: requires root or file owner (chflags sappend)"
+        info["notes"] = "macOS: requires root or file owner (chflags uappend)"
     else:
         info["notes"] = f"Platform {_SYSTEM} does not support append-only files"
 
@@ -273,7 +273,7 @@ def _check_linux(filepath: Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# macOS implementation (chflags sappend)
+# macOS implementation (chflags uappend)
 # ---------------------------------------------------------------------------
 
 # UF_APPEND = 0x00000004 (user append-only, macOS)

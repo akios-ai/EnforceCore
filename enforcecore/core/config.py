@@ -43,6 +43,13 @@ class Settings(BaseSettings):
             Defaults to ``False``.
         cost_budget_usd: Global cost budget across all enforced calls.
             ``None`` means no limit.
+        audit_immutable: If ``True``, set the OS-level append-only attribute
+            on the audit file (``chattr +a`` / ``chflags uappend``).  Requires
+            ``CAP_LINUX_IMMUTABLE`` on Linux or root on macOS.  Env var:
+            ``ENFORCECORE_AUDIT_IMMUTABLE``.  Default ``False``.
+        audit_witness_file: Path to a witness JSONL file.  If set, the Auditor
+            publishes entry hashes to this file for tamper detection.  Env var:
+            ``ENFORCECORE_AUDIT_WITNESS_FILE``.  Default ``None``.
         webhook_on_violation: URL to POST when a violation occurs.
         webhook_on_cost_threshold: URL to POST when cost threshold is hit.
         webhook_retry_attempts: Number of webhook retries. Default 3.
@@ -57,6 +64,8 @@ class Settings(BaseSettings):
     audit_rotate_mb: float = 100.0
     audit_retain_days: int = 90
     audit_compress: bool = True
+    audit_immutable: bool = False
+    audit_witness_file: Path | None = None
     redaction_enabled: bool = True
     log_level: str = "INFO"
     fail_open: bool = False

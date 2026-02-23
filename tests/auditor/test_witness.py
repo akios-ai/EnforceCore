@@ -374,3 +374,90 @@ class TestVerifyWithWitness:
         assert result.error_count == 0
         result.errors.append("test error")
         assert result.error_count == 1
+
+    def test_empty_trail_file(self, tmp_path: Path) -> None:
+        """Empty trail with empty witness → valid (0 matched)."""
+        audit_file = tmp_path / "empty.jsonl"
+        audit_file.write_text("")
+        result = verify_with_witness(audit_file, witness_hashes=[])
+        assert result.is_valid
+        assert result.matched == 0
+        assert result.trail_entries == 0
+        assert result.witness_entries == 0
+
+    def test_empty_trail_with_hashes_is_mismatch(self, tmp_path: Path) -> None:
+        """Empty trail but witness has hashes → count mismatch."""
+        audit_file = tmp_path / "empty.jsonl"
+        audit_file.write_text("")
+        result = verify_with_witness(audit_file, witness_hashes=["hash1", "hash2"])
+        assert not result.is_valid
+        assert any("count mismatch" in e for e in result.errors)
+
+
+# =========================================================================
+# Concurrent stress test
+# =========================================================================
+
+
+class TestConcurrentWitness:
+    """Concurrent access to witness backends."""
+
+    def test_callback_witness_thread_safety(self, tmp_path: Path) -> None:
+        """Multiple threads publishing to CallbackWitness concurrently."""
+        import threading
+
+        records: list[WitnessRecord] = []
+        lock = threading.Lock()
+
+        def safe_append(r: WitnessRecord) -> None:
+            with lock:
+                records.append(r)
+
+        witness = CallbackWitness(safe_append)
+        threads = []
+        n_threads = 10
+        n_records = 50
+
+        def publish_batch(start: int) -> None:
+            for i in range(n_records):
+                witness.publish(
+                    WitnessRecord(f"id-{start}-{i}", f"hash-{start}-{i}", "", i + 1, "t")
+                )
+
+        for t in range(n_threads):
+            thread = threading.Thread(target=publish_batch, args=(t,))
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        assert len(records) == n_threads * n_records
+        assert witness.records_published == n_threads * n_records
+
+    def test_file_witness_thread_safety(self, tmp_path: Path) -> None:
+        """Multiple threads publishing to FileWitness concurrently."""
+        import threading
+
+        witness_file = tmp_path / "witness.jsonl"
+        witness = FileWitness(witness_file)
+        n_threads = 10
+        n_records = 20
+
+        def publish_batch(start: int) -> None:
+            for i in range(n_records):
+                witness.publish(
+                    WitnessRecord(f"id-{start}-{i}", f"hash-{start}-{i}", "", i + 1, "t")
+                )
+
+        threads = []
+        for t in range(n_threads):
+            thread = threading.Thread(target=publish_batch, args=(t,))
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        hashes = witness.load_hashes()
+        assert len(hashes) == n_threads * n_records
