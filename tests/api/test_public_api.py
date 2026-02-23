@@ -5,10 +5,15 @@
 Guarantees that every symbol in ``enforcecore.__all__`` exists, is importable,
 and has the expected kind (class, function, enum, instance, or string).
 
+As of v1.0.25a1, ``__all__`` contains ~30 core symbols (Tier 1).
+An additional ~80 symbols (Tier 2) remain importable from the top-level
+package but are NOT in ``__all__``.  They are the stable submodule API.
+
 Any failure here means the public API has changed — intentional changes must
 be reflected in ``docs/migration.md`` and the CHANGELOG.
 
 .. versionadded:: 1.0.16
+.. versionchanged:: 1.0.25a1  Pruned __all__ from 110 to 30.
 """
 
 from __future__ import annotations
@@ -40,17 +45,77 @@ class TestAllExportsExist:
     def test_no_duplicates(self) -> None:
         assert len(enforcecore.__all__) == len(set(enforcecore.__all__))
 
+    def test_all_count(self) -> None:
+        """__all__ should have exactly 30 symbols (Tier 1 public API)."""
+        assert len(enforcecore.__all__) == 30, (
+            f"Expected 30 symbols in __all__, got {len(enforcecore.__all__)}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # 2. Symbol classification — verify expected types
+#    Tier 1: in __all__ (stable public API)
+#    Tier 2: importable from top-level, NOT in __all__
 # ---------------------------------------------------------------------------
 
-# Classes (non-exception, non-enum)
-EXPECTED_CLASSES: set[str] = {
-    "AuditBackend",
+# ── Tier 1: Classes in __all__ ──
+TIER1_CLASSES: set[str] = {
     "AuditEntry",
-    "AuditRotator",
     "Auditor",
+    "CostTracker",
+    "EnforcementResult",
+    "Enforcer",
+    "KillSwitch",
+    "RateLimiter",
+    "RedactionResult",
+    "Redactor",
+    "Policy",
+    "ResourceGuard",
+    "SecretScanner",
+    "Settings",
+    "VerificationResult",
+}
+
+# ── Tier 1: Exceptions in __all__ ──
+TIER1_EXCEPTIONS: set[str] = {
+    "ContentViolationError",
+    "CostLimitError",
+    "EnforceCoreError",
+    "EnforcementViolation",
+    "PolicyError",
+    "PolicyLoadError",
+    "ResourceLimitError",
+    "ToolDeniedError",
+}
+
+# ── Tier 1: Enums in __all__ ──
+TIER1_ENUMS: set[str] = {
+    "Decision",
+    "RedactionStrategy",
+}
+
+# ── Tier 1: Functions in __all__ ──
+TIER1_FUNCTIONS: set[str] = {
+    "enforce",
+    "load_policy",
+    "load_trail",
+    "verify_trail",
+}
+
+# ── Tier 1: Instances in __all__ ──
+TIER1_INSTANCES: set[str] = {
+    "settings",
+}
+
+# ── Tier 1: Strings in __all__ ──
+TIER1_STRINGS: set[str] = {
+    "__version__",
+}
+
+# ── Tier 2: importable but NOT in __all__ ──
+TIER2_CLASSES: set[str] = {
+    "AuditBackend",
+    "AuditRotator",
     "BenchmarkResult",
     "BenchmarkRunner",
     "BenchmarkSuite",
@@ -59,76 +124,52 @@ EXPECTED_CLASSES: set[str] = {
     "ContentRule",
     "ContentRuleConfig",
     "ContentRulesPolicyConfig",
-    "CostTracker",
     "CustomPattern",
     "DetectedEntity",
     "DetectedSecret",
     "DomainChecker",
     "EnforceCoreInstrumentor",
     "EnforceCoreMetrics",
-    "EnforcementResult",
-    "Enforcer",
     "HookContext",
     "HookRegistry",
     "JsonlBackend",
-    "KillSwitch",
     "MultiBackend",
     "NetworkPolicy",
     "NullBackend",
     "PIIRedactionConfig",
     "PatternRegistry",
-    "Policy",
     "PolicyEngine",
     "PolicyRules",
     "RateLimit",
     "RateLimitPolicyConfig",
-    "RateLimiter",
     "RedactionEvent",
     "RedactionHookContext",
-    "RedactionResult",
-    "Redactor",
-    "ResourceGuard",
     "ResourceLimits",
     "RuleEngine",
     "RuleViolation",
     "Scenario",
     "ScenarioResult",
     "ScenarioRunner",
-    "SecretScanner",
-    "Settings",
     "SuiteResult",
-    "VerificationResult",
     "ViolationHookContext",
     "WebhookDispatcher",
     "WebhookEvent",
 }
 
-# Exception classes
-EXPECTED_EXCEPTIONS: set[str] = {
+TIER2_EXCEPTIONS: set[str] = {
     "AuditError",
-    "ContentViolationError",
-    "CostLimitError",
     "DomainDeniedError",
-    "EnforceCoreError",
     "EnforcementDepthError",
-    "EnforcementViolation",
     "GuardError",
     "HardeningError",
     "InputTooLargeError",
     "InvalidToolNameError",
-    "PolicyError",
-    "PolicyLoadError",
     "PolicyValidationError",
     "RateLimitError",
     "RedactionError",
-    "ResourceLimitError",
-    "ToolDeniedError",
 }
 
-# Enum / StrEnum classes
-EXPECTED_ENUMS: set[str] = {
-    "Decision",
-    "RedactionStrategy",
+TIER2_ENUMS: set[str] = {
     "ScenarioOutcome",
     "Severity",
     "ThreatCategory",
@@ -136,13 +177,11 @@ EXPECTED_ENUMS: set[str] = {
     "ViolationType",
 }
 
-# Functions (including decorators)
-EXPECTED_FUNCTIONS: set[str] = {
+TIER2_FUNCTIONS: set[str] = {
     "check_input_size",
     "clear_policy_cache",
     "decode_encoded_pii",
     "deep_redact",
-    "enforce",
     "enter_enforcement",
     "exit_enforcement",
     "generate_benchmark_report",
@@ -154,8 +193,6 @@ EXPECTED_FUNCTIONS: set[str] = {
     "get_enforcement_depth",
     "get_scenarios_by_category",
     "is_dev_mode",
-    "load_policy",
-    "load_trail",
     "normalize_homoglyphs",
     "normalize_unicode",
     "on_post_call",
@@ -165,19 +202,16 @@ EXPECTED_FUNCTIONS: set[str] = {
     "prepare_for_detection",
     "require_package",
     "validate_tool_name",
-    "verify_trail",
     "wrap_with_policy",
 }
 
-# Singleton instances
-EXPECTED_INSTANCES: set[str] = {
-    "settings",
-}
-
-# String constants
-EXPECTED_STRINGS: set[str] = {
-    "__version__",
-}
+# Combined sets for backwards-compat tests
+EXPECTED_CLASSES = TIER1_CLASSES | TIER2_CLASSES
+EXPECTED_EXCEPTIONS = TIER1_EXCEPTIONS | TIER2_EXCEPTIONS
+EXPECTED_ENUMS = TIER1_ENUMS | TIER2_ENUMS
+EXPECTED_FUNCTIONS = TIER1_FUNCTIONS | TIER2_FUNCTIONS
+EXPECTED_INSTANCES = TIER1_INSTANCES
+EXPECTED_STRINGS = TIER1_STRINGS
 
 
 class TestSymbolTypes:
@@ -217,21 +251,32 @@ class TestSymbolTypes:
         obj = getattr(enforcecore, name)
         assert isinstance(obj, str), f"{name} should be a string"
 
-    def test_all_symbols_classified(self) -> None:
-        """Every symbol in __all__ must appear in exactly one category."""
-        all_classified = (
-            EXPECTED_CLASSES
-            | EXPECTED_EXCEPTIONS
-            | EXPECTED_ENUMS
-            | EXPECTED_FUNCTIONS
-            | EXPECTED_INSTANCES
-            | EXPECTED_STRINGS
+    def test_tier1_symbols_classified(self) -> None:
+        """Every symbol in __all__ must appear in exactly one Tier 1 category."""
+        tier1_all = (
+            TIER1_CLASSES
+            | TIER1_EXCEPTIONS
+            | TIER1_ENUMS
+            | TIER1_FUNCTIONS
+            | TIER1_INSTANCES
+            | TIER1_STRINGS
         )
         all_symbols = set(enforcecore.__all__)
-        missing = all_symbols - all_classified
-        extra = all_classified - all_symbols
-        assert not missing, f"Symbols in __all__ but not classified: {missing}"
-        assert not extra, f"Symbols classified but not in __all__: {extra}"
+        missing = all_symbols - tier1_all
+        extra = tier1_all - all_symbols
+        assert not missing, f"Symbols in __all__ but not classified in Tier 1: {missing}"
+        assert not extra, f"Symbols classified as Tier 1 but not in __all__: {extra}"
+
+    def test_tier2_symbols_importable(self) -> None:
+        """Every Tier 2 symbol must be importable but NOT in __all__."""
+        tier2_all = TIER2_CLASSES | TIER2_EXCEPTIONS | TIER2_ENUMS | TIER2_FUNCTIONS
+        all_symbols = set(enforcecore.__all__)
+        leaked = tier2_all & all_symbols
+        assert not leaked, f"Tier 2 symbols leaked into __all__: {leaked}"
+        for name in tier2_all:
+            assert hasattr(enforcecore, name), (
+                f"Tier 2 symbol {name} not importable from enforcecore"
+            )
 
 
 # ---------------------------------------------------------------------------

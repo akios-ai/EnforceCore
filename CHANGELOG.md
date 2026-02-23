@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.25a1] — 2026-02-23
+
+### Changed
+
+- **[API Pruning]** `__all__` reduced from 110 symbols to 30 core symbols
+  (Tier 1 public API). All 110 symbols remain importable via
+  `from enforcecore import X` for backwards compatibility, but only the 30
+  Tier 1 symbols are part of the stable API contract going forward.
+
+  **Tier 1 (in `__all__`):** `enforce`, `Enforcer`, `Policy`, `load_policy`,
+  `Redactor`, `RedactionResult`, `RedactionStrategy`, `SecretScanner`,
+  `Auditor`, `AuditEntry`, `VerificationResult`, `verify_trail`, `load_trail`,
+  `ResourceGuard`, `CostTracker`, `KillSwitch`, `RateLimiter`, `Decision`,
+  `EnforcementResult`, `EnforceCoreError`, `EnforcementViolation`,
+  `ToolDeniedError`, `ContentViolationError`, `PolicyError`, `PolicyLoadError`,
+  `CostLimitError`, `ResourceLimitError`, `Settings`, `settings`, `__version__`.
+
+  **Tier 2 (importable, not in `__all__`):** All other symbols — eval types,
+  hook decorators, audit backends, hardening utilities, policy sub-configs,
+  telemetry, unicode helpers, etc. Import from submodules for the stable path:
+  `from enforcecore.eval import ScenarioRunner`
+  `from enforcecore.plugins.hooks import on_pre_call`
+  `from enforcecore.auditor.backends import JsonlBackend`
+
+### Tests
+
+- Updated `tests/api/test_public_api.py` with Tier 1/Tier 2 classification.
+  Added `test_tier2_symbols_importable` to verify backwards compatibility.
+
 ## [1.0.24a1] — 2026-02-24
 
 ### Security
