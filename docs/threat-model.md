@@ -1,7 +1,7 @@
 # EnforceCore — Formal Threat Model
 
-**Version:** 1.0.12a1
-**Last updated:** 2026-02-21
+**Version:** 1.0.23a1
+**Last updated:** 2026-02-23
 **Status:** Active — reviewed with each release
 
 ---
@@ -400,4 +400,5 @@ We explicitly document what EnforceCore does **not** protect against:
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.0.23a1 | 2026-02-23 | Updated version header to current release |
 | 1.0.12a1 | 2026-02-21 | Initial formal threat model |

@@ -31,8 +31,8 @@ No hard dependency on any framework. Adapters use optional imports.
 
 v1.0.6 includes security hardening, unicode evasion protection, and
 fail-closed enforcement on all paths. The public API is considered stable
-after v1.0.6. However, we are still in alpha (no PyPI release yet) and
-recommend thorough testing with your own workloads.
+after v1.0.6. We are still in alpha (`pip install enforcecore==1.0.23a1`)
+and recommend thorough testing with your own workloads.
 
 ---
 

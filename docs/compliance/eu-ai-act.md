@@ -1,8 +1,8 @@
 # EU AI Act — Compliance Mapping
 
 **Regulation:** Regulation (EU) 2024/1689 (Artificial Intelligence Act)
-**Mapped against:** EnforceCore v1.0.19a1
-**Last updated:** 2026-02-21
+**Mapped against:** EnforceCore v1.0.23a1
+**Last updated:** 2026-02-23
 
 ---
 
@@ -141,7 +141,7 @@ pytest tests/redactor/test_unicode.py -v  # Evasion resistance
 | Requirement | EnforceCore Capability | Evidence |
 |---|---|---|
 | Design and development procedures | Documented architecture, roadmap, dev guide | [docs/architecture.md](architecture.md), [docs/roadmap.md](roadmap.md), [docs/dev-guide.md](dev-guide.md) |
-| Testing and validation | 1461 tests, automated CI on Linux + macOS, type checking (mypy), linting (ruff) | `.github/workflows/ci.yml`, `pytest --cov` |
+| Testing and validation | 1503 tests, automated CI on macOS, type checking (mypy), linting (ruff) | `.github/workflows/ci.yml`, `pytest --cov` |
 | Data management | PII redaction categories and secret patterns documented and tested | `enforcecore/redactor/patterns.py`, `enforcecore/redactor/secrets.py` |
 | Record-keeping | Merkle-chained audit trails, CHANGELOG, git history | `enforcecore/auditor/`, `CHANGELOG.md` |
 | Corrective actions | Webhook alerts on violations, structured logging for incident response | `enforcecore/plugins/webhooks.py`, structlog events |
@@ -185,5 +185,6 @@ pytest --cov=enforcecore                # Test suite + coverage
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.0.23a1 | 2026-02-23 | Updated version header, test counts (1503), CI platform (macOS) |
 | 1.0.19a1 | 2026-02-21 | Updated scenario counts, version header, gaps table |
 | 1.0.12a1 | 2026-02-21 | Initial EU AI Act compliance mapping |
