@@ -13,7 +13,7 @@ Usage:
     # Skip tests (if you already ran them):
     python scripts/release.py 1.0.23a1 --execute --skip-tests
 
-    # Local only — don’t push or verify PyPI:
+    # Local only -- don't push or verify PyPI:
     python scripts/release.py 1.0.23a1 --execute --local-only
 
     # Push only (after a previous --local-only run):
@@ -175,8 +175,7 @@ def run_checks() -> bool:
     log("Running pytest (CI parity: --timeout=60, HYPOTHESIS_MAX_EXAMPLES=10) …", level="step")
     ci_env = {**os.environ, "HYPOTHESIS_MAX_EXAMPLES": _CI_HYPOTHESIS_MAX}
     r = run(
-        [sys.executable, "-m", "pytest", "-q", "--tb=short",
-         "--timeout", _CI_PYTEST_TIMEOUT],
+        [sys.executable, "-m", "pytest", "-q", "--tb=short", "--timeout", _CI_PYTEST_TIMEOUT],
         env=ci_env,
     )
     if r.returncode != 0:
