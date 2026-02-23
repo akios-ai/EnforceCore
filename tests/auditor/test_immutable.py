@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import platform
-from typing import TYPE_CHECKING
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -17,9 +17,6 @@ from enforcecore.auditor.immutable import (
     platform_support_info,
     protect_append_only,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 # =========================================================================
 # Platform detection
@@ -159,7 +156,10 @@ class TestIsAppendOnlyMacOS:
     def test_stat_failure_returns_false(self, mock_stat: MagicMock, tmp_path: Path) -> None:
         test_file = tmp_path / "test.txt"
         test_file.write_text("data\n")
-        assert is_append_only(test_file) is False
+        # Patch Path.exists so the pathlib .exists() call succeeds despite
+        # os.stat being mocked; the OSError is caught inside _check_macos.
+        with patch.object(Path, "exists", return_value=True):
+            assert is_append_only(test_file) is False
 
 
 # =========================================================================
