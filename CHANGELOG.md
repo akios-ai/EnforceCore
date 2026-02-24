@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-02-24
+
+## [1.0.0] — 2026-02-24
+
+This is the first stable release of EnforceCore. All public APIs are now stable
+and covered by semantic versioning. The library is production-ready.
+
+### Highlights
+- **100% adversarial containment** — 20/20 scenarios across 10 threat categories
+  blocked in the independent evaluation suite (tool abuse, data exfiltration,
+  resource exhaustion, policy evasion, PII leakage, privilege escalation,
+  prompt injection, ransomware, supply chain, and multi-agent collusion).
+- **Sub-millisecond overhead** — `policy_pre_call` p99 = 0.021 ms,
+  `pii_redaction` p99 = 0.035 ms (2000-iteration benchmark, Python 3.13).
+- **Zero mandatory dependencies** — PII engine is pure stdlib regex.
+  Optional presidio, langchain-core, crewai, and autogen adapters are isolated.
+- **Cryptographic audit trail** — SHA-256 Merkle chain, append-only OS flag,
+  optional remote witness backends.
+- **Framework-agnostic** — Verified adapters for LangGraph, AutoGen v0.4,
+  and CrewAI. Works with any Python agentic framework.
+
+### What's in 1.0.0 vs 1.0.0b6
+No new code — this release promotes b6 to stable after CI green across
+Python 3.11, 3.12, and 3.13. API surface is frozen.
+
 ## [1.0.0b6] — 2026-02-24
 
 ## [1.0.0b6] — 2026-02-24
