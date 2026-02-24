@@ -76,13 +76,16 @@ metrics (call counts, block rates, latency), and structured log export.
 
 ## Current Release
 
-### v1.0.2 — Latest Stable ✅
+### v1.1.0 — Latest Stable ✅
 
 Available on [PyPI](https://pypi.org/project/enforcecore/):
 
 ```bash
 pip install enforcecore
 ```
+
+Expanded adversarial evaluation: 26 scenarios across 11 threat categories, with
+HTML report generation and structured JSON output for CI integration.
 
 **Quality metrics:** 1520+ tests passing, 30 public API symbols, mypy strict
 mode, ruff-formatted, CI-verified on Linux and macOS.
@@ -91,10 +94,8 @@ mode, ruff-formatted, CI-verified on Linux and macOS.
 
 ## Upcoming
 
-### v1.1.0 — Evaluation Expansion
-
-Expanded adversarial evaluation: 26 scenarios across 11 threat categories, with
-HTML report generation and structured JSON output for CI integration.
+Next release TBD — see [CONTRIBUTING.md](../CONTRIBUTING.md) for how to get
+involved.
 
 ---
 
