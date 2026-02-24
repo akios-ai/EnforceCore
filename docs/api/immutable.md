@@ -57,7 +57,7 @@ from enforcecore.auditor import Auditor
 auditor = Auditor(output_path="audit.jsonl", immutable=True)
 ```
 
-### Via Environment Variable (v1.0.0b5+)
+### Via Environment Variable
 
 ```bash
 export ENFORCECORE_AUDIT_IMMUTABLE=true

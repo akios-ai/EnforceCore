@@ -32,7 +32,7 @@ result = verify_with_witness("audit.jsonl", witness_hashes=[r.entry_hash for r i
 assert result.is_valid
 ```
 
-### Via Environment Variables (v1.0.0b5+)
+### Via Environment Variables
 
 ```bash
 export ENFORCECORE_AUDIT_WITNESS_FILE=/var/log/ec-witness.jsonl

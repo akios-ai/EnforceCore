@@ -50,7 +50,7 @@ async def search_web(query: str) -> str:
 - [x] Allowed calls pass through, denied calls raise `EnforcementViolation`
 - [x] 97% test coverage on core module (94 tests)
 - [x] README with quickstart guide
-- [ ] Published to PyPI as `enforcecore==1.0.0`
+- [x] Published to PyPI as `enforcecore==1.0.0`
 
 ---
 
@@ -519,9 +519,9 @@ async def agent_tool(query: str) -> str:
 - [x] OpenTelemetry traces and metrics working with Jaeger/Datadog
 - [x] Audit rotation, retention, and compression working
 - [x] Webhook delivery with retry logic
-- [ ] All alpha suffixes removed — v1.0.0 stable
-- [ ] Published to PyPI with package signing
-- [ ] Full documentation published
+- [x] All alpha suffixes removed — v1.0.0 stable
+- [x] Published to PyPI with package signing
+- [x] Full documentation published
 - [x] Tests passing, 96%+ coverage
 - [x] Zero known security issues
 

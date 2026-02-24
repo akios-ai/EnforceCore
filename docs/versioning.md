@@ -19,11 +19,11 @@ MAJOR.MINOR.PATCH[-PRERELEASE]
 | **PATCH** | Backward-compatible bug fixes | `1.0.1` |
 | **PRERELEASE** | Alpha / beta / release candidate | `1.0.0a1`, `1.0.0b1`, `1.0.0rc1` |
 
-### Alpha Releases (Current)
+### Pre-release History
 
-All `1.0.xaN` releases are **pre-release** versions. The API may change
-between alpha releases. Once `1.0.0` (stable) is released, the
-compatibility guarantees below take full effect.
+EnforceCore went through alpha (`1.0.xaN`) and beta (`1.0.0bN`) phases
+before reaching `1.0.0` stable on February 24, 2026. All compatibility
+guarantees below are now in full effect.
 
 ---
 
@@ -65,7 +65,7 @@ code changes. Specifically:
 
 The **public API** consists of:
 
-1. **All symbols in `enforcecore.__all__`** — currently 110 symbols.
+1. **All symbols in `enforcecore.__all__`** — currently 30 symbols.
 2. **All public methods** on exported classes (methods without a leading underscore).
 3. **All public attributes** on exported dataclasses and Pydantic models.
 4. **Policy YAML schema** — the structure and semantics of policy files.
@@ -107,10 +107,10 @@ v1.4.0  — guard_sync() still works, warning persists
 v2.0.0  — guard_sync() removed
 ```
 
-### Alpha Exception
+### Historical: Alpha Exception
 
-During the alpha phase (v1.0.xaN), the deprecation period may be
-shortened to **1 release** since the API is not yet stable. This is
+During the alpha phase (v1.0.xaN), the deprecation period was
+shortened to **1 release** since the API was not yet stable. This is
 what happened with `guard_sync`/`guard_async`:
 
 ```
@@ -126,7 +126,7 @@ v1.0.16a1 — Removed (API freeze release)
 |---|---|---|
 | Latest stable (v1.x) | Security fixes, critical bugs | Until next MAJOR |
 | Previous MAJOR (v0.x) | Not applicable (no v0.x exists) | — |
-| Alpha releases | Not backported — upgrade to latest alpha | — |
+| Pre-release (alpha/beta) | Not backported — upgrade to v1.0.0 stable | — |
 
 ---
 

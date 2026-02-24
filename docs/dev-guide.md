@@ -14,7 +14,7 @@ enforcecore/
 │   │   └── enforcer.py         # Main enforcer (coordinator)
 │   ├── redactor/               # PII redaction (v1.0.1+)
 │   │   ├── __init__.py
-│   │   ├── engine.py           # Presidio-based detection + redaction
+│   │   ├── engine.py           # Regex-based PII detection + redaction
 │   │   └── strategies.py       # Redaction strategies (mask, hash, etc.)
 │   ├── auditor/                # Merkle audit trail (v1.0.2+)
 │   │   ├── __init__.py

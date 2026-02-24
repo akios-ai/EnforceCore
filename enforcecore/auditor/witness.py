@@ -348,7 +348,10 @@ def verify_with_witness(
 
     w_hashes: list[str]
     if witness_hashes is not None:
-        w_hashes = list(witness_hashes)
+        w_hashes = [
+            h.entry_hash if isinstance(h, WitnessRecord) else h
+            for h in witness_hashes
+        ]
     elif witness_file is not None:
         fw = FileWitness(witness_file)
         w_hashes = fw.load_hashes()

@@ -84,11 +84,15 @@ Why Hatch over alternatives:
 
 ## Critical Technical Decisions
 
-### 1. Why Presidio over regex-only PII detection
+### 1. Why regex-based PII detection (not Presidio/spaCy)
 
-Regex-only approaches miss context. "John" is a name but also a common word. Presidio uses NLP models + pattern matching for much higher accuracy. The overhead (~5-50ms) is acceptable because:
-- Tool calls themselves take 100ms-10s
-- PII leakage in production is a legal liability, not just a nice-to-have
+EnforceCore uses compiled regex patterns for PII detection by default. This was a deliberate choice:
+- **Zero heavy dependencies:** No spaCy, no model downloads, no Presidio
+- **Deterministic:** Same input always produces the same result
+- **Fast:** ~0.028ms per short text — critical for a security enforcement layer
+- **Portable:** Works on all Python 3.11+ without platform-specific issues
+
+The tradeoff is lower coverage on novel PII formats. NER-based detection (via optional Presidio integration) is planned for v1.3.0 as an opt-in tier.
 
 ### 2. Why Pydantic v2 for policies (not raw YAML dicts)
 
