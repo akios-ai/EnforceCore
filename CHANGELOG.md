@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0b6] — 2026-02-24
+
+## [1.0.0b6] — 2026-02-24
+
+### Fixed
+- **`passport` PII category missing from redactor engine** — `enforcecore/redactor/engine.py` was missing the `passport` entry in `_PII_PATTERNS`, `_PLACEHOLDERS`, and `_MASKS`. Any scenario or policy config specifying `passport` as a PII category would raise `RedactionError: Unknown PII category: 'passport'`.  Added ICAO Doc 9303 regex `[A-Z]{1,2}\d{6,9}` with `<PASSPORT>` placeholder and `**-*******` mask. All 19 affected eval scenarios now resolve correctly.
+
+### Added
+- **Framework comparison module** — `enforcecore/eval/framework_comparison.py` runs the adversarial scenario suite under two modes: a permissive LOG-only baseline (simulating bare LangGraph/AutoGen/CrewAI without enforcement) and a full EnforceCore BLOCK policy. Generates `results/framework_comparison.md` with a capability matrix, per-scenario outcome table, and summary findings. Run with `python -m enforcecore.eval.framework_comparison`.
+- **Framework-specific quickstart examples** — Three new copy-paste examples, all runnable without an API key: `examples/quickstart_langgraph.py`, `examples/quickstart_autogen.py`, `examples/quickstart_crewai.py`. Each demonstrates `enforce_sync` for allow/deny enforcement, per-agent policy scoping (AutoGen), and automatic PII redaction on tool outputs (CrewAI/LangGraph).
+
+### Changed
+- **Eval results refreshed** — `results/eval_report.md` updated: 20/20 adversarial scenarios contained (100%), 0 errors, across all 10 threat categories. Prior result had 19 errors due to the passport bug.
+- **README test count badge** — Updated to reflect 1510 passing tests.
+
 ## [1.0.0b5] — 2026-02-23
 
 ## [1.0.0b5] — 2026-02-23
