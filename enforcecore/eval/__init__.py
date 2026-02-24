@@ -8,11 +8,11 @@ enforcement capabilities against adversarial threat scenarios.
 Modules:
 
 * :mod:`~enforcecore.eval.types` — Type definitions (Scenario, Results, etc.)
-* :mod:`~enforcecore.eval.scenarios` — 20 adversarial scenarios across 10 threat
+* :mod:`~enforcecore.eval.scenarios` — 26 adversarial scenarios across 11 threat
   categories
 * :mod:`~enforcecore.eval.runner` — Test harness / scenario runner
 * :mod:`~enforcecore.eval.benchmarks` — Per-component performance benchmarks
-* :mod:`~enforcecore.eval.report` — Markdown report generator
+* :mod:`~enforcecore.eval.report` — Markdown & HTML report generator
 
 Quick start::
 
@@ -37,6 +37,7 @@ Quick start::
 from enforcecore.eval.benchmarks import BenchmarkRunner
 from enforcecore.eval.report import (
     generate_benchmark_report,
+    generate_html_report,
     generate_report,
     generate_suite_report,
 )
@@ -68,6 +69,7 @@ __all__ = [
     "SuiteResult",
     "ThreatCategory",
     "generate_benchmark_report",
+    "generate_html_report",
     "generate_report",
     "generate_suite_report",
     "get_all_scenarios",

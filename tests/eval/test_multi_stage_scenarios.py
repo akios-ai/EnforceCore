@@ -61,7 +61,7 @@ class TestMultiStageRegistry:
 
     def test_total_scenario_count(self) -> None:
         scenarios = get_all_scenarios()
-        assert len(scenarios) >= 20
+        assert len(scenarios) >= 26
 
     def test_all_new_scenarios_have_executors(self) -> None:
         new_ids = [

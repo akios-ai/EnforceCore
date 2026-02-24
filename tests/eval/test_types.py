@@ -26,7 +26,7 @@ class TestThreatCategory:
     """Tests for the ThreatCategory enum."""
 
     def test_all_categories_exist(self) -> None:
-        assert len(ThreatCategory) == 10
+        assert len(ThreatCategory) == 11
 
     def test_category_values(self) -> None:
         expected = {
@@ -40,6 +40,7 @@ class TestThreatCategory:
             "ransomware",
             "supply_chain",
             "collusion",
+            "audit_completeness",
         }
         assert {c.value for c in ThreatCategory} == expected
 
