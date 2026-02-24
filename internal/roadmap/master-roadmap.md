@@ -90,8 +90,8 @@ All entry criteria met:
 
 ### v1.0.1 — Bug-fix Patch (NEXT)
 
-**Target:** Within 1 week of this update  
-**Scope:** 2 bug fixes found during post-release audit + source improvements
+**Target:** ✅ SHIPPED Feb 24, 2026 (PyPI: https://pypi.org/project/enforcecore/1.0.1/)  
+**Scope:** 2 bug fixes found during post-release audit + 14 doc updates
 
 | Fix | File | Description |
 |-----|------|-------------|
@@ -111,7 +111,7 @@ All entry criteria met:
 | Version | Theme | Target | Status |
 |---------|-------|--------|--------|
 | v1.0.0 | Stable release | Feb 24, 2026 | ✅ SHIPPED |
-| v1.0.1 | Audit bug fixes | ~Mar 1, 2026 | 🔧 Ready to ship |
+| v1.0.1 | Audit bug fixes | Feb 24, 2026 | ✅ SHIPPED |
 | v1.0.x | Patch series | Ongoing | Community trust |
 | v1.1.0 | AgentSecBench public | May 2026 | Defines the conversation |
 | v1.2.0 | Subprocess / WASM sandbox | June 2026 | Closes the last real security gap |
