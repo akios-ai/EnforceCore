@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] — 2026-02-24
 
-## [1.0.0] — 2026-02-24
-
 This is the first stable release of EnforceCore. All public APIs are now stable
 and covered by semantic versioning. The library is production-ready.
 
@@ -34,8 +32,6 @@ Python 3.11, 3.12, and 3.13. API surface is frozen.
 
 ## [1.0.0b6] — 2026-02-24
 
-## [1.0.0b6] — 2026-02-24
-
 ### Fixed
 - **`passport` PII category missing from redactor engine** — `enforcecore/redactor/engine.py` was missing the `passport` entry in `_PII_PATTERNS`, `_PLACEHOLDERS`, and `_MASKS`. Any scenario or policy config specifying `passport` as a PII category would raise `RedactionError: Unknown PII category: 'passport'`.  Added ICAO Doc 9303 regex `[A-Z]{1,2}\d{6,9}` with `<PASSPORT>` placeholder and `**-*******` mask. All 19 affected eval scenarios now resolve correctly.
 
@@ -46,8 +42,6 @@ Python 3.11, 3.12, and 3.13. API surface is frozen.
 ### Changed
 - **Eval results refreshed** — `results/eval_report.md` updated: 20/20 adversarial scenarios contained (100%), 0 errors, across all 10 threat categories. Prior result had 19 errors due to the passport bug.
 - **README test count badge** — Updated to reflect 1510 passing tests.
-
-## [1.0.0b5] — 2026-02-23
 
 ## [1.0.0b5] — 2026-02-23
 
