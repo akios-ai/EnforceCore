@@ -269,7 +269,9 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.0.0** | Core Enforcer + Policy Engine | ✅ Shipped |
 | **v1.0.1** | PII Redactor + Bug Fixes | ✅ Shipped |
 | **v1.0.2** | CI Hardening + Release Process | ✅ Shipped |
-| **v1.1.0** | Evaluation Expansion (26 scenarios, 11 threat categories, HTML reports) | ✅ **Latest** |
+| **v1.1.0** | Evaluation Expansion (26 scenarios, 11 threat categories, HTML reports) | ✅ Shipped |
+| **v1.1.1** | Eval Polish + Community Prep | ✅ Shipped |
+| **v1.1.2** | Beta Feedback Fixes (CLI `--version`, doc links, extras detection) | ✅ **Latest** |
 
 See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.
 
@@ -369,7 +371,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1520 tests · 95% coverage · 0 lint errors
+**Current stats:** 1525 tests · 95% coverage · 0 lint errors
 
 ---
 

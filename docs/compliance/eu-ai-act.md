@@ -1,8 +1,8 @@
 # EU AI Act — Compliance Mapping
 
 **Regulation:** Regulation (EU) 2024/1689 (Artificial Intelligence Act)
-**Mapped against:** EnforceCore v1.0.23a1
-**Last updated:** 2026-02-23
+**Mapped against:** EnforceCore v1.1.2
+**Last updated:** 2026-02-24
 
 ---
 
@@ -39,7 +39,7 @@ to runtime enforcement of AI agent behavior.
 | Estimate and evaluate risks that may emerge | Evaluation suite with 20 adversarial scenarios across 10 threat categories covering tool abuse, data exfiltration, injection attacks, ransomware, supply-chain, and collusion | `enforcecore/eval/` — `ScenarioRunner`, `BenchmarkRunner` |
 | Adopt risk management measures | Fail-closed enforcement, PII redaction, cost limits, rate limiting, domain enforcement | `enforcecore/core/enforcer.py` — `enforce_sync()`, `enforce_async()` |
 | Test to identify the most appropriate measures | Dry-run mode replays tool calls against a policy without execution | `enforcecore/cli/` — `enforcecore dry-run` command |
-| Residual risk documentation | Threat model documents known limitations and unmitigated risks | [docs/threat-model.md](threat-model.md) §7 |
+| Residual risk documentation | Threat model documents known limitations and unmitigated risks | [docs/threat-model.md](../threat-model.md) §7 |
 
 **Verification:**
 ```bash
@@ -60,9 +60,9 @@ enforcecore dry-run policy.yaml --calls recorded_calls.jsonl
 
 | Requirement | EnforceCore Capability | Evidence |
 |---|---|---|
-| Information about capabilities and limitations | Threat model with formal security properties and known limitations | [docs/threat-model.md](threat-model.md) |
-| Intended purpose and foreseeable misuse | Architecture docs with trust boundaries and adversary model | [docs/architecture.md](architecture.md), [docs/threat-model.md](threat-model.md) §3 |
-| Level of accuracy, robustness, cybersecurity | Published benchmarks with statistical methodology (p50/p95/p99) | [docs/benchmarks.md](benchmarks.md) |
+| Information about capabilities and limitations | Threat model with formal security properties and known limitations | [docs/threat-model.md](../threat-model.md) |
+| Intended purpose and foreseeable misuse | Architecture docs with trust boundaries and adversary model | [docs/architecture.md](../architecture.md), [docs/threat-model.md](../threat-model.md) §3 |
+| Level of accuracy, robustness, cybersecurity | Published benchmarks with statistical methodology (p50/p95/p99) | [docs/benchmarks.md](../benchmarks.md) |
 | Logging capabilities | Merkle-chained audit trail records every enforcement decision with timestamps, tool names, args hashes, decisions, and timing | `enforcecore/auditor/engine.py` — `Auditor.record()` |
 | Human-interpretable records | CLI inspection of audit trails with filtering and formatting | `enforcecore/cli/` — `enforcecore inspect audit.jsonl --tail 20` |
 
@@ -140,8 +140,8 @@ pytest tests/redactor/test_unicode.py -v  # Evasion resistance
 
 | Requirement | EnforceCore Capability | Evidence |
 |---|---|---|
-| Design and development procedures | Documented architecture, roadmap, dev guide | [docs/architecture.md](architecture.md), [docs/roadmap.md](roadmap.md), [docs/dev-guide.md](dev-guide.md) |
-| Testing and validation | 1503 tests, automated CI on macOS, type checking (mypy), linting (ruff) | `.github/workflows/ci.yml`, `pytest --cov` |
+| Design and development procedures | Documented architecture, roadmap, dev guide | [docs/architecture.md](../architecture.md), [docs/roadmap.md](../roadmap.md), [docs/dev-guide.md](../dev-guide.md) |
+| Testing and validation | 1525 tests, automated CI on macOS, type checking (mypy), linting (ruff) | `.github/workflows/ci.yml`, `pytest --cov` |
 | Data management | PII redaction categories and secret patterns documented and tested | `enforcecore/redactor/patterns.py`, `enforcecore/redactor/secrets.py` |
 | Record-keeping | Merkle-chained audit trails, CHANGELOG, git history | `enforcecore/auditor/`, `CHANGELOG.md` |
 | Corrective actions | Webhook alerts on violations, structured logging for incident response | `enforcecore/plugins/webhooks.py`, structlog events |
@@ -162,11 +162,11 @@ pytest --cov=enforcecore                # Test suite + coverage
 
 | AI Act Article | EnforceCore Module | Test File | Docs |
 |---|---|---|---|
-| Art. 9 (Risk Mgmt) | `core/policy`, `core/rules`, `eval/` | `test_policy.py`, `test_rules.py`, `test_eval_*.py` | [threat-model.md](threat-model.md) |
-| Art. 13 (Transparency) | `auditor/`, `cli/` | `test_engine.py`, `test_cli.py` | [architecture.md](architecture.md) |
-| Art. 14 (Human Oversight) | `core/policy`, `cli/`, `plugins/webhooks` | `test_policy.py`, `test_cli.py`, `test_webhooks.py` | [api-design.md](api-design.md) |
-| Art. 15 (Robustness) | `core/enforcer`, `core/rules`, `redactor/` | `test_enforcer.py`, `test_rules.py`, `test_unicode.py` | [threat-model.md](threat-model.md) |
-| Art. 17 (Quality Mgmt) | CI, telemetry, auditor | `.github/workflows/ci.yml` | [dev-guide.md](dev-guide.md) |
+| Art. 9 (Risk Mgmt) | `core/policy`, `core/rules`, `eval/` | `test_policy.py`, `test_rules.py`, `test_eval_*.py` | [threat-model.md](../threat-model.md) |
+| Art. 13 (Transparency) | `auditor/`, `cli/` | `test_engine.py`, `test_cli.py` | [architecture.md](../architecture.md) |
+| Art. 14 (Human Oversight) | `core/policy`, `cli/`, `plugins/webhooks` | `test_policy.py`, `test_cli.py`, `test_webhooks.py` | [api-design.md](../api-design.md) |
+| Art. 15 (Robustness) | `core/enforcer`, `core/rules`, `redactor/` | `test_enforcer.py`, `test_rules.py`, `test_unicode.py` | [threat-model.md](../threat-model.md) |
+| Art. 17 (Quality Mgmt) | CI, telemetry, auditor | `.github/workflows/ci.yml` | [dev-guide.md](../dev-guide.md) |
 
 ---
 

@@ -76,7 +76,16 @@ metrics (call counts, block rates, latency), and structured log export.
 
 ## Current Release
 
-### v1.1.0 — Latest Stable ✅
+### v1.1.0 — Evaluation Expansion ✅
+
+Expanded adversarial evaluation: 26 scenarios across 11 threat categories, with
+HTML report generation and structured JSON output for CI integration.
+
+### v1.1.1 — Eval Polish ✅
+
+Polish pass on evaluation suite and community feedback preparation.
+
+### v1.1.2 — Beta Feedback Fixes ✅ Latest
 
 Available on [PyPI](https://pypi.org/project/enforcecore/):
 
@@ -84,10 +93,14 @@ Available on [PyPI](https://pypi.org/project/enforcecore/):
 pip install enforcecore
 ```
 
-Expanded adversarial evaluation: 26 scenarios across 11 threat categories, with
-HTML report generation and structured JSON output for CI integration.
+Fixes from external beta testing:
+- Added `--version` CLI flag (standard Unix convention)
+- Fixed 13 broken doc links in `docs/compliance/eu-ai-act.md`
+- `enforcecore info` now shows telemetry + redactor extras
+- Empty-rules policy warning for safer defaults
+- Improved error messages for misplaced `on_violation`
 
-**Quality metrics:** 1520+ tests passing, 30 public API symbols, mypy strict
+**Quality metrics:** 1525 tests passing, 30 public API symbols, mypy strict
 mode, ruff-formatted, CI-verified on Linux and macOS.
 
 ---
