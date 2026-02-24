@@ -10,5 +10,5 @@ These tests act as a **contract** — if any test here fails, it means the
 public API surface has changed and the change must be intentional, documented
 in the migration guide, and reflected in the version bump.
 
-.. versionadded:: 1.0.16
+.. versionadded:: 1.0.0
 """

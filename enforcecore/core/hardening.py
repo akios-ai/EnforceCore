@@ -372,7 +372,7 @@ def _warn_fail_open(
         tool_name: The tool whose enforcement failed (for diagnostics).
         error: The exception that triggered the fail-open path.
 
-    .. versionchanged:: 1.0.16
+    .. versionchanged:: 1.0.0
        Renamed from ``warn_fail_open`` to ``_warn_fail_open`` (internal API).
     .. versionchanged:: 1.0.0
        Added *tool_name* and *error* parameters for diagnostic context.

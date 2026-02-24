@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-02-25
+
+CI hardening and release process improvements — prevents the class of failures
+that caused 5 consecutive CI failures after v1.0.1.
+
+### Added
+- **`RELEASE_PROCESS.md`** — formal 3-phase release process (pre-release gate → release automation → post-release verification) documenting exactly how every release should be shipped.
+- **`scripts/pre_release_gate.py`** — automated pre-release checks that mirror CI locally: ruff format, ruff check, mypy, pytest, version consistency across 4 files, stale Sphinx version directive detection, and CHANGELOG validation. Run before every release.
+
+### Fixed
+- **3 stale Sphinx version directives** — `versionchanged:: 1.0.16` in `hardening.py`, `versionadded:: 1.0.16` in `tests/api/__init__.py` and `tests/api/test_public_api.py` corrected to `1.0.0`.
+- **`_SCOPE_VERSION` mismatch** — `enforcecore/telemetry/instrumentor.py` was `"1.0.0"` while all other version files were `"1.0.1"`. Now consistent across all 4 version files.
+- **`CONTRIBUTORS.md` accuracy** — reframed Sabelfeld and Stucki entries from "Research Collaboration" to "Technical Feedback" to accurately reflect the nature of their input.
+
 ## [1.0.1] — 2026-02-24
 
 Patch release fixing two bugs discovered during the 147-point post-release audit.

@@ -12,7 +12,7 @@ package but emit a ``DeprecationWarning``.  They are the stable submodule API.
 Any failure here means the public API has changed — intentional changes must
 be reflected in ``docs/migration.md`` and the CHANGELOG.
 
-.. versionadded:: 1.0.16
+.. versionadded:: 1.0.0
 .. versionchanged:: 1.0.0a1  Pruned __all__ from 110 to 30.
 .. versionchanged:: 1.0.0b1   Tier 2 symbols emit DeprecationWarning.
 """
