@@ -454,6 +454,53 @@ class Auditor:
 
         return entry
 
+    # ── Convenience wrappers ──────────────────────────────────────────
+
+    def log(
+        self,
+        tool_name: str,
+        policy_name: str,
+        *,
+        decision: str = "allowed",
+        **kwargs: Any,
+    ) -> AuditEntry:
+        """Shorthand for :meth:`record` with a simpler signature.
+
+        Example::
+
+            auditor.log("search_web", "strict")
+            auditor.log("run_sql", "strict", decision="blocked",
+                        violation_reason="SQL injection detected")
+
+        .. versionadded:: 1.1.1
+        """
+        return self.record(
+            tool_name=tool_name,
+            policy_name=policy_name,
+            decision=decision,
+            **kwargs,
+        )
+
+    def verify(self) -> VerificationResult:
+        """Verify the integrity of *this* auditor's trail.
+
+        Convenience wrapper around :func:`verify_trail` using the
+        auditor's ``output_path``.
+
+        Returns:
+            A ``VerificationResult`` — check ``.is_valid``.
+
+        Raises:
+            AuditError: If no ``output_path`` is configured.
+
+        .. versionadded:: 1.1.1
+        """
+        if self._output_path is None:
+            raise AuditError(
+                "Cannot verify: auditor was created with a backend, not an output_path"
+            )
+        return verify_trail(self._output_path)
+
     def _publish_to_witness(self, entry: AuditEntry) -> None:
         """Send entry hash to the witness backend.
 

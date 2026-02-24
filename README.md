@@ -10,11 +10,12 @@
 </p>
 
 <p align="center">
+  <a href="https://pypi.org/project/enforcecore/"><img src="https://img.shields.io/pypi/v/enforcecore?style=flat-square" alt="PyPI" /></a>
+  <a href="https://pepy.tech/project/enforcecore"><img src="https://static.pepy.tech/badge/enforcecore/month?style=flat-square" alt="Downloads" /></a>
+  <a href="https://pypi.org/project/enforcecore/"><img src="https://img.shields.io/pypi/pyversions/enforcecore?style=flat-square" alt="Python" /></a>
   <a href="https://github.com/akios-ai/EnforceCore/actions"><img src="https://img.shields.io/github/actions/workflow/status/akios-ai/EnforceCore/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
-  <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
-  <img src="https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-1520_passed-brightgreen?style=flat-square" alt="Tests" />
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square" alt="Ruff" /></a>
 </p>
 
 <p align="center">
@@ -22,7 +23,7 @@
   <a href="docs/architecture.md">Architecture</a> ·
   <a href="docs/roadmap.md">Roadmap</a> ·
   <a href="docs/api-design.md">API Reference</a> ·
-  <a href="docs/contributing.md">Contributing</a>
+  <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 > **⚠️ Disclaimer:** EnforceCore is provided "as is", without warranty of any kind, express or
@@ -150,6 +151,15 @@ async def search_web(query: str) -> str:
 def calculator(expr: str) -> float:
     return eval(expr)  # policy controls whether this tool can be called
 ```
+
+> **How tool names work:** `@enforce` uses the function name (e.g. `search_web`)
+> as the tool name matched against `allowed_tools` / `denied_tools`.
+> To override, pass `tool_name=`:
+>
+> ```python
+> @enforce(policy="policy.yaml", tool_name="web_search")
+> async def search(query: str) -> str: ...
+> ```
 
 ### 3. See It Work
 
@@ -301,7 +311,7 @@ problem of AI agent safety. We welcome academic collaboration.
 - 🔬 [**Open Research Questions**](docs/related-work.md#5-open-research-questions) —
   policy composition, temporal properties, adversarial robustness
 - 🧪 [**Evaluation Suite**](docs/evaluation.md) — reproducible adversarial
-  benchmarks with 20 scenarios across 10 threat categories
+  benchmarks with 26 scenarios across 11 threat categories
 - 📐 [**Architecture**](docs/architecture.md) — formal design with Mermaid
   diagrams
 
@@ -359,7 +369,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1510 tests · 95% coverage · 0 lint errors
+**Current stats:** 1520 tests · 95% coverage · 0 lint errors
 
 ---
 

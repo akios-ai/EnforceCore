@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-02-24
+
+Patch release — fixes 7 UX issues discovered during end-to-end testing from a
+clean PyPI install. Adds a 3-phase release test process to prevent regressions.
+
+### Added
+- **`enforcecore/__main__.py`** — `python -m enforcecore` now works (shows version or launches CLI).
+- **`RedactionResult.redacted_text`** property — discoverable alias for `.text` on redaction results.
+- **`Auditor.log()`** — convenience wrapper around `record()` with positional `tool_name` and `policy_name` args.
+- **`Auditor.verify()`** — convenience method to verify the auditor's own trail integrity.
+- **`RedactionStrategy`** re-exported from `enforcecore.redactor` (was only available at top-level).
+- **`tool_name=` documentation** — README Quick Start now explains how `@enforce` resolves tool names from function names and how to override with `tool_name=`.
+- **3-phase release test process** — Phase 2 (smoke test) and Phase 3 (post-release E2E from clean PyPI venv) scripts added to catch the exact class of issues found in this audit.
+
+### Fixed
+- **CLI `enforcecore` crash** — no longer crashes with `ModuleNotFoundError: typer` when the `cli` extra is not installed. Shows a helpful "pip install enforcecore[cli]" message instead.
+- **Noisy debug logging** — `ENFORCECORE_LOG_LEVEL` setting is now wired to stdlib logging so structlog respects it. Default `INFO` silences internal debug output.
+
 ## [1.1.0] — 2026-02-24
 
 First minor release — expanded adversarial evaluation framework and repository

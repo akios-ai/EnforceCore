@@ -300,7 +300,16 @@ from enforcecore.telemetry import (
     EnforceCoreMetrics as EnforceCoreMetrics,
 )
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
+
+# ── Logging configuration ────────────────────────────────────────────────
+# Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
+# respects it.  Default is INFO which silences noisy DEBUG output.
+import logging as _logging
+
+_logging.getLogger("enforcecore").setLevel(
+    getattr(_logging, settings.log_level.upper(), _logging.INFO)
+)
 
 # ── Public API contract ──────────────────────────────────────────────────
 # Only these ~30 symbols are guaranteed stable across minor versions.

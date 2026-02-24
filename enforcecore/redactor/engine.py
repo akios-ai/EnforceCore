@@ -143,6 +143,14 @@ class RedactionResult:
     def was_redacted(self) -> bool:
         return self.count > 0
 
+    @property
+    def redacted_text(self) -> str:
+        """Alias for :attr:`text` — the redacted output string.
+
+        .. versionadded:: 1.1.1
+        """
+        return self.text
+
 
 class Redactor:
     """PII detection and redaction engine.
