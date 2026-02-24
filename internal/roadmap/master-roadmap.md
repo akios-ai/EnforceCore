@@ -112,15 +112,17 @@ All entry criteria met:
 |---------|-------|--------|--------|
 | v1.0.0 | Stable release | Feb 24, 2026 | ✅ SHIPPED |
 | v1.0.1 | Audit bug fixes | Feb 24, 2026 | ✅ SHIPPED |
-| v1.0.x | Patch series | Ongoing | Community trust |
-| v1.1.0 | AgentSecBench public | May 2026 | Defines the conversation |
-| v1.2.0 | Subprocess / WASM sandbox | June 2026 | Closes the last real security gap |
-| v1.3.0 | NER PII + sensitivity labels | July 2026 | Answers "regex PII is garbage" + first IFC labels |
-| v1.4.0 | OpenTelemetry + observability | Aug 2026 | Enterprise deployability |
-| v1.5.0 | Multi-tenant + policy inheritance | Sep 2026 | Enterprise sales prerequisite |
-| v1.6.0 | Policy server (remote + signed) | Nov 2026 | Ops teams need this for scale |
-| v1.7.0 | Compliance reporting | Jan 2027 | EU AI Act / SOC2 audit buyers |
-| v2.0.0 | Distributed enforcement | 2027 | Major: multi-node, multi-agent architectures |
+| v1.0.2 | CI hardening + release process | Feb 25, 2026 | ✅ READY |
+| v1.1.0 | Eval expansion (26 scenarios, HTML reports) | Mar 2026 | 🔧 CODE DONE — needs release |
+| v1.1.1 | Eval polish + community feedback | Mar–Apr 2026 | 📋 Planned |
+| v1.2.0 | AgentSecBench standalone package | May 2026 | 📋 Planned — defines the conversation |
+| v1.3.0 | Subprocess sandbox | June 2026 | 📋 Planned — closes last real security gap |
+| v1.4.0 | NER PII + sensitivity labels | July 2026 | 📋 Planned — answers "regex PII is garbage" + first IFC labels |
+| v1.5.0 | OpenTelemetry + observability | Aug 2026 | 📋 Planned — enterprise deployability |
+| v1.6.0 | Multi-tenant + policy inheritance | Sep 2026 | 📋 Planned — enterprise prerequisite |
+| v1.7.0 | Policy server (remote + signed) | Nov 2026 | 📋 Planned — ops teams need this |
+| v1.8.0 | Compliance reporting | Jan 2027 | 📋 Planned — EU AI Act / SOC2 |
+| v2.0.0 | Distributed enforcement | 2027 | 📋 Planned — multi-node architectures |
 
 ---
 
@@ -132,37 +134,91 @@ Purely reactive. Fix bugs reported by the community, backport security patches, 
 
 ---
 
-### v1.1.0 — AgentSecBench: The Benchmark
+### v1.0.2 — CI Hardening + Release Process
 
-**Target:** May 2026  
-**What:** Formalize the benchmark suite (built in b6) as a first-class public tool.
+**Target:** ✅ READY — Feb 25, 2026
+**Scope:** Release process improvements discovered during v1.0.1 CI failures
 
-This is the single highest-leverage release in the entire roadmap. Here's why:
-
-```
-Nobody has defined "secure AI agent execution" in measurable terms.
-If we create the benchmark, we define the conversation.
-Every framework gets measured against OUR criteria.
-```
+**What happened:** After v1.0.1 shipped, 5 consecutive CI failures exposed gaps in the
+pre-release workflow: ruff format not checked locally, stale version directives from
+internal iteration (27 Sphinx directives referencing impossible versions like 1.0.24),
+mypy errors from eval scenario code using wrong API, version mismatch in instrumentor.py.
 
 **Deliverables:**
-- `pip install agentsecbench` (separate package, co-maintained under akios-ai)
-- 25+ security scenarios across 5 categories: tool safety, PII handling, prompt injection resistance, resource governance, audit completeness
-- Framework adapters: LangGraph, AutoGen, CrewAI, + EnforceCore
-- HTML comparison report generator
-- Published results: "No framework provides built-in protection against any evaluated scenario"
+- `RELEASE_PROCESS.md` — 3-phase release process doc (pre-release → release → post-release)
+- `scripts/pre_release_gate.py` — automated pre-release checks that mirror CI exactly
+- Fixed 3 remaining stale version directives (1.0.16 → 1.0.0)
+- Fixed `_SCOPE_VERSION` mismatch in `enforcecore/telemetry/instrumentor.py`
+- Fixed `CONTRIBUTORS.md` — reframed Sabelfeld/Stucki entries for accuracy
 
-**Why a separate package matters:** It lets EnforceCore *be the reference implementation* that passes the benchmark, while AgentSecBench can be adopted by other projects. It also positions akios-ai as the standards body, not just a product company.
+**Tests:** 1520 pass, 0 fail.
 
-**Adoption plays this unlocks:**
-- arXiv paper #2 ("AgentSecBench: A Benchmark Suite for Evaluating Security in AI Agent Frameworks")
-- DEF CON AI Village talk using the live benchmark demo
-- Blog post #5: "We benchmarked 3 agent frameworks. They all failed."
+**Lesson embedded:** Every future release runs `pre_release_gate.py` before `release.py`.
+The gate catches what CI catches, but locally, before the push.
+
+---
+
+### v1.1.0 — Eval Expansion: 26 Scenarios + HTML Reports
+
+**Target:** March 2026 (code done, needs release prep)
+**What:** Major expansion of the evaluation suite from 20 → 26 scenarios with a new
+threat category and HTML report generation.
+
+**Status: Code is written, tested, and committed.** This is the next release to ship.
+
+**What was added (committed post-v1.0.1):**
+
+| New Scenario | Category | What it tests |
+|---|---|---|
+| `audit_trail_integrity` | AUDIT_COMPLETENESS | Merkle chain tamper detection |
+| `audit_witness_callback` | AUDIT_COMPLETENESS | Witness callback fires and records |
+| `tool_abuse_argument_injection` | TOOL_ABUSE | Malicious args in tool parameters |
+| `pii_leak_chained_output` | PII_LEAKAGE | PII surviving multi-step chains |
+| `resource_exhaust_large_input` | RESOURCE_EXHAUSTION | Oversized payloads |
+| `prompt_injection_system_override` | PROMPT_INJECTION | System prompt override attempts |
+
+**New threat category:** `AUDIT_COMPLETENESS` — validates that the audit trail is
+complete, tamper-evident, and verifiable.
+
+**HTML report generator:** `generate_html_report()` — produces a standalone HTML
+report with scenario results, benchmark data, and visual formatting.
+
+**Coverage now:** 26 scenarios across 11 threat categories:
+`TOOL_ABUSE` (4), `DATA_EXFILTRATION` (2), `RESOURCE_EXHAUSTION` (3),
+`POLICY_EVASION` (2), `PII_LEAKAGE` (2), `PRIVILEGE_ESCALATION` (2),
+`PROMPT_INJECTION` (3), `RANSOMWARE` (2), `SUPPLY_CHAIN` (2),
+`COLLUSION` (1), `AUDIT_COMPLETENESS` (2) + 1 multi-stage.
+
+**Release checklist for v1.1.0:**
+- [ ] Run `pre_release_gate.py` — must pass all 8 checks
+- [ ] Update CHANGELOG [Unreleased] with new scenario list
+- [ ] Run full eval suite and capture results
+- [ ] Run `release.py 1.1.0 --execute`
+- [ ] Verify CI green on tag
+- [ ] Verify PyPI publication
+
+---
+
+### v1.1.1 — Eval Polish + Community Feedback (Planned)
+
+**Target:** March–April 2026
+**What:** Iterate on v1.1.0 based on early feedback. Add 2–4 more scenarios
+if obvious gaps emerge. Polish HTML report formatting.
+
+This is the buffer release — don't plan specific features, react to what users
+actually report after trying the expanded eval suite.
+
+---
+
+### v1.2.0 — AgentSecBench: The Standalone Benchmark
+
+**Target:** May 2026
+**What:** Extract the evaluation suite into a standalone `agentsecbench` package.
 - OPA contribution: AI agent policy templates that pass AgentSecBench scenarios
 
 ---
 
-### v1.2.0 — Subprocess / WASM Sandbox
+### v1.3.0 — Subprocess / WASM Sandbox
 
 **Target:** June 2026  
 **What:** True execution isolation — run agent tool calls inside a sandboxed subprocess or WASM environment.
@@ -182,7 +238,7 @@ Wasmtime was correctly dropped from the contribution plan. But a WASM integratio
 
 ---
 
-### v1.3.0 — NER-Based PII + Lightweight Sensitivity Labels
+### v1.4.0 — NER-Based PII + Lightweight Sensitivity Labels
 
 **Target:** July 2026  
 **What:** (a) Add an optional NER/ML-based PII detection tier alongside the existing regex engine. (b) Introduce lightweight sensitivity labels on tool schemas and data fields — the first step toward label-based IFC.
@@ -239,7 +295,7 @@ We already contribute to Presidio. Their NER recognizers are battle-tested. The 
 
 ---
 
-### v1.4.0 — OpenTelemetry + Observability
+### v1.5.0 — OpenTelemetry + Observability
 
 **Target:** August 2026  
 **What:** First-class OpenTelemetry trace/metric/log export from every enforcement decision.
@@ -257,7 +313,7 @@ Enterprise teams don't evaluate security tools — their ops teams do. Ops teams
 
 ---
 
-### v1.5.0 — Multi-Tenant + Policy Inheritance
+### v1.6.0 — Multi-Tenant + Policy Inheritance
 
 **Target:** September 2026  
 **What:** Let multiple agents/teams share an EnforceCore deployment with hierarchical policies.
@@ -294,7 +350,7 @@ The single-policy model is the right starting point. Adding inheritance before u
 
 ---
 
-### v1.6.0 — Remote Policy Server
+### v1.7.0 — Remote Policy Server
 
 **Target:** November 2026  
 **What:** Centralized policy management — policies stored and versioned server-side, agents pull at startup or on cache miss.
@@ -325,7 +381,7 @@ Build the server-side component only after the client (EnforceCore) is widely ad
 
 ---
 
-### v1.7.0 — Compliance Reporting
+### v1.8.0 — Compliance Reporting
 
 **Target:** January 2027  
 **What:** Turn the audit trail into structured compliance exports — EU AI Act, SOC2, GDPR.
@@ -375,12 +431,14 @@ Each release maps to a gravity play:
 |---------|-------------|-----------|--------|
 | v1.0.0 stable | Show HN post | "It works, it's stable, here are the benchmark numbers" | ✅ Ready |
 | v1.0.0 stable | NeurIPS 2026 workshop | 11-page paper with 100% containment results | ✅ Written |
-| v1.1.0 AgentSecBench | Defines the conversation | Every other framework gets measured against our criteria | 📋 Planned |
-| v1.1.0 AgentSecBench | DEF CON CFP | Live demo: 3 frameworks fail, EnforceCore passes — with our benchmark | 📋 Planned |
-| v1.1.0 AgentSecBench | arXiv paper | "AgentSecBench" as a citeable academic contribution | 📋 Planned |
-| v1.2.0 Sandbox | Blog post #4 | "Runtime vs. prompt vs. sandbox — a hierarchy of defense" | 📋 Planned |
-| v1.3.0 NER PII + Labels | Addresses HN criticism + IFC research | The "regex PII is garbage" comment gets a concrete answer; lightweight labels open IFC collaboration with Chalmers | 📋 Planned |
-| v1.4.0 OTEL | Enterprise funnel | Ops teams can now see it in Datadog → procurement unlocked | 📋 Planned |
+| v1.0.2 | CI hardening | Release process formalized — never ship broken CI again | ✅ Ready |
+| v1.1.0 | Eval expansion | 26 scenarios, 11 categories, HTML reports — proves depth | 🔧 Code done |
+| v1.2.0 AgentSecBench | Defines the conversation | Every other framework gets measured against our criteria | 📋 Planned |
+| v1.2.0 AgentSecBench | DEF CON CFP | Live demo: 3 frameworks fail, EnforceCore passes — with our benchmark | 📋 Planned |
+| v1.2.0 AgentSecBench | arXiv paper | "AgentSecBench" as a citeable academic contribution | 📋 Planned |
+| v1.3.0 Sandbox | Blog post #4 | "Runtime vs. prompt vs. sandbox — a hierarchy of defense" | 📋 Planned |
+| v1.4.0 NER PII + Labels | Addresses HN criticism + IFC research | The "regex PII is garbage" comment gets a concrete answer; lightweight labels open IFC collaboration with Chalmers | 📋 Planned |
+| v1.5.0 OTEL | Enterprise funnel | Ops teams can now see it in Datadog → procurement unlocked | 📋 Planned |
 | v2.0.0 Distributed | Academic paper #3 | Distributed tamper-evident audit trails across agent fleets | 📋 Planned |
 
 ### The single most important sequence
@@ -456,47 +514,50 @@ The arxiv-strategy.md lists USENIX Security, AAAI Workshop, IEEE S&P, NeurIPS Wo
                   - Post-release audit (147/147 = 100%)                          ✅
                   - 1510 tests green                                             ✅
 
-Feb 25 – Mar 1    v1.0.1 Patch
-                  - Ship 2 bug fixes (witness + policy validator)
-                  - Havelund email (attach benchmark results + paper)
-                  - Blog post #1 live (Merkle audit trails)
+✅ DONE          v1.0.1 Patch (Feb 24)
+                  - 2 bug fixes (witness + policy validator)                     ✅
+                  - 14 doc updates                                               ✅
 
-Mar 2 – Mar 14    Show HN + DEF CON Prep
-                  - Show HN post (Tuesday 9am EST)
-                  - Respond to HN comments within 1 hour
+✅ READY         v1.0.2 CI Hardening (Feb 25)
+                  - RELEASE_PROCESS.md (3-phase release process)                 ✅
+                  - scripts/pre_release_gate.py (automated pre-release checks)   ✅
+                  - Fixed stale version directives + version mismatch            ✅
+                  - CONTRIBUTORS.md corrected                                    ✅
+
+🔧 CODE DONE    v1.1.0 Eval Expansion (Mar)
+                  - 6 new scenarios (26 total, 11 threat categories)             ✅
+                  - AUDIT_COMPLETENESS threat category                           ✅
+                  - HTML report generator                                        ✅
+                  - 1520 tests green                                             ✅
+                  - CHANGELOG update                                             ⬜
+                  - Release via release.py                                       ⬜
+
+Mar – Apr         v1.1.1 Eval Polish
+                  - Community feedback on eval suite
+                  - 2–4 additional scenarios if gaps found
+                  - Blog post #1 (Merkle audit trails)
+
+Apr – May         v1.2.0 AgentSecBench Standalone
+                  - Extract eval → pip install agentsecbench
                   - DEF CON AI Village CFP draft
-                  - OWASP Slack: join, read, contribute expertise
+                  - arXiv preprint submission
 
-Mar 15 – Apr 4    DEF CON CFP + arXiv
-                  - DEF CON AI Village CFP submission (deadline ~April 1-15)
-                  - arXiv preprint submission (Paper #1: EnforceCore)
-                  - Blog post #2 (prompt-level safety broken)
-                  - Fix any bugs from community (patch releases)
-
-Apr 5 – May 2     v1.1.0 AgentSecBench
-                  - Full benchmark suite: 25 scenarios, HTML reports, pip installable
-                  - Blog post #3: "We benchmarked 3 agent frameworks. They all failed."
-                  - OWASP: share benchmark results in relevant discussions
-
-May – Jun         v1.2.0 Sandbox
+May – Jun         v1.3.0 Sandbox
                   - Subprocess isolation layer
                   - WASM design (don't build yet)
-                  - OPA AI agent Rego library contribution
 
-Jul               v1.3.0 NER PII + Sensitivity Labels
+Jul               v1.4.0 NER PII + Sensitivity Labels
                   - Presidio NER integration
                   - Lightweight sensitivity labels on tool schemas
-                  - Deepen Presidio contribution alignment
-                  - Follow up with Stucki/Sabelfeld (Chalmers) on label model design
+                  - Follow up with Stucki/Sabelfeld on label model design
 
 Aug               DEF CON AI Village (if CFP accepted)
                   - Live benchmark demo
-                  - Release conference materials open-source
 
-Sep               v1.4.0 OpenTelemetry
-Oct               v1.5.0 Multi-tenant policies
-Nov               v1.6.0 Policy server
-Jan 2027          v1.7.0 Compliance reporting
+Sep               v1.5.0 OpenTelemetry
+Oct               v1.6.0 Multi-tenant policies
+Nov               v1.7.0 Policy server
+Jan 2027          v1.8.0 Compliance reporting
 2027              v2.0.0 Distributed enforcement
 ```
 

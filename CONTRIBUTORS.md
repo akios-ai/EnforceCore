@@ -54,18 +54,15 @@ We are grateful to the researchers and practitioners whose work made this possib
   append-only files (`chattr +a`) and hash-only remote witnesses. Co-author
   of Crosby & Wallach (2009), the paper that informs EnforceCore’s Merkle-chained
   audit engine.
-### Research Collaboration
+### Technical Feedback
 
-- **Prof. Andrei Sabelfeld** (Chalmers University of Technology) — information-flow
-  control expertise. Co-author of the definitive IFC survey with Andrew Myers (2003).
-  Connected EnforceCore's redaction pipeline to the broader IFC research landscape
-  and directed further collaboration through his research group.
-- **Dr. Sandro Stucki** (Chalmers University of Technology, Sabelfeld group) —
-  identified EnforceCore's PII redaction as a **data minimization** mechanism
-  (connected to trigger-action platform work / LazyTAP). Posed the key research
-  question on sensitivity label inference for AI agent tool calls. Referenced
-  AirGapAgent (CCS 2024) as a complementary approach. His feedback directly shaped
-  the v1.3.0 sensitivity labels design.
+- **Prof. Andrei Sabelfeld** (Chalmers University of Technology) — pointed us toward
+  relevant information-flow control literature and connected us with his research
+  group for technical perspective on the redaction pipeline design.
+- **Dr. Sandro Stucki** (Chalmers University of Technology) — provided feedback
+  identifying EnforceCore's PII redaction as a data minimization pattern and raised
+  the question of sensitivity label inference for AI agent tool calls, which informed
+  our thinking on future label-based designs.
 ### Evaluation Methodology
 
 - **Prof. Valérie Viet Triem Tong** (CentraleSupélec, IRISA/PIRAT) — the adversarial
