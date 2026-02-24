@@ -18,13 +18,12 @@ Example YAML policy::
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import Any
 
 import structlog
 import yaml
-import warnings
-
 from pydantic import BaseModel, field_validator, model_validator
 
 from enforcecore.core.rules import ContentRuleConfig
