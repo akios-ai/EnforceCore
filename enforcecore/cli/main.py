@@ -37,12 +37,36 @@ except ImportError:
 
 import enforcecore
 
+
+def _version_callback(value: bool) -> None:
+    """Print version and exit when --version is passed."""
+    if value:
+        print(f"enforcecore {enforcecore.__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(
     name="enforcecore",
     help="EnforceCore — runtime enforcement for agentic AI systems.",
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
+
+
+@app.callback()
+def main(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            help="Show version and exit.",
+            callback=_version_callback,
+            is_eager=True,
+        ),
+    ] = False,
+) -> None:
+    """EnforceCore — runtime enforcement for agentic AI systems."""
+
 
 console = Console()
 err_console = Console(stderr=True)
@@ -79,6 +103,18 @@ def info() -> None:
         from importlib.metadata import version as _get_version2
 
         extras.append(f"rich ({_get_version2('rich')})")
+    except (ImportError, Exception):  # pragma: no cover
+        pass
+    try:
+        from importlib.metadata import version as _get_otel
+
+        extras.append(f"telemetry (opentelemetry-sdk {_get_otel('opentelemetry-sdk')})")
+    except (ImportError, Exception):  # pragma: no cover
+        pass
+    try:
+        from importlib.metadata import version as _get_presidio
+
+        extras.append(f"redactor (presidio-analyzer {_get_presidio('presidio-analyzer')})")
     except (ImportError, Exception):  # pragma: no cover
         pass
 

@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] — 2026-02-24
+
+Patch release — fixes from external beta testing. 5 of 13 reported issues
+confirmed valid, 7 rejected after fact-checking (including the "CRITICAL"
+thread pool deadlock claim — all 48 integration tests pass in 0.20s, no
+deadlock).
+
+### Added
+- **CLI `--version` flag** — `enforcecore --version` now prints the version and
+  exits, matching standard Unix CLI conventions.
+- **`enforcecore info` extras detection** — now reports `telemetry` (opentelemetry-sdk)
+  and `redactor` (presidio-analyzer) extras in addition to `cli` and `rich`.
+- **Empty-rules policy warning** — loading a policy with no `rules` section from
+  YAML now emits a `UserWarning` instead of silently defaulting to allow-all.
+- **`on_violation` misplacement hint** — placing `on_violation` inside `rules:`
+  now produces a clear message: *"belongs at the top level of the policy, not
+  under 'rules'"* instead of the generic "Unknown policy rule keys ignored."
+
+### Fixed
+- **13 broken doc links in `docs/compliance/eu-ai-act.md`** — relative links
+  like `threat-model.md` corrected to `../threat-model.md` (file is in
+  `docs/compliance/`, targets are in `docs/`). `mkdocs build --strict` now
+  resolves all internal links.
+- **README roadmap stale** — roadmap table now shows v1.1.2 as Latest (was
+  stuck on v1.1.0). `docs/roadmap.md` updated to match.
+- **README test stats** — updated to 1525 tests (was 1520; actual collection
+  is 1525 with 1520 passing and 5 skipped).
+- **`eu-ai-act.md` test count** — updated from 1503 to 1525.
+
+### Beta Report Rejections (not bugs)
+- **Thread pool deadlock (claimed CRITICAL)** — `ResourceGuard` uses
+  `ThreadPoolExecutor` with daemon threads. All 48 integration tests pass
+  in 0.20s. The leaked-thread tracker at line 503 already handles pool
+  exhaustion. Tester's 15-second timeout in GitHub Codespaces was too aggressive.
+- **Chattr tests fail in containers** — tests already use `@pytest.mark.skipif`
+  + `@patch("subprocess.run")`. They never invoke real `chattr`.
+- **Eval test hangs** — full suite completes in 43s. No hang. The tester's
+  15-second per-test timeout was insufficient for the eval suite.
+- **Test count "wrong"** — README reported 1520 (passing count), tester
+  counted 1525 (collected). Both correct; 5 are skipped. Updated to 1525.
+- **`person_name` warning spam** — already fixed in v1.0.9; fires once per
+  `Redactor` instance, not per call.
+
 ## [1.1.1] — 2026-02-24
 
 Patch release — fixes 7 UX issues discovered during end-to-end testing from a

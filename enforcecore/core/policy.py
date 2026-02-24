@@ -170,11 +170,25 @@ class PolicyRules(BaseModel):
         # Warn about unknown keys (but don't block — forward-compat)
         extras = set(values) - known - set(_RULES_ALIASES)
         if extras:
-            warnings.warn(
-                f"Unknown policy rule keys ignored: {sorted(extras)}. Valid keys: {sorted(known)}",
-                UserWarning,
-                stacklevel=4,
-            )
+            # Check if any unknown keys are actually top-level Policy fields
+            top_level_fields = {"on_violation", "name", "version", "extends"}
+            misplaced = extras & top_level_fields
+            if misplaced:
+                warnings.warn(
+                    f"Policy keys {sorted(misplaced)} found inside 'rules' but "
+                    f"they belong at the top level of the policy, not under 'rules'. "
+                    f"Move them up: e.g. place 'on_violation' next to 'name' and 'rules'.",
+                    UserWarning,
+                    stacklevel=4,
+                )
+            remaining = extras - top_level_fields
+            if remaining:
+                warnings.warn(
+                    f"Unknown policy rule keys ignored: {sorted(remaining)}. "
+                    f"Valid keys: {sorted(known)}",
+                    UserWarning,
+                    stacklevel=4,
+                )
 
         return values
 
@@ -280,7 +294,15 @@ class Policy(BaseModel):
                 stacklevel=2,
             )
         elif "rules" not in data:
-            pass  # no rules at all — fine
+            import warnings
+
+            warnings.warn(
+                "Policy has no 'rules' section — all tools will be allowed and "
+                "no enforcement will be applied. Add a 'rules' section with "
+                "'allowed_tools' or 'denied_tools' for meaningful enforcement.",
+                UserWarning,
+                stacklevel=2,
+            )
         try:
             return cls.model_validate(data)
         except Exception as exc:
