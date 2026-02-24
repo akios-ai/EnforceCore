@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from enforcecore.eval.report import (
     generate_benchmark_report,
+    generate_html_report,
     generate_report,
     generate_suite_report,
 )
@@ -209,3 +210,54 @@ class TestCombinedReport:
     def test_combined_report_none(self) -> None:
         report = generate_report()
         assert "No results to report" in report
+
+
+# ---------------------------------------------------------------------------
+# HTML report
+# ---------------------------------------------------------------------------
+
+
+class TestHtmlReport:
+    """Tests for the HTML report generator."""
+
+    def test_html_report_is_valid_html(self) -> None:
+        report = generate_html_report(suite=_make_suite())
+        assert report.startswith("<!DOCTYPE html>")
+        assert "</html>" in report
+
+    def test_html_report_contains_policy_name(self) -> None:
+        report = generate_html_report(suite=_make_suite())
+        assert "test-policy" in report
+
+    def test_html_report_contains_containment(self) -> None:
+        report = generate_html_report(suite=_make_suite())
+        assert "Containment" in report
+
+    def test_html_report_contains_scenario_names(self) -> None:
+        report = generate_html_report(suite=_make_suite())
+        assert "Tool Abuse Test" in report
+        assert "PII Leak Test" in report
+
+    def test_html_report_contains_categories(self) -> None:
+        report = generate_html_report(suite=_make_suite())
+        assert "Tool Abuse" in report
+
+    def test_html_report_benchmark_only(self) -> None:
+        report = generate_html_report(benchmarks=_make_benchmark_suite())
+        assert "Performance Benchmarks" in report
+        assert "policy_pre_call" in report
+
+    def test_html_report_combined(self) -> None:
+        report = generate_html_report(_make_suite(), _make_benchmark_suite())
+        assert "Containment" in report
+        assert "Performance Benchmarks" in report
+
+    def test_html_report_empty(self) -> None:
+        report = generate_html_report()
+        assert "No results to report" in report
+
+    def test_html_report_escapes_special_chars(self) -> None:
+        suite = SuiteResult(policy_name="<script>alert(1)</script>")
+        report = generate_html_report(suite=suite)
+        assert "<script>" not in report
+        assert "&lt;script&gt;" in report

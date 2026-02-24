@@ -412,6 +412,7 @@ _TIER2_IMPORTS: dict[str, tuple[str, str]] = {
     "BenchmarkRunner": ("enforcecore.eval", "BenchmarkRunner"),
     "ScenarioRunner": ("enforcecore.eval", "ScenarioRunner"),
     "generate_benchmark_report": ("enforcecore.eval", "generate_benchmark_report"),
+    "generate_html_report": ("enforcecore.eval", "generate_html_report"),
     "generate_report": ("enforcecore.eval", "generate_report"),
     "generate_suite_report": ("enforcecore.eval", "generate_suite_report"),
     "get_all_scenarios": ("enforcecore.eval", "get_all_scenarios"),

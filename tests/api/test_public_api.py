@@ -191,6 +191,7 @@ TIER2_FUNCTIONS: set[str] = {
     "enter_enforcement",
     "exit_enforcement",
     "generate_benchmark_report",
+    "generate_html_report",
     "generate_report",
     "generate_suite_report",
     "get_all_scenarios",

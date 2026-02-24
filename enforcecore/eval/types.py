@@ -32,6 +32,7 @@ class ThreatCategory(enum.StrEnum):
     RANSOMWARE = "ransomware"
     SUPPLY_CHAIN = "supply_chain"
     COLLUSION = "collusion"
+    AUDIT_COMPLETENESS = "audit_completeness"
 
 
 class Severity(enum.StrEnum):
