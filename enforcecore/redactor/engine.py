@@ -12,6 +12,7 @@ Supported categories:
 - ssn: US Social Security Numbers
 - credit_card: Credit card numbers (Visa, MC, Amex, Discover)
 - ip_address: IPv4 addresses
+- passport: Passport numbers (ICAO Doc 9303 format: 1-2 letters + 6-9 digits)
 - person_name: Basic person name patterns (Title Case sequences)
 
 Performance: ~0.1-0.5ms per call (pure regex, no NLP pipeline).
@@ -77,6 +78,9 @@ _PII_PATTERNS: dict[str, re.Pattern[str]] = {
     "ip_address": re.compile(
         r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}" r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b"
     ),
+    # Passport numbers — ICAO Doc 9303 format: 1-2 uppercase letters + 6-9 digits
+    # Covers US (A12345678), UK/CA (AB123456), EU machine-readable documents
+    "passport": re.compile(r"\b[A-Z]{1,2}\d{6,9}\b"),
 }
 
 # Placeholder labels for each category
@@ -87,6 +91,7 @@ _PLACEHOLDERS: dict[str, str] = {
     "credit_card": "<CREDIT_CARD>",
     "ip_address": "<IP_ADDRESS>",
     "person_name": "<PERSON>",
+    "passport": "<PASSPORT>",
 }
 
 # Mask characters per category
@@ -97,6 +102,7 @@ _MASKS: dict[str, str] = {
     "credit_card": "****-****-****-****",
     "ip_address": "***.***.***.***",
     "person_name": "****",
+    "passport": "**-*******",
 }
 
 
@@ -167,7 +173,7 @@ class Redactor:
         Args:
             categories: PII categories to detect. Defaults to all supported.
                 Supported: ``email``, ``phone``, ``ssn``, ``credit_card``,
-                ``ip_address``.
+                ``ip_address``, ``passport``.
             strategy: How to redact detected PII. Default: ``placeholder``.
             secret_detection: Enable secret detection (API keys, tokens, etc.).
             secret_categories: Secret categories to detect. Defaults to all.

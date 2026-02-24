@@ -1,3 +1,21 @@
+
+Here's the critical summary of what I wrote and why:
+
+**Pre-stable (b6 → stable):**
+You need exactly **one more beta** (b6), not several. The product is functionally complete. b6 is purely about generating benchmark numbers — because the benchmark is the foundation of every other adoption play. Stable follows ~2 weeks later.
+
+**The DEF CON deadline is a forcing function.** CFPs close around April 2026. That means you need stable + benchmark results by **mid-March at the latest**, or you wait until Black Hat 2027. This makes b6 the most time-sensitive thing on the board right now.
+
+**Post-stable milestones** (10 steps to v2.0):
+1. **v1.1 AgentSecBench** — the single highest-leverage release. This is what positions you as the standards body, not just a product.
+2. **v1.2 Sandbox** — closes the one real security gap (post-decision enforcement)
+3. **v1.3 NER PII** — answers the "regex is garbage" criticism with a concrete upgrade
+4. **v1.4 OpenTelemetry** — the ops team unlock for enterprise
+5. **v1.5 Multi-tenant** → **v1.6 Policy server** → **v1.7 Compliance** → **v2.0 Distributed**
+
+**What I cut from the strategy docs:** French social media (too early), Wasmtime contributions (correctly dropped — use it as a dependency later, don't contribute to it), the 4-5 conference venue shotgun approach (pick arXiv + NeurIPS workshop only), and the V1 "10-week contribution campaign" model (already abandoned).
+
+
 # EnforceCore — Master Roadmap
 
 **Written:** February 24, 2026  
