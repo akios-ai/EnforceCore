@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square" alt="Coverage" />
-  <img src="https://img.shields.io/badge/tests-1510_passed-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-1520_passed-brightgreen?style=flat-square" alt="Tests" />
 </p>
 
 <p align="center">
@@ -256,40 +256,12 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 
 | Release | Focus | Status |
 |---|---|---|
-| **v1.0.0a1** | Core Enforcer + Policy Engine | ✅ Shipped |
-| **v1.0.1a1** | PII Redactor | ✅ Shipped |
-| **v1.0.2a1** | Merkle Audit Trail | ✅ Shipped |
-| **v1.0.3a1** | Resource Guard + KillSwitch | ✅ Shipped |
-| **v1.0.4a1** | Framework Integrations | ✅ Shipped |
-| **v1.0.5a1** | Evaluation Suite | ✅ Shipped |
-| **v1.0.6a1** | Hardening + Polish | ✅ Shipped |
-| **v1.0.7a1** | Plugin & Extensibility | ✅ Shipped |
-| **v1.0.8a1** | Deep Inspection & Network Control | ✅ Shipped |
-| **v1.0.9a1** | CLI & Policy Tooling | ✅ Shipped |
-| **v1.0.10a1** | Observability & Telemetry | ✅ Shipped |
-| **v1.0.11a1** | Documentation & Academic Foundation | ✅ Shipped |
-| **v1.0.12a1** | Threat Model & Compliance Mapping | ✅ Shipped |
-| **v1.0.13a1** | Formal Verification & Property Testing | ✅ Shipped |
-| **v1.0.14a1** | Reproducible Benchmarks & Evaluation | ✅ Shipped |
-| **v1.0.15a1** | End-to-End Examples & Integration | ✅ Shipped |
-| **v1.0.16a1** | API Freeze & Stability Audit | ✅ Shipped |
-| **v1.0.17a1** | Adversarial Scenario Expansion | ✅ Shipped |
-| **v1.0.18a1** | Security Landscape & Positioning | ✅ Shipped |
-| **v1.0.19a1** | Pre-Release Polish & Community | ✅ Shipped |
-| **v1.0.20a1** | Packaging & Publication | ✅ Shipped |
-| **v1.0.21a1** | Security Fixes | ✅ Shipped |
-| **v1.0.22a1** | Infrastructure Hardening | ✅ Shipped |
-| **v1.0.23a1** | Release Infrastructure & CI Fix | ✅ Shipped |
-| **v1.0.24a1** | Security Audit | ✅ Shipped |
-| **v1.0.25a1** | API Pruning (110 → 30 symbols) | ✅ Shipped |
-| **v1.0.0b1** | First Beta (deprecation warnings) | ✅ Shipped |
-| **v1.0.0b2** | Security Fix (from_dict hoisting) | ✅ Shipped |
-| **v1.0.0b3** | Documentation Accuracy Fixes | ✅ Shipped |
-| **v1.0.0b4** | Tamper-Evidence (append-only + witness) | ✅ Shipped |
-| **v1.0.0b5** | Settings Integration + Docs + Edge-Case Tests | ✅ Shipped |
-| **v1.0.0** | **Stable Release** | 🎯 Target |
+| **v1.0.0** | Core Enforcer + Policy Engine | ✅ Shipped |
+| **v1.0.1** | PII Redactor + Bug Fixes | ✅ Shipped |
+| **v1.0.2** | CI Hardening + Release Process | ✅ Shipped |
+| **v1.1.0** | Evaluation Expansion (26 scenarios, 11 threat categories, HTML reports) | ✅ **Latest** |
 
-See [docs/roadmap.md](docs/roadmap.md) for detailed scope of each release.
+See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.
 
 ---
 
