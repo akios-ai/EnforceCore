@@ -8,7 +8,7 @@ tracking (via ``contextvars``), input-size checks, and dev-mode gating.
 All functions are **fail-closed** — validation failures raise exceptions that
 inherit from ``EnforceCoreError``.
 
-.. versionadded:: 1.0.6
+.. versionadded:: 1.0.0
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ MIN_INPUT_SIZE_BYTES: int = 64
 Setting ``max_bytes`` below this floor (e.g. 0 or -1) would silently disable
 input-size checking.  The floor prevents accidental misconfiguration.
 
-.. versionadded:: 1.0.24
+.. versionadded:: 1.0.0
 """
 
 MAX_ENFORCEMENT_DEPTH: int = 10
@@ -141,7 +141,7 @@ def check_input_size(
         HardeningError: If *max_bytes* is below the minimum floor.
         InputTooLargeError: If the total exceeds *max_bytes*.
 
-    .. versionchanged:: 1.0.24
+    .. versionchanged:: 1.0.0
        Added minimum floor enforcement for *max_bytes*.
     """
     if max_bytes < MIN_INPUT_SIZE_BYTES:
@@ -374,7 +374,7 @@ def _warn_fail_open(
 
     .. versionchanged:: 1.0.16
        Renamed from ``warn_fail_open`` to ``_warn_fail_open`` (internal API).
-    .. versionchanged:: 1.0.21
+    .. versionchanged:: 1.0.0
        Added *tool_name* and *error* parameters for diagnostic context.
     """
     error_type = type(error).__name__ if error else "unknown"

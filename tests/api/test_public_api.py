@@ -13,7 +13,7 @@ Any failure here means the public API has changed — intentional changes must
 be reflected in ``docs/migration.md`` and the CHANGELOG.
 
 .. versionadded:: 1.0.16
-.. versionchanged:: 1.0.25a1  Pruned __all__ from 110 to 30.
+.. versionchanged:: 1.0.0a1  Pruned __all__ from 110 to 30.
 .. versionchanged:: 1.0.0b1   Tier 2 symbols emit DeprecationWarning.
 """
 

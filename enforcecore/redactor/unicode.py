@@ -14,8 +14,8 @@ These functions are applied *before* the regex-based PII detection in
 :class:`~enforcecore.redactor.engine.Redactor`, hardening it against
 adversarial evasion techniques.
 
-.. versionadded:: 1.0.6
-.. versionchanged:: 1.0.24
+.. versionadded:: 1.0.0
+.. versionchanged:: 1.0.0
    Added :class:`NormalizationResult` with offset mapping so that entity
    positions on normalized text can be mapped back to the original text.
    The engine no longer falls back to un-normalized text when normalization
@@ -144,7 +144,7 @@ class NormalizationResult:
     back to positions in the original text.  ``offset_map[i]`` is the
     index in the original text that corresponds to ``text[i]``.
 
-    .. versionadded:: 1.0.24
+    .. versionadded:: 1.0.0
     """
 
     text: str
@@ -297,7 +297,7 @@ def prepare_for_detection_mapped(text: str) -> NormalizationResult:
     Returns:
         A :class:`NormalizationResult` with normalized text and offset map.
 
-    .. versionadded:: 1.0.24
+    .. versionadded:: 1.0.0
     """
     # Build identity offset map: offset_map[i] = i
     offset_map = list(range(len(text)))

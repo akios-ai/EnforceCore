@@ -245,7 +245,7 @@ class Enforcer:
 
         Returns ``(resolved_name, call_ctx, hook_ctx)``.
 
-        .. versionadded:: 1.0.24
+        .. versionadded:: 1.0.0
         """
         resolved_name = tool_name if tool_name is not None else str(getattr(func, "__name__", func))
         resolved_name = validate_tool_name(resolved_name)
@@ -271,7 +271,7 @@ class Enforcer:
 
         Raises on any violation.  All checks are synchronous.
 
-        .. versionadded:: 1.0.24
+        .. versionadded:: 1.0.0
         """
         check_input_size(args, kwargs)
         pre = self._engine.evaluate_pre_call(ctx)
@@ -309,7 +309,7 @@ class Enforcer:
 
         Returns ``(r_args, r_kwargs, input_redactions)``.
 
-        .. versionadded:: 1.0.24
+        .. versionadded:: 1.0.0
         """
         r_args, r_kwargs, input_redactions = self._redact_args(args, kwargs)
 
@@ -332,7 +332,7 @@ class Enforcer:
 
         Returns ``(processed_result, output_redactions)``.
 
-        .. versionadded:: 1.0.24
+        .. versionadded:: 1.0.0
         """
         result, output_redactions = self._redact_output(result)
 
@@ -364,7 +364,7 @@ class Enforcer:
     ) -> None:
         """Log and audit a successful (allowed) call.
 
-        .. versionadded:: 1.0.24
+        .. versionadded:: 1.0.0
         """
         overhead = (time.perf_counter() - t0) * 1000 - call_duration
 
@@ -399,7 +399,7 @@ class Enforcer:
     ) -> None:
         """Audit a blocked call.  Does NOT fire hooks (sync/async differ).
 
-        .. versionadded:: 1.0.24
+        .. versionadded:: 1.0.0
         """
         elapsed = (time.perf_counter() - t0) * 1000
         self._record_audit(
@@ -423,7 +423,7 @@ class Enforcer:
 
         If redaction itself fails, replaces all strings with ``[REDACTED]``.
 
-        .. versionadded:: 1.0.24
+        .. versionadded:: 1.0.0
         """
         try:
             r_args, r_kwargs, _ = self._redact_args(args, kwargs)
@@ -534,7 +534,7 @@ class Enforcer:
         Raises:
             EnforcementViolation: If the call is blocked by policy.
 
-        .. versionchanged:: 1.0.24
+        .. versionchanged:: 1.0.0
            Refactored to use shared enforcement helpers (M-2).
         """
         resolved_name, ctx, hook_ctx = self._prepare_call(func, args, kwargs, tool_name)
@@ -669,7 +669,7 @@ class Enforcer:
 
         Same semantics as :meth:`enforce_sync` but awaits *func*.
 
-        .. versionchanged:: 1.0.24
+        .. versionchanged:: 1.0.0
            Refactored to use shared enforcement helpers (M-2).
         """
         resolved_name, ctx, hook_ctx = self._prepare_call(func, args, kwargs, tool_name)
@@ -825,7 +825,7 @@ def _resolve_policy(
     has been modified since it was cached, the cache entry is evicted and
     the file is re-loaded automatically.
 
-    .. versionchanged:: 1.0.22
+    .. versionchanged:: 1.0.0
        Cache now tracks file mtime; stale entries are evicted on access.
     """
     if isinstance(policy, Policy):

@@ -115,7 +115,7 @@ class AuditEntry:
         field contains a non-serializable value (``datetime``, ``bytes``,
         ``set``, custom object), raises :class:`AuditError`.
 
-        .. versionchanged:: 1.0.24
+        .. versionchanged:: 1.0.0
            Added JSON-safety validation.
         """
         d = asdict(self)
@@ -258,7 +258,7 @@ class Auditor:
         binary mode to avoid undefined behavior with text-mode ``seek()``,
         then decodes to UTF-8.
 
-        .. versionchanged:: 1.0.22
+        .. versionchanged:: 1.0.0
            Increased read-back window from 8 KB to 64 KB; uses binary
            mode for seeking; retries with doubled window on failure.
         """
