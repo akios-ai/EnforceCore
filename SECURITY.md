@@ -4,10 +4,9 @@
 
 | Version | Supported |
 |---|---|
-| 1.0.0b5 (current beta) | ✅ Actively supported |
-| 1.0.0b4 | ⚠️ Superseded — upgrade to b5 |
-| 1.0.0b3 | ❌ Superseded |
-| 1.0.0b2 | ❌ Superseded |
+| 1.0.0 (current stable) | ✅ Actively supported |
+| 1.0.0b6 | ⚠️ Superseded — upgrade to 1.0.0 |
+| 1.0.0b1–b5 | ❌ Superseded |
 | 1.0.x-alpha | ❌ Not supported |
 
 ## Reporting a Vulnerability

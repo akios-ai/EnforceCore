@@ -1,7 +1,7 @@
 # EnforceCore — Formal Threat Model
 
-**Version:** 1.0.0b5
-**Last updated:** 2026-02-23
+**Version:** 1.0.0
+**Last updated:** 2026-02-24
 **Status:** Active — reviewed with each release
 
 ---
@@ -440,6 +440,7 @@ We explicitly document what EnforceCore does **not** protect against:
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.0.0 | 2026-02-24 | Promoted to stable release; all properties verified by 147-point audit |
 | 1.0.0b5 | 2026-02-23 | Updated §6 Assumption 6, §7 Limitations table, and §8 with b4 mitigation cross-references |
 | 1.0.0b4 | 2026-02-23 | §5.3 rewritten: append-only files + hash-only witnesses; Property S3 caveat updated |
 | 1.0.23a1 | 2026-02-23 | Updated version header to current release |

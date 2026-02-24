@@ -23,7 +23,9 @@ from typing import Any
 
 import structlog
 import yaml
-from pydantic import BaseModel, field_validator
+import warnings
+
+from pydantic import BaseModel, field_validator, model_validator
 
 from enforcecore.core.rules import ContentRuleConfig
 from enforcecore.core.types import (
@@ -115,6 +117,15 @@ class RateLimitPolicyConfig(BaseModel):
     global_limit: dict[str, float] | None = None
 
 
+# Mapping of common aliases to their canonical field names.
+_RULES_ALIASES: dict[str, str] = {
+    "pii": "pii_redaction",
+    "pii_config": "pii_redaction",
+    "resources": "resource_limits",
+    "network_policy": "network",
+}
+
+
 class PolicyRules(BaseModel):
     """The rule-set that a policy evaluates against.
 
@@ -132,6 +143,43 @@ class PolicyRules(BaseModel):
     rate_limits: RateLimitPolicyConfig = RateLimitPolicyConfig()
     max_output_size_bytes: int | None = None
     redact_output: bool = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _remap_aliases(cls, values: Any) -> Any:
+        """Remap common aliases to canonical field names.
+
+        Emits a deprecation warning so users learn the correct keys.
+        Raises ``PolicyValidationError`` for completely unknown keys.
+        """
+        if not isinstance(values, dict):
+            return values
+
+        known = set(cls.model_fields)
+        for alias, canonical in _RULES_ALIASES.items():
+            if alias in values and canonical not in values:
+                warnings.warn(
+                    f"Policy key '{alias}' is deprecated, "
+                    f"use '{canonical}' instead.",
+                    DeprecationWarning,
+                    stacklevel=4,
+                )
+                values[canonical] = values.pop(alias)
+            elif alias in values and canonical in values:
+                # Both provided — drop the alias silently
+                del values[alias]
+
+        # Warn about unknown keys (but don't block — forward-compat)
+        extras = set(values) - known - set(_RULES_ALIASES)
+        if extras:
+            warnings.warn(
+                f"Unknown policy rule keys ignored: {sorted(extras)}. "
+                f"Valid keys: {sorted(known)}",
+                UserWarning,
+                stacklevel=4,
+            )
+
+        return values
 
 
 class Policy(BaseModel):

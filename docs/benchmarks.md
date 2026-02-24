@@ -142,7 +142,7 @@ produce machine-readable output for regression detection. See
     "platform": "Darwin arm64",
     "cpu": "arm",
     "machine": "arm64",
-    "enforcecore_version": "1.0.0b1",
+    "enforcecore_version": "1.0.0",
     "total_duration_ms": 1372.34
   },
   "results": [

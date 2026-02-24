@@ -29,10 +29,11 @@ No hard dependency on any framework. Adapters use optional imports.
 
 ### Is EnforceCore production-ready?
 
-v1.0.6 includes security hardening, unicode evasion protection, and
-fail-closed enforcement on all paths. The public API is considered stable
-after v1.0.6. We are still in alpha (`pip install enforcecore==1.0.23a1`)
-and recommend thorough testing with your own workloads.
+Yes. EnforceCore v1.0.0 is stable and production-ready (`pip install enforcecore`).
+It includes security hardening, unicode evasion protection, fail-closed
+enforcement on all paths, and a 30-symbol public API frozen since beta.
+1510 tests pass across Python 3.11/3.12/3.13. We still recommend thorough
+testing with your own workloads, as with any security-critical dependency.
 
 ---
 

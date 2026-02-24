@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-02-24
+
+Patch release fixing two bugs discovered during the 147-point post-release audit.
+
+### Fixed
+- **`verify_with_witness` crashes on `WitnessRecord` objects** — `CallbackWitness` callback passes `WitnessRecord` instances into the witness hash list, but `verify_with_witness` tried to subscript them as strings (`w_hash[:16]`). The function now normalizes `WitnessRecord` objects to their `.entry_hash` attribute before comparison. (`enforcecore/auditor/witness.py`)
+- **`PolicyRules` silently ignores unknown YAML keys** — Pydantic's `model_config = {"extra": "ignore"}` meant misspelled or aliased policy keys (e.g. `pii` instead of `pii_redaction`) were silently dropped, causing rules to appear configured but not enforced. Added a `model_validator(mode="before")` that remaps common aliases (`pii` → `pii_redaction`, `resources` → `resource_limits`, `network_policy` → `network`) with deprecation warnings, and emits warnings for truly unknown keys. (`enforcecore/core/policy.py`)
+
+### Changed
+- **Documentation updated for v1.0.0 stable** — 14 documentation files updated to reflect stable release status: removed beta version tags, corrected PII engine description (regex-based, not Presidio-based), updated supported versions table, refreshed FAQ and versioning docs, checked roadmap DoD boxes.
+
 ## [1.0.0] — 2026-02-24
 
 This is the first stable release of EnforceCore. All public APIs are now stable

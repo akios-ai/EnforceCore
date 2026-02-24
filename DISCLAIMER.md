@@ -61,8 +61,8 @@ instead of — other security measures including but not limited to:
 
 ## PII Redaction Disclaimer
 
-The PII redaction capabilities in EnforceCore (powered by Microsoft Presidio)
-are provided on a **best-effort basis**. No PII detection system achieves
+The PII redaction capabilities in EnforceCore are provided on a **best-effort
+basis**. No PII detection system achieves
 100% accuracy. Specifically:
 
 - **False negatives** (missed PII) may occur. Do not rely solely on
