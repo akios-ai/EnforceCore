@@ -42,7 +42,7 @@ _GENERIC_KEY_MIN_ENTROPY: float = 3.0
 Real API keys have entropy > 3.5 bits/char.  Placeholder values like
 ``YOUR_KEY_HERE`` (~2.8) or ``aaaaaaaaaaaaaaaa`` (0.0) are filtered out.
 
-.. versionadded:: 1.0.24
+.. versionadded:: 1.0.0
 """
 
 
@@ -248,7 +248,7 @@ class SecretScanner:
         For ``generic_api_key`` matches, a Shannon entropy check filters
         out low-entropy placeholder values (e.g. ``YOUR_KEY_HERE``).
 
-        .. versionchanged:: 1.0.24
+        .. versionchanged:: 1.0.0
            Added Shannon entropy filtering for ``generic_api_key``.
         """
         secrets: list[DetectedSecret] = []

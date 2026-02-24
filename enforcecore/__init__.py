@@ -16,7 +16,7 @@ Basic usage::
 
 See https://github.com/akios-ai/EnforceCore for documentation.
 
-**API surface (v1.0.0b5+):** This package exports 30 core symbols (Tier 1).
+**API surface (v1.0.0+):** This package exports 30 core symbols (Tier 1).
 Advanced types remain importable for backwards compatibility but emit a
 ``DeprecationWarning`` — migrate to submodule imports::
 

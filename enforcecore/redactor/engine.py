@@ -226,7 +226,7 @@ class Redactor:
         Includes built-in PII patterns, custom patterns from the
         PatternRegistry, and secret patterns if enabled.
 
-        .. versionchanged:: 1.0.24
+        .. versionchanged:: 1.0.0
            Entities now returned in ascending order (was descending).
            Callers that iterate for replacement should use ``reversed()``.
            Now always uses normalized text for detection with offset

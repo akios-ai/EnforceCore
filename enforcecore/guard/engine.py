@@ -306,7 +306,7 @@ class ResourceGuard:
             kill_switch: Kill switch instance. Creates a new
                 (non-tripped) switch if ``None``.
 
-        .. versionchanged:: 1.0.22
+        .. versionchanged:: 1.0.0
            Uses a shared ``ThreadPoolExecutor`` with daemon threads
            instead of creating a new pool per call.
         """
@@ -337,7 +337,7 @@ class ResourceGuard:
         function returns naturally. This counter tracks how many such
         "leaked" threads are outstanding.
 
-        .. versionadded:: 1.0.22
+        .. versionadded:: 1.0.0
         """
         return self._leaked_thread_count
 
@@ -491,7 +491,7 @@ class ResourceGuard:
            The worker thread cannot be forcibly terminated.  The function
            may continue running after the timeout.
 
-        .. versionchanged:: 1.0.22
+        .. versionchanged:: 1.0.0
            Uses shared pool; tracks leaked threads; no longer static.
         """
         future = self._pool.submit(func, *args, **kwargs)
