@@ -7,9 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.2] — 2026-02-24
+## [1.1.0] — 2026-02-24
 
-## [1.0.2] — 2026-02-25
+First minor release — expanded adversarial evaluation framework and repository
+hygiene hardening.
+
+### Added
+- **Evaluation expansion** — 26 adversarial scenarios across 11 threat categories (up from 20 scenarios / 9 categories): new `collusion` and `audit_completeness` categories covering multi-agent collusion attacks and audit trail integrity.
+- **HTML report generator** — `generate_html_report()` produces self-contained visual evaluation reports with per-category breakdowns, severity distribution, and pass/fail summary tables.
+- **Structured JSON output** — evaluation results now export as JSON for CI integration and automated quality gates.
+- **Enhanced pre-release gate** — 2 new checks: public/private boundary enforcement (prevents leaking internal docs) and duplicate CHANGELOG header detection (prevents the v1.0.2 double-header bug).
+
+### Changed
+- **Public roadmap** — replaced 1,273-line internal roadmap with clean 130-line public version showing shipped capabilities and future directions only. Detailed iteration history moved to internal.
+- **Repository hygiene** — removed 6 internal files from public repo (release automation scripts, release process docs, release runbook). All preserved in `internal/` (gitignored).
+
+### Security
+- **Public/private boundary audit** — identified and fixed exposure of release automation scripts, internal release process documentation, and detailed development roadmap. Informed by audit of Semgrep, OPA, Falco, and Presidio sharing practices. Formal sharing policy documented internally.
+
+## [1.0.2] — 2026-02-24
 
 CI hardening and release process improvements — prevents the class of failures
 that caused 5 consecutive CI failures after v1.0.1.
