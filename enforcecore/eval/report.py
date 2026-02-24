@@ -328,7 +328,7 @@ def generate_html_report(
 
     if suite is not None:
         # --- Header ---
-        parts.append(f"<h1>EnforceCore Evaluation Report</h1>")
+        parts.append("<h1>EnforceCore Evaluation Report</h1>")
         parts.append(
             f'<div class="subtitle">Policy: {_html_escape(suite.policy_name)} &middot; '
             f"Run: {_html_escape(suite.run_id)} &middot; {_html_escape(suite.timestamp)}</div>"
@@ -397,12 +397,12 @@ def generate_html_report(
         )
         parts.append("<table><thead><tr><th>Component</th><th>Mean</th><th>Median</th>"
                       "<th>P95</th><th>P99</th><th>Ops/s</th></tr></thead><tbody>")
-        for r in benchmarks.results:
+        for br in benchmarks.results:
             parts.append(
-                f"<tr><td>{_html_escape(r.name)}</td>"
-                f"<td>{r.mean_ms:.3f}ms</td><td>{r.median_ms:.3f}ms</td>"
-                f"<td>{r.p95_ms:.3f}ms</td><td>{r.p99_ms:.3f}ms</td>"
-                f"<td>{r.ops_per_second:,.0f}</td></tr>"
+                f"<tr><td>{_html_escape(br.name)}</td>"
+                f"<td>{br.mean_ms:.3f}ms</td><td>{br.median_ms:.3f}ms</td>"
+                f"<td>{br.p95_ms:.3f}ms</td><td>{br.p99_ms:.3f}ms</td>"
+                f"<td>{br.ops_per_second:,.0f}</td></tr>"
             )
         parts.append("</tbody></table></div>")
 

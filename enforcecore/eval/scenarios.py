@@ -1644,10 +1644,11 @@ def run_audit_trail_integrity(policy: Policy) -> ScenarioResult:
     t0 = time.perf_counter()
 
     try:
-        with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=True) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as tmp:
             audit_path = tmp.name
 
-        enforcer = Enforcer(policy, audit_path=audit_path)
+        auditor = Auditor(output_path=audit_path)
+        enforcer = Enforcer(policy)
 
         # 1. Make several allowed calls
         def search_web(query: str) -> str:
@@ -1657,6 +1658,11 @@ def run_audit_trail_integrity(policy: Policy) -> ScenarioResult:
         for q in ["test1", "test2", "test3"]:
             try:
                 enforcer.enforce_sync(search_web, q, tool_name="search_web")
+                auditor.record(
+                    tool_name="search_web",
+                    policy_name=policy.name,
+                    decision="allowed",
+                )
                 allowed_count += 1
             except (EnforcementViolation, EnforceCoreError):
                 pass
@@ -1670,6 +1676,11 @@ def run_audit_trail_integrity(policy: Policy) -> ScenarioResult:
 
                 enforcer.enforce_sync(bad_tool, "data", tool_name="execute_shell")
             except (EnforcementViolation, EnforceCoreError):
+                auditor.record(
+                    tool_name="execute_shell",
+                    policy_name=policy.name,
+                    decision="denied",
+                )
                 denied_count += 1
 
         # 3. Verify the audit trail
@@ -1692,7 +1703,7 @@ def run_audit_trail_integrity(policy: Policy) -> ScenarioResult:
         duration = (time.perf_counter() - t0) * 1000
 
         total_expected = allowed_count + denied_count
-        if vr.valid and vr.entry_count >= total_expected:
+        if vr.is_valid and vr.total_entries >= total_expected:
             return ScenarioResult(
                 scenario_id=scenario.id,
                 scenario_name=scenario.name,
@@ -1701,7 +1712,7 @@ def run_audit_trail_integrity(policy: Policy) -> ScenarioResult:
                 outcome=ScenarioOutcome.CONTAINED,
                 duration_ms=round(duration, 2),
                 details=(
-                    f"Audit trail integrity verified: {vr.entry_count} entries, "
+                    f"Audit trail integrity verified: {vr.total_entries} entries, "
                     f"Merkle chain valid, {allowed_count} allowed + {denied_count} "
                     f"denied events all recorded."
                 ),
@@ -1715,8 +1726,8 @@ def run_audit_trail_integrity(policy: Policy) -> ScenarioResult:
                 outcome=ScenarioOutcome.ESCAPED,
                 duration_ms=round(duration, 2),
                 details=(
-                    f"Audit incomplete: {vr.entry_count} entries found "
-                    f"(expected ≥{total_expected}), valid={vr.valid}"
+                    f"Audit incomplete: {vr.total_entries} entries found "
+                    f"(expected ≥{total_expected}), valid={vr.is_valid}"
                 ),
             )
 
@@ -1766,12 +1777,11 @@ def run_audit_witness_callback(policy: Policy) -> ScenarioResult:
 
         witness = CallbackWitness(on_witness)
 
-        with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=True) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as tmp:
             audit_path = tmp.name
 
-        enforcer = Enforcer(
-            policy, audit_path=audit_path, witness_backends=[witness]
-        )
+        auditor = Auditor(output_path=audit_path, witness=witness)
+        enforcer = Enforcer(policy)
 
         # Make a mix of calls
         call_count = 0
@@ -1781,8 +1791,18 @@ def run_audit_witness_callback(policy: Policy) -> ScenarioResult:
                     return f"result-{x}"
 
                 enforcer.enforce_sync(tool_fn, str(i), tool_name="search_web")
+                auditor.record(
+                    tool_name="search_web",
+                    policy_name=policy.name,
+                    decision="allowed",
+                )
                 call_count += 1
             except (EnforcementViolation, EnforceCoreError):
+                auditor.record(
+                    tool_name="search_web",
+                    policy_name=policy.name,
+                    decision="denied",
+                )
                 call_count += 1  # Denied calls still get audited
 
         duration = (time.perf_counter() - t0) * 1000
@@ -1932,7 +1952,7 @@ def run_pii_leak_chained_output(policy: Policy) -> ScenarioResult:
     scenario = PII_LEAK_CHAINED_OUTPUT
 
     try:
-        def lookup_user(user_id: str) -> dict:
+        def lookup_user(user_id: str) -> dict[str, str]:
             return {
                 "name": "Jane Doe",
                 "email": "jane.doe@example.com",
