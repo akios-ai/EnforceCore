@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-02-24
+
 ## [1.0.2] — 2026-02-25
 
 CI hardening and release process improvements — prevents the class of failures

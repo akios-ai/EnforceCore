@@ -300,7 +300,7 @@ from enforcecore.telemetry import (
     EnforceCoreMetrics as EnforceCoreMetrics,
 )
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 # ── Public API contract ──────────────────────────────────────────────────
 # Only these ~30 symbols are guaranteed stable across minor versions.

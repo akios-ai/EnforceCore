@@ -54,6 +54,7 @@ We are grateful to the researchers and practitioners whose work made this possib
   append-only files (`chattr +a`) and hash-only remote witnesses. Co-author
   of Crosby & Wallach (2009), the paper that informs EnforceCore’s Merkle-chained
   audit engine.
+  
 ### Technical Feedback
 
 - **Prof. Andrei Sabelfeld** (Chalmers University of Technology) — pointed us toward
