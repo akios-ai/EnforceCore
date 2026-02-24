@@ -21,10 +21,19 @@ import sys
 from pathlib import Path
 from typing import Annotated
 
-import typer
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
+try:
+    import typer
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+except ImportError:
+    print(
+        "Error: The EnforceCore CLI requires extra dependencies.\n"
+        "Install them with:\n\n"
+        "    pip install enforcecore[cli]\n",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)  # noqa: B904
 
 import enforcecore
 
