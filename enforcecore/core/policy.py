@@ -158,8 +158,7 @@ class PolicyRules(BaseModel):
         for alias, canonical in _RULES_ALIASES.items():
             if alias in values and canonical not in values:
                 warnings.warn(
-                    f"Policy key '{alias}' is deprecated, "
-                    f"use '{canonical}' instead.",
+                    f"Policy key '{alias}' is deprecated, use '{canonical}' instead.",
                     DeprecationWarning,
                     stacklevel=4,
                 )
@@ -172,8 +171,7 @@ class PolicyRules(BaseModel):
         extras = set(values) - known - set(_RULES_ALIASES)
         if extras:
             warnings.warn(
-                f"Unknown policy rule keys ignored: {sorted(extras)}. "
-                f"Valid keys: {sorted(known)}",
+                f"Unknown policy rule keys ignored: {sorted(extras)}. Valid keys: {sorted(known)}",
                 UserWarning,
                 stacklevel=4,
             )

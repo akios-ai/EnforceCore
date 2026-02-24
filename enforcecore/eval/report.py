@@ -296,10 +296,7 @@ footer {{ margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--borde
 def _html_escape(text: str) -> str:
     """Minimal HTML escaping."""
     return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
+        text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
     )
 
 
@@ -336,7 +333,9 @@ def generate_html_report(
 
         # --- Containment badge ---
         rate = suite.containment_rate
-        badge_cls = "badge-green" if rate >= 1.0 else ("badge-yellow" if rate >= 0.8 else "badge-red")
+        badge_cls = (
+            "badge-green" if rate >= 1.0 else ("badge-yellow" if rate >= 0.8 else "badge-red")
+        )
         parts.append(f'<div class="badge {badge_cls}">{rate:.0%} Containment</div>')
 
         # --- Summary grid ---
@@ -364,7 +363,9 @@ def generate_html_report(
             contained = sum(1 for r in results if r.outcome == ScenarioOutcome.CONTAINED)
             total = len(results)
             pct = contained / total if total else 0
-            bar_color = "var(--green)" if pct >= 1.0 else ("var(--yellow)" if pct >= 0.5 else "var(--red)")
+            bar_color = (
+                "var(--green)" if pct >= 1.0 else ("var(--yellow)" if pct >= 0.5 else "var(--red)")
+            )
             cat_title = _html_escape(cat.value.replace("_", " ").title())
             parts.append(
                 f"<div><strong>{cat_title}</strong> — {contained}/{total}"
@@ -375,12 +376,14 @@ def generate_html_report(
 
         # --- Scenario table ---
         parts.append('<div class="section"><h2>Scenario Details</h2>')
-        parts.append("<table><thead><tr><th>Scenario</th><th>Category</th>"
-                      "<th>Severity</th><th>Outcome</th><th>Duration</th>"
-                      "<th>Details</th></tr></thead><tbody>")
+        parts.append(
+            "<table><thead><tr><th>Scenario</th><th>Category</th>"
+            "<th>Severity</th><th>Outcome</th><th>Duration</th>"
+            "<th>Details</th></tr></thead><tbody>"
+        )
         for r in suite.results:
             parts.append(
-                f'<tr><td>{_html_escape(r.scenario_name)}</td>'
+                f"<tr><td>{_html_escape(r.scenario_name)}</td>"
                 f"<td>{_html_escape(r.category.value)}</td>"
                 f'<td class="{_severity_class(r.severity)}">{r.severity.upper()}</td>'
                 f'<td class="{_outcome_class(r.outcome)}">{r.outcome.value.upper()}</td>'
@@ -395,8 +398,10 @@ def generate_html_report(
             f'<div class="subtitle">Python {_html_escape(benchmarks.python_version)} &middot; '
             f"{_html_escape(benchmarks.platform)} &middot; {benchmarks.total_duration_ms:.1f}ms total</div>"
         )
-        parts.append("<table><thead><tr><th>Component</th><th>Mean</th><th>Median</th>"
-                      "<th>P95</th><th>P99</th><th>Ops/s</th></tr></thead><tbody>")
+        parts.append(
+            "<table><thead><tr><th>Component</th><th>Mean</th><th>Median</th>"
+            "<th>P95</th><th>P99</th><th>Ops/s</th></tr></thead><tbody>"
+        )
         for br in benchmarks.results:
             parts.append(
                 f"<tr><td>{_html_escape(br.name)}</td>"

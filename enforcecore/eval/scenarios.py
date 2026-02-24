@@ -1671,6 +1671,7 @@ def run_audit_trail_integrity(policy: Policy) -> ScenarioResult:
         denied_count = 0
         for _ in range(3):
             try:
+
                 def bad_tool(x: str) -> str:
                     return x
 
@@ -1787,6 +1788,7 @@ def run_audit_witness_callback(policy: Policy) -> ScenarioResult:
         call_count = 0
         for i in range(5):
             try:
+
                 def tool_fn(x: str) -> str:
                     return f"result-{x}"
 
@@ -1889,12 +1891,11 @@ def run_tool_abuse_argument_injection(policy: Policy) -> ScenarioResult:
 
     for payload in injection_payloads:
         try:
+
             def search_web(query: str) -> str:
                 return f"results for {query}"
 
-            result = enforcer.enforce_sync(
-                search_web, payload, tool_name="search_web"
-            )
+            result = enforcer.enforce_sync(search_web, payload, tool_name="search_web")
             # Call succeeded — check if payload was sanitized in output
             result_str = str(result)
             if payload not in result_str:
@@ -1952,6 +1953,7 @@ def run_pii_leak_chained_output(policy: Policy) -> ScenarioResult:
     scenario = PII_LEAK_CHAINED_OUTPUT
 
     try:
+
         def lookup_user(user_id: str) -> dict[str, str]:
             return {
                 "name": "Jane Doe",
@@ -1961,9 +1963,7 @@ def run_pii_leak_chained_output(policy: Policy) -> ScenarioResult:
                 "notes": "Contact at jane.doe@example.com for the SSN 987-65-4321",
             }
 
-        result = enforcer.enforce_sync(
-            lookup_user, "user-42", tool_name="search_web"
-        )
+        result = enforcer.enforce_sync(lookup_user, "user-42", tool_name="search_web")
         duration = (time.perf_counter() - t0) * 1000
 
         result_str = str(result)
@@ -1985,10 +1985,7 @@ def run_pii_leak_chained_output(policy: Policy) -> ScenarioResult:
                 severity=scenario.severity,
                 outcome=ScenarioOutcome.CONTAINED,
                 duration_ms=round(duration, 2),
-                details=(
-                    f"All {len(pii_markers)} PII markers redacted from "
-                    f"structured output."
-                ),
+                details=(f"All {len(pii_markers)} PII markers redacted from structured output."),
             )
         else:
             return ScenarioResult(
@@ -1998,10 +1995,7 @@ def run_pii_leak_chained_output(policy: Policy) -> ScenarioResult:
                 severity=scenario.severity,
                 outcome=ScenarioOutcome.ESCAPED,
                 duration_ms=round(duration, 2),
-                details=(
-                    f"{len(leaked)}/{len(pii_markers)} PII markers leaked: "
-                    f"{leaked}"
-                ),
+                details=(f"{len(leaked)}/{len(pii_markers)} PII markers leaked: {leaked}"),
             )
 
     except (EnforcementViolation, EnforceCoreError) as exc:
@@ -2065,9 +2059,7 @@ def run_resource_exhaust_large_input(policy: Policy) -> ScenarioResult:
         def search_web(query: str) -> str:
             return f"results for query of length {len(query)}"
 
-        enforcer.enforce_sync(
-            search_web, large_payload, tool_name="search_web"
-        )
+        enforcer.enforce_sync(search_web, large_payload, tool_name="search_web")
         duration = (time.perf_counter() - t0) * 1000
 
         return ScenarioResult(
@@ -2150,6 +2142,7 @@ def run_prompt_injection_system_override(policy: Policy) -> ScenarioResult:
 
     for payload in override_payloads:
         try:
+
             def search_web(query: str) -> str:
                 return f"results for {query}"
 
@@ -2161,6 +2154,7 @@ def run_prompt_injection_system_override(policy: Policy) -> ScenarioResult:
     # Now verify that enforcement is still active after all override attempts
     enforcement_intact = False
     try:
+
         def bad_tool(x: str) -> str:
             return x
 
