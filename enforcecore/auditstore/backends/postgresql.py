@@ -11,6 +11,7 @@ from .base import AuditBackend
 try:
     import psycopg2
     from psycopg2.extras import RealDictCursor
+
     HAS_PSYCOPG2 = True
 except ImportError:
     HAS_PSYCOPG2 = False
@@ -51,9 +52,7 @@ class PostgreSQLBackend(AuditBackend):
             ssl_mode: SSL mode (disable, allow, prefer, require)
         """
         if not HAS_PSYCOPG2:
-            raise ImportError(
-                "psycopg2 not installed. Install with: pip install psycopg2-binary"
-            )
+            raise ImportError("psycopg2 not installed. Install with: pip install psycopg2-binary")
 
         self.connection_params = {
             "host": host,
@@ -257,9 +256,7 @@ class PostgreSQLBackend(AuditBackend):
         conn = self._get_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        cursor.execute(
-            "SELECT * FROM audit_entries ORDER BY chain_index DESC LIMIT 1"
-        )
+        cursor.execute("SELECT * FROM audit_entries ORDER BY chain_index DESC LIMIT 1")
         row = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -334,6 +331,7 @@ class PostgreSQLBackend(AuditBackend):
             return "\n".join(json.dumps(e.to_dict()) for e in entries)
         elif format == "json":
             import json as json_module
+
             entries = self.list_entries(limit=999999)
             return json_module.dumps([e.to_dict() for e in entries], indent=2)
 

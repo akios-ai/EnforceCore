@@ -290,7 +290,9 @@ class SQLiteBackend(AuditBackend):
             enforcement_overhead_ms=enforcement_overhead_ms or 0.0,
             input_redactions=input_redactions or 0,
             output_redactions=output_redactions or 0,
-            redacted_categories=(redacted_categories or "").split(",") if redacted_categories else [],
+            redacted_categories=(redacted_categories or "").split(",")
+            if redacted_categories
+            else [],
             cost_usd=cost_usd,
             tokens_used=tokens_used,
             violation_type=violation_type,

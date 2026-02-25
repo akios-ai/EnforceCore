@@ -6,6 +6,7 @@ from .sqlite import SQLiteBackend
 
 try:
     from .postgresql import PostgreSQLBackend
+
     HAS_POSTGRESQL = True
 except ImportError:
     HAS_POSTGRESQL = False

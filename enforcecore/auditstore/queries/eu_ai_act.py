@@ -151,7 +151,9 @@ class EUAIActQueries:
             "total_entries": len(entries),
             "total_pii_redactions": sum(e.input_redactions + e.output_redactions for e in entries),
             "redactions_by_category": redactions_by_category,
-            "entries_with_redactions": len([e for e in entries if e.input_redactions > 0 or e.output_redactions > 0]),
+            "entries_with_redactions": len(
+                [e for e in entries if e.input_redactions > 0 or e.output_redactions > 0]
+            ),
         }
 
     def policy_violations_summary(

@@ -147,9 +147,7 @@ class AuditStore:
             offset=offset,
         )
 
-    def verify_chain(
-        self, start_index: int = 0, end_index: int | None = None
-    ) -> bool:
+    def verify_chain(self, start_index: int = 0, end_index: int | None = None) -> bool:
         """Verify Merkle chain integrity."""
         return self.backend.verify_chain(start_index, end_index)
 
