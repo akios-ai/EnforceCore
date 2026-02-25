@@ -65,7 +65,9 @@ class MerkleTree:
         of the chain at the specified position.
         """
         if target_index >= len(entries):
-            raise ValueError(f"Target index {target_index} out of bounds (chain length: {len(entries)})")
+            raise ValueError(
+                f"Target index {target_index} out of bounds (chain length: {len(entries)})"
+            )
 
         proof = {
             "target_index": target_index,

@@ -242,9 +242,7 @@ class TestReportGenerationFromAuditor:
             generator = ReportGenerator(store)
 
             report = generator.generate_eu_ai_act_report(
-                organization="Test Corp",
-                period="Q1 2026",
-                format="html"
+                organization="Test Corp", period="Q1 2026", format="html"
             )
 
             # Verify report contains data
@@ -280,9 +278,7 @@ class TestReportGenerationFromAuditor:
             generator = ReportGenerator(store)
 
             report = generator.generate_eu_ai_act_report(
-                organization="API Corp",
-                period="Feb 2026",
-                format="json"
+                organization="API Corp", period="Feb 2026", format="json"
             )
 
             assert report.format == "json"

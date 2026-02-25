@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.3] — 2026-02-25
 
-## [1.1.3] — 2026-02-25
-
 Patch release — test robustness and documentation improvements. Responds to beta
 tester v2 challenge report with platform-specific fixes.
 

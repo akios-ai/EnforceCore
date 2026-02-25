@@ -77,6 +77,7 @@ class ReportGenerator:
             content = self._render_html_report(data)
         elif format == "json":
             import json
+
             content = json.dumps(data, indent=2, default=str)
         else:
             raise ValueError(f"Unsupported format: {format}")
@@ -94,7 +95,7 @@ class ReportGenerator:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EU AI Act Compliance Report - {data['period']}</title>
+    <title>EU AI Act Compliance Report - {data["period"]}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #333; }}
@@ -127,10 +128,10 @@ class ReportGenerator:
     <div class="container">
         <div class="header">
             <h1>EU AI Act Compliance Report</h1>
-            <p>{data['organization']} • {data['period']}</p>
+            <p>{data["organization"]} • {data["period"]}</p>
             <div class="meta">
-                <span>Period: {data['start_date']} to {data['end_date']}</span>
-                <span>Generated: {data['generated_at']}</span>
+                <span>Period: {data["start_date"]} to {data["end_date"]}</span>
+                <span>Generated: {data["generated_at"]}</span>
             </div>
         </div>
 
@@ -138,15 +139,15 @@ class ReportGenerator:
             <h2>Executive Summary</h2>
             <div class="metric">
                 <div class="metric-box">
-                    <div class="value">{data['article_9']['total_decisions']}</div>
+                    <div class="value">{data["article_9"]["total_decisions"]}</div>
                     <div class="label">Total Decisions</div>
                 </div>
                 <div class="metric-box">
-                    <div class="value">{data['article_13']['blocked_calls']}</div>
+                    <div class="value">{data["article_13"]["blocked_calls"]}</div>
                     <div class="label">Blocked Calls (Human Oversight)</div>
                 </div>
                 <div class="metric-box">
-                    <div class="value">{data['pii_summary']['total_pii_redactions']}</div>
+                    <div class="value">{data["pii_summary"]["total_pii_redactions"]}</div>
                     <div class="label">PII Redactions</div>
                 </div>
                 <div class="metric-box">
@@ -168,7 +169,7 @@ class ReportGenerator:
             <p>All decisions made by the high-risk AI system during the reporting period.</p>
             <div class="metric">
                 <div class="metric-box">
-                    <div class="value">{data['article_9']['total_decisions']}</div>
+                    <div class="value">{data["article_9"]["total_decisions"]}</div>
                     <div class="label">Total Logged Decisions</div>
                 </div>
             </div>
@@ -180,12 +181,12 @@ class ReportGenerator:
             <p>Evidence that human oversight is implemented and functional.</p>
             <div class="metric">
                 <div class="metric-box">
-                    <div class="value">{data['article_13']['blocked_calls']}</div>
+                    <div class="value">{data["article_13"]["blocked_calls"]}</div>
                     <div class="label">Blocked Calls</div>
                 </div>
             </div>
             <div class="status pass">
-                <strong>Finding:</strong> {data['article_13']['evidence']}
+                <strong>Finding:</strong> {data["article_13"]["evidence"]}
             </div>
         </div>
 
@@ -199,23 +200,23 @@ class ReportGenerator:
                 </tr>
                 <tr>
                     <td>Total Calls</td>
-                    <td>{data['article_14']['statistics']['total_calls']}</td>
+                    <td>{data["article_14"]["statistics"]["total_calls"]}</td>
                 </tr>
                 <tr>
                     <td>Allowed Calls</td>
-                    <td>{data['article_14']['statistics']['allowed_calls']}</td>
+                    <td>{data["article_14"]["statistics"]["allowed_calls"]}</td>
                 </tr>
                 <tr>
                     <td>Blocked Calls</td>
-                    <td>{data['article_14']['statistics']['blocked_calls']}</td>
+                    <td>{data["article_14"]["statistics"]["blocked_calls"]}</td>
                 </tr>
                 <tr>
                     <td>PII Redactions</td>
-                    <td>{data['article_14']['statistics']['pii_redactions']}</td>
+                    <td>{data["article_14"]["statistics"]["pii_redactions"]}</td>
                 </tr>
             </table>
             <div class="status pass">
-                <strong>Note:</strong> {data['article_14']['disclaimer']}
+                <strong>Note:</strong> {data["article_14"]["disclaimer"]}
             </div>
         </div>
 
@@ -224,16 +225,16 @@ class ReportGenerator:
             <p>Complete audit trail of all enforced calls with Merkle chain verification.</p>
             <div class="metric">
                 <div class="metric-box">
-                    <div class="value">{data['article_52']['entries_count']}</div>
+                    <div class="value">{data["article_52"]["entries_count"]}</div>
                     <div class="label">Logged Entries</div>
                 </div>
                 <div class="metric-box">
-                    <div class="value">{'✓ Valid' if data['article_52']['merkle_chain_verified'] else '✗ Invalid'}</div>
+                    <div class="value">{"✓ Valid" if data["article_52"]["merkle_chain_verified"] else "✗ Invalid"}</div>
                     <div class="label">Merkle Chain</div>
                 </div>
             </div>
             <div class="compliance-check yes">
-                ✓ Audit trail integrity: {data['article_52']['audit_trail_integrity']}
+                ✓ Audit trail integrity: {data["article_52"]["audit_trail_integrity"]}
             </div>
         </div>
 
@@ -241,11 +242,11 @@ class ReportGenerator:
             <h2>PII Handling Summary</h2>
             <div class="metric">
                 <div class="metric-box">
-                    <div class="value">{data['pii_summary']['total_pii_redactions']}</div>
+                    <div class="value">{data["pii_summary"]["total_pii_redactions"]}</div>
                     <div class="label">Total Redactions</div>
                 </div>
                 <div class="metric-box">
-                    <div class="value">{data['pii_summary']['entries_with_redactions']}</div>
+                    <div class="value">{data["pii_summary"]["entries_with_redactions"]}</div>
                     <div class="label">Entries with Redactions</div>
                 </div>
             </div>
@@ -255,7 +256,7 @@ class ReportGenerator:
             <h2>Policy Violations</h2>
             <div class="metric">
                 <div class="metric-box">
-                    <div class="value">{data['violations']['total_violations']}</div>
+                    <div class="value">{data["violations"]["total_violations"]}</div>
                     <div class="label">Total Violations</div>
                 </div>
             </div>
@@ -311,17 +312,29 @@ class ReportGenerator:
             month_str = match.group(1)
             year = int(match.group(2))
             months = {
-                "jan": 1, "january": 1,
-                "feb": 2, "february": 2,
-                "mar": 3, "march": 3,
-                "apr": 4, "april": 4,
-                "may": 5, "jun": 6, "june": 6,
-                "jul": 7, "july": 7,
-                "aug": 8, "august": 8,
-                "sep": 9, "september": 9,
-                "oct": 10, "october": 10,
-                "nov": 11, "november": 11,
-                "dec": 12, "december": 12,
+                "jan": 1,
+                "january": 1,
+                "feb": 2,
+                "february": 2,
+                "mar": 3,
+                "march": 3,
+                "apr": 4,
+                "april": 4,
+                "may": 5,
+                "jun": 6,
+                "june": 6,
+                "jul": 7,
+                "july": 7,
+                "aug": 8,
+                "august": 8,
+                "sep": 9,
+                "september": 9,
+                "oct": 10,
+                "october": 10,
+                "nov": 11,
+                "november": 11,
+                "dec": 12,
+                "december": 12,
             }
             month = months.get(month_str.lower())
             if month:
