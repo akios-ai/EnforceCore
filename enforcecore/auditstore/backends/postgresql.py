@@ -188,7 +188,7 @@ class PostgreSQLBackend(AuditBackend):
             )
 
             conn.commit()
-        except Exception as e:
+        except Exception:
             conn.rollback()
             raise
         finally:

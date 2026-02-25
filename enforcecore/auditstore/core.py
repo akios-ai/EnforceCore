@@ -5,10 +5,16 @@ AuditEntry: Immutable audit log entry
 AuditStore: Main facade for audit storage with backend abstraction
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import TYPE_CHECKING, Any
+
 import uuid
+
+if TYPE_CHECKING:
+    from .backends.base import AuditBackend
 
 
 @dataclass
@@ -29,23 +35,23 @@ class AuditEntry:
     # PII & redaction
     input_redactions: int
     output_redactions: int
-    redacted_categories: List[str] = field(default_factory=list)
+    redacted_categories: list[str] = field(default_factory=list)
 
     # Cost tracking
-    cost_usd: Optional[float] = None
-    tokens_used: Optional[int] = None
+    cost_usd: float | None = None
+    tokens_used: int | None = None
 
     # Violation details (if blocked)
-    violation_type: Optional[str] = None
-    violation_reason: Optional[str] = None
+    violation_type: str | None = None
+    violation_reason: str | None = None
 
     # Merkle chain (set by backend)
-    merkle_hash: Optional[str] = None
-    parent_hash: Optional[str] = None
-    chain_index: Optional[int] = None
+    merkle_hash: str | None = None
+    parent_hash: str | None = None
+    chain_index: int | None = None
 
     # Additional metadata
-    context: Dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def create(
@@ -59,7 +65,7 @@ class AuditEntry:
         input_redactions: int = 0,
         output_redactions: int = 0,
         **kwargs,
-    ) -> "AuditEntry":
+    ) -> AuditEntry:
         """Create new audit entry with auto-generated ID."""
         return cls(
             entry_id=str(uuid.uuid4()),
@@ -75,7 +81,7 @@ class AuditEntry:
             **kwargs,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dict."""
         return {
             "entry_id": self.entry_id,
@@ -103,7 +109,7 @@ class AuditEntry:
 class AuditStore:
     """Main interface for audit storage with backend abstraction."""
 
-    def __init__(self, backend: "AuditBackend", verify_on_read: bool = True):
+    def __init__(self, backend: AuditBackend, verify_on_read: bool = True) -> None:
         """Initialize audit store with backend."""
         self.backend = backend
         self.verify_on_read = verify_on_read
@@ -113,7 +119,7 @@ class AuditStore:
         entry = AuditEntry.create(**kwargs)
         return self.backend.record(entry)
 
-    def get_entry(self, entry_id: str) -> Optional[AuditEntry]:
+    def get_entry(self, entry_id: str) -> AuditEntry | None:
         """Retrieve entry by ID with optional verification."""
         entry = self.backend.get_entry(entry_id)
         if entry and self.verify_on_read:
@@ -122,14 +128,14 @@ class AuditStore:
 
     def list_entries(
         self,
-        policy_name: Optional[str] = None,
-        tool_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        decision: Optional[str] = None,
+        policy_name: str | None = None,
+        tool_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        decision: str | None = None,
         limit: int = 1000,
         offset: int = 0,
-    ) -> List[AuditEntry]:
+    ) -> list[AuditEntry]:
         """Query entries with flexible filters."""
         return self.backend.list_entries(
             policy_name=policy_name,
@@ -142,7 +148,7 @@ class AuditStore:
         )
 
     def verify_chain(
-        self, start_index: int = 0, end_index: Optional[int] = None
+        self, start_index: int = 0, end_index: int | None = None
     ) -> bool:
         """Verify Merkle chain integrity."""
         return self.backend.verify_chain(start_index, end_index)

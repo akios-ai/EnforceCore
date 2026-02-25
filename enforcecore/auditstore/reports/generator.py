@@ -1,7 +1,7 @@
 """Report generation for regulatory compliance."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..core import AuditStore
 from ..queries import EUAIActQueries
@@ -87,7 +87,7 @@ class ReportGenerator:
             format=format,
         )
 
-    def _render_html_report(self, data: Dict[str, Any]) -> str:
+    def _render_html_report(self, data: dict[str, Any]) -> str:
         """Render HTML report."""
         html = f"""<!DOCTYPE html>
 <html lang="en">

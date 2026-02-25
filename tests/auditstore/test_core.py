@@ -1,11 +1,10 @@
 """Tests for auditstore core module."""
 
-import pytest
-from datetime import datetime
+import os
+import tempfile
+
 from enforcecore.auditstore.core import AuditEntry, AuditStore
 from enforcecore.auditstore.backends.jsonl import JSONLBackend
-import tempfile
-import os
 
 
 def test_audit_entry_creation():
