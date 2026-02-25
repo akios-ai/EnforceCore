@@ -15,14 +15,14 @@ Usage:
     store.record(tool_name="search", decision="allowed", ...)
 """
 
-from .core import AuditEntry, AuditStore
-from .backends.base import AuditBackend
 from .adapters import AuditStoreBackendAdapter
+from .backends.base import AuditBackend
+from .core import AuditEntry, AuditStore
 
 __version__ = "1.2.0"
 __all__ = [
+    "AuditBackend",
     "AuditEntry",
     "AuditStore",
-    "AuditBackend",
     "AuditStoreBackendAdapter",
 ]

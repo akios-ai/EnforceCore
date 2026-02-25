@@ -61,7 +61,7 @@ class AuditStoreBackendAdapter(AuditorBackend):
         auditor.record(tool_name="search", policy_name="strict")
     """
 
-    __slots__ = ("_auditstore_backend", "_last_hash", "_entry_count")
+    __slots__ = ("_auditstore_backend", "_entry_count", "_last_hash")
 
     def __init__(self, auditstore_backend: Any) -> None:
         """Initialize adapter with an auditstore backend.

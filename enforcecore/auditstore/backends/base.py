@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List, Optional
 
 from ..core import AuditEntry
 
@@ -16,26 +15,26 @@ class AuditBackend(ABC):
         pass
 
     @abstractmethod
-    def get_entry(self, entry_id: str) -> Optional[AuditEntry]:
+    def get_entry(self, entry_id: str) -> AuditEntry | None:
         """Retrieve single entry by ID."""
         pass
 
     @abstractmethod
     def list_entries(
         self,
-        policy_name: Optional[str] = None,
-        tool_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        decision: Optional[str] = None,
+        policy_name: str | None = None,
+        tool_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        decision: str | None = None,
         limit: int = 1000,
         offset: int = 0,
-    ) -> List[AuditEntry]:
+    ) -> list[AuditEntry]:
         """Query entries with filters."""
         pass
 
     @abstractmethod
-    def get_chain_tail(self) -> Optional[AuditEntry]:
+    def get_chain_tail(self) -> AuditEntry | None:
         """Get last entry in Merkle chain."""
         pass
 
@@ -43,7 +42,7 @@ class AuditBackend(ABC):
     def verify_chain(
         self,
         start_index: int = 0,
-        end_index: Optional[int] = None,
+        end_index: int | None = None,
     ) -> bool:
         """Verify Merkle chain integrity in range."""
         pass
@@ -58,7 +57,7 @@ class AuditBackend(ABC):
         """Export all entries (for backup/migration)."""
         pass
 
-    def _compute_merkle_hash(self, entry: AuditEntry, parent_hash: Optional[str] = None) -> str:
+    def _compute_merkle_hash(self, entry: AuditEntry, parent_hash: str | None = None) -> str:
         """Compute Merkle hash for entry.
 
         This is a helper that backends should use consistently.

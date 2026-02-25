@@ -3,8 +3,8 @@
 import os
 import tempfile
 
-from enforcecore.auditstore.core import AuditEntry, AuditStore
 from enforcecore.auditstore.backends.jsonl import JSONLBackend
+from enforcecore.auditstore.core import AuditEntry, AuditStore
 
 
 def test_audit_entry_creation():

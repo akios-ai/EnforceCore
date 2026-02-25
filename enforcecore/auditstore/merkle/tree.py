@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..core import AuditEntry
 
@@ -11,7 +11,7 @@ class MerkleTree:
     """Merkle tree for audit trail verification and tamper-evidence."""
 
     @staticmethod
-    def compute_hash(entry: AuditEntry, parent_hash: Optional[str] = None) -> str:
+    def compute_hash(entry: AuditEntry, parent_hash: str | None = None) -> str:
         """Compute Merkle hash for an entry.
 
         This creates a SHA256 hash of the entry data combined with parent hash,
@@ -31,7 +31,7 @@ class MerkleTree:
         return hashlib.sha256(content.encode()).hexdigest()
 
     @staticmethod
-    def verify_chain(entries: List[AuditEntry]) -> bool:
+    def verify_chain(entries: list[AuditEntry]) -> bool:
         """Verify entire chain integrity.
 
         Returns True if all entries form a valid Merkle chain.
@@ -46,7 +46,7 @@ class MerkleTree:
         return True
 
     @staticmethod
-    def verify_entry(entry: AuditEntry, prev_entry: Optional[AuditEntry] = None) -> bool:
+    def verify_entry(entry: AuditEntry, prev_entry: AuditEntry | None = None) -> bool:
         """Verify single entry's Merkle hash.
 
         Args:
@@ -58,7 +58,7 @@ class MerkleTree:
         return entry.merkle_hash == expected_hash
 
     @staticmethod
-    def generate_proof(entries: List[AuditEntry], target_index: int) -> Dict[str, Any]:
+    def generate_proof(entries: list[AuditEntry], target_index: int) -> dict[str, Any]:
         """Generate proof that entry at target_index is in chain.
 
         This proves that the entry hasn't been tampered with and is part
@@ -81,7 +81,7 @@ class MerkleTree:
         return proof
 
     @staticmethod
-    def detect_tampering(entries: List[AuditEntry], start_index: int = 0) -> Optional[int]:
+    def detect_tampering(entries: list[AuditEntry], start_index: int = 0) -> int | None:
         """Detect tampering by finding broken hash chain.
 
         Returns the index of the first tampered entry, or None if chain is valid.

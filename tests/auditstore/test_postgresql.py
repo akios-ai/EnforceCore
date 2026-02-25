@@ -4,14 +4,15 @@ These tests require a running PostgreSQL instance.
 Skip if psycopg2 not installed or PostgreSQL not available.
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 
 # Skip all tests if psycopg2 not available
 pytest.importorskip("psycopg2")
 
-from enforcecore.auditstore.core import AuditStore
 from enforcecore.auditstore.backends.postgresql import PostgreSQLBackend
+from enforcecore.auditstore.core import AuditStore
 
 
 @pytest.fixture
