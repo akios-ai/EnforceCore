@@ -377,4 +377,4 @@ If you use EnforceCore in your research, please cite:
 }
 ```
 
-See also [CITATION.cff](../CITATION.cff) for machine-readable citation metadata.
+See also [CITATION.cff](https://github.com/akios-ai/EnforceCore/blob/main/CITATION.cff) for machine-readable citation metadata.

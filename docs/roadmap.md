@@ -107,7 +107,7 @@ mode, ruff-formatted, CI-verified on Linux and macOS.
 
 ## Upcoming
 
-Next release TBD — see [CONTRIBUTING.md](../CONTRIBUTING.md) for how to get
+Next release TBD — see [CONTRIBUTING.md](https://github.com/akios-ai/EnforceCore/blob/main/CONTRIBUTING.md) for how to get
 involved.
 
 ---
@@ -140,5 +140,5 @@ Open problems we are interested in collaborating on:
 
 ## Contributing
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for how to get involved. We welcome
+See [CONTRIBUTING.md](https://github.com/akios-ai/EnforceCore/blob/main/CONTRIBUTING.md) for how to get involved. We welcome
 contributions to any area of the roadmap.
