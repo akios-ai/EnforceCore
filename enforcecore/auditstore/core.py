@@ -7,11 +7,10 @@ AuditStore: Main facade for audit storage with backend abstraction
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
-
-import uuid
 
 if TYPE_CHECKING:
     from .backends.base import AuditBackend
@@ -64,7 +63,7 @@ class AuditEntry:
         enforcement_overhead_ms: float,
         input_redactions: int = 0,
         output_redactions: int = 0,
-        **kwargs,
+        **kwargs: Any,
     ) -> AuditEntry:
         """Create new audit entry with auto-generated ID."""
         return cls(
@@ -114,7 +113,7 @@ class AuditStore:
         self.backend = backend
         self.verify_on_read = verify_on_read
 
-    def record(self, **kwargs) -> AuditEntry:
+    def record(self, **kwargs: Any) -> AuditEntry:
         """Record an enforced call."""
         entry = AuditEntry.create(**kwargs)
         return self.backend.record(entry)

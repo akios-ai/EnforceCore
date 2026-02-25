@@ -2,7 +2,7 @@
 
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import Any
 
 from ..core import AuditEntry
 from .base import AuditBackend
@@ -66,11 +66,11 @@ class PostgreSQLBackend(AuditBackend):
         self.pool_size = pool_size
         self._init_schema()
 
-    def _get_connection(self):
+    def _get_connection(self) -> Any:
         """Get database connection."""
         return psycopg2.connect(**self.connection_params)
 
-    def _init_schema(self):
+    def _init_schema(self) -> None:
         """Create tables and indices."""
         conn = self._get_connection()
         cursor = conn.cursor()
@@ -146,7 +146,7 @@ class PostgreSQLBackend(AuditBackend):
             entry.merkle_hash = self._compute_merkle_hash(entry)
             last_entry = self.get_chain_tail()
             entry.parent_hash = last_entry.merkle_hash if last_entry else None
-            entry.chain_index = (last_entry.chain_index + 1) if last_entry else 0
+            entry.chain_index = (last_entry.chain_index or 0) + 1 if last_entry else 0
 
             # Insert entry
             cursor.execute(
@@ -196,7 +196,7 @@ class PostgreSQLBackend(AuditBackend):
 
         return entry
 
-    def get_entry(self, entry_id: str) -> Optional[AuditEntry]:
+    def get_entry(self, entry_id: str) -> AuditEntry | None:
         """Retrieve entry by ID."""
         conn = self._get_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -210,20 +210,20 @@ class PostgreSQLBackend(AuditBackend):
 
     def list_entries(
         self,
-        policy_name: Optional[str] = None,
-        tool_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        decision: Optional[str] = None,
+        policy_name: str | None = None,
+        tool_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        decision: str | None = None,
         limit: int = 1000,
         offset: int = 0,
-    ) -> List[AuditEntry]:
+    ) -> list[AuditEntry]:
         """Query with flexible filters."""
         conn = self._get_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         query = "SELECT * FROM audit_entries WHERE 1=1"
-        params = []
+        params: list[Any] = []
 
         if policy_name:
             query += " AND policy_name = %s"
@@ -251,7 +251,7 @@ class PostgreSQLBackend(AuditBackend):
 
         return [self._row_to_entry(row) for row in rows]
 
-    def get_chain_tail(self) -> Optional[AuditEntry]:
+    def get_chain_tail(self) -> AuditEntry | None:
         """Get last entry in chain."""
         conn = self._get_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -266,7 +266,7 @@ class PostgreSQLBackend(AuditBackend):
     def verify_chain(
         self,
         start_index: int = 0,
-        end_index: Optional[int] = None,
+        end_index: int | None = None,
     ) -> bool:
         """Verify Merkle chain integrity."""
         conn = self._get_connection()
@@ -337,7 +337,7 @@ class PostgreSQLBackend(AuditBackend):
 
         raise ValueError(f"Unsupported export format: {format}")
 
-    def _row_to_entry(self, row: dict) -> AuditEntry:
+    def _row_to_entry(self, row: dict[str, Any]) -> AuditEntry:
         """Convert SQL row to AuditEntry."""
         return AuditEntry(
             entry_id=str(row["entry_id"]),

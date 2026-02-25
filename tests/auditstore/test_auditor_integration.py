@@ -8,10 +8,11 @@ Auditor API via the AuditStoreBackendAdapter. Covers:
 - Report generation from enforced calls
 """
 
-import pytest
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-import tempfile
+
+import pytest
 
 from enforcecore.auditor import Auditor
 from enforcecore.auditstore import AuditStore, AuditStoreBackendAdapter

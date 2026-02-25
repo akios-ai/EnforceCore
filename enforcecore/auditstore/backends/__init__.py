@@ -10,7 +10,7 @@ try:
     HAS_POSTGRESQL = True
 except ImportError:
     HAS_POSTGRESQL = False
-    PostgreSQLBackend = None
+    PostgreSQLBackend = None  # type: ignore[assignment,misc]
 
 __all__ = [
     "AuditBackend",

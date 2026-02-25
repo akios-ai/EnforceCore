@@ -3,7 +3,7 @@
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Any
 
 from ..core import AuditEntry
 from .base import AuditBackend
@@ -18,7 +18,7 @@ class SQLiteBackend(AuditBackend):
         self.verify_merkle = verify_merkle
         self._init_schema()
 
-    def _init_schema(self):
+    def _init_schema(self) -> None:
         """Create tables if not exists."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -80,7 +80,7 @@ class SQLiteBackend(AuditBackend):
         entry.merkle_hash = self._compute_merkle_hash(entry)
         last_entry = self.get_chain_tail()
         entry.parent_hash = last_entry.merkle_hash if last_entry else None
-        entry.chain_index = (last_entry.chain_index + 1) if last_entry else 0
+        entry.chain_index = (last_entry.chain_index or 0) + 1 if last_entry else 0
 
         # Insert entry
         cursor.execute(
@@ -123,7 +123,7 @@ class SQLiteBackend(AuditBackend):
         conn.close()
         return entry
 
-    def get_entry(self, entry_id: str) -> Optional[AuditEntry]:
+    def get_entry(self, entry_id: str) -> AuditEntry | None:
         """Retrieve entry by ID."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -136,14 +136,14 @@ class SQLiteBackend(AuditBackend):
 
     def list_entries(
         self,
-        policy_name: Optional[str] = None,
-        tool_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        decision: Optional[str] = None,
+        policy_name: str | None = None,
+        tool_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        decision: str | None = None,
         limit: int = 1000,
         offset: int = 0,
-    ) -> List[AuditEntry]:
+    ) -> list[AuditEntry]:
         """Query with flexible filters."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -168,7 +168,7 @@ class SQLiteBackend(AuditBackend):
             params.append(end_time.isoformat())
 
         query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
-        params.extend([limit, offset])
+        params.extend([str(limit), str(offset)])
 
         cursor.execute(query, params)
         rows = cursor.fetchall()
@@ -176,7 +176,7 @@ class SQLiteBackend(AuditBackend):
 
         return [self._row_to_entry(row) for row in rows]
 
-    def get_chain_tail(self) -> Optional[AuditEntry]:
+    def get_chain_tail(self) -> AuditEntry | None:
         """Get last entry in chain."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -187,7 +187,7 @@ class SQLiteBackend(AuditBackend):
 
         return self._row_to_entry(row) if row else None
 
-    def verify_chain(self, start_index: int = 0, end_index: Optional[int] = None) -> bool:
+    def verify_chain(self, start_index: int = 0, end_index: int | None = None) -> bool:
         """Verify Merkle chain integrity."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -254,7 +254,7 @@ class SQLiteBackend(AuditBackend):
 
         raise ValueError(f"Unsupported export format: {format}")
 
-    def _row_to_entry(self, row: tuple) -> AuditEntry:
+    def _row_to_entry(self, row: tuple[Any, ...]) -> AuditEntry:
         """Convert SQL row to AuditEntry."""
         (
             entry_id,
@@ -275,7 +275,7 @@ class SQLiteBackend(AuditBackend):
             merkle_hash,
             parent_hash,
             chain_index,
-            context,
+            _context,
             _,
         ) = row
 

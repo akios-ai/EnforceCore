@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Any
 
 from ..core import AuditEntry
 from .base import AuditBackend
@@ -26,7 +26,7 @@ class JSONLBackend(AuditBackend):
         parent_hash = last_entry.merkle_hash if last_entry else None
         entry.merkle_hash = self._compute_merkle_hash(entry, parent_hash)
         entry.parent_hash = parent_hash
-        entry.chain_index = (last_entry.chain_index + 1) if last_entry else 0
+        entry.chain_index = (last_entry.chain_index or 0) + 1 if last_entry else 0
 
         # Append to file
         with open(self.path, "a") as f:
@@ -34,12 +34,12 @@ class JSONLBackend(AuditBackend):
 
         return entry
 
-    def get_entry(self, entry_id: str) -> Optional[AuditEntry]:
+    def get_entry(self, entry_id: str) -> AuditEntry | None:
         """Retrieve entry by ID from JSONL file."""
         if not self.path.exists():
             return None
 
-        with open(self.path, "r") as f:
+        with open(self.path) as f:
             for line in f:
                 if not line.strip():
                     continue
@@ -51,20 +51,20 @@ class JSONLBackend(AuditBackend):
 
     def list_entries(
         self,
-        policy_name: Optional[str] = None,
-        tool_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        decision: Optional[str] = None,
+        policy_name: str | None = None,
+        tool_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        decision: str | None = None,
         limit: int = 1000,
         offset: int = 0,
-    ) -> List[AuditEntry]:
+    ) -> list[AuditEntry]:
         """Query entries from JSONL file."""
         if not self.path.exists():
             return []
 
         entries = []
-        with open(self.path, "r") as f:
+        with open(self.path) as f:
             for line in f:
                 if not line.strip():
                     continue
@@ -91,13 +91,13 @@ class JSONLBackend(AuditBackend):
         entries.sort(key=lambda e: e.timestamp, reverse=True)
         return entries[offset : offset + limit]
 
-    def get_chain_tail(self) -> Optional[AuditEntry]:
+    def get_chain_tail(self) -> AuditEntry | None:
         """Get last entry in file (chain tail)."""
         if not self.path.exists():
             return None
 
         last_entry = None
-        with open(self.path, "r") as f:
+        with open(self.path) as f:
             for line in f:
                 if line.strip():
                     last_entry = json.loads(line)
@@ -107,14 +107,14 @@ class JSONLBackend(AuditBackend):
     def verify_chain(
         self,
         start_index: int = 0,
-        end_index: Optional[int] = None,
+        end_index: int | None = None,
     ) -> bool:
         """Verify Merkle chain integrity."""
         if not self.path.exists():
             return True
 
         entries = []
-        with open(self.path, "r") as f:
+        with open(self.path) as f:
             for line in f:
                 if line.strip():
                     entries.append(self._dict_to_entry(json.loads(line)))
@@ -151,12 +151,12 @@ class JSONLBackend(AuditBackend):
             return ""
 
         if format == "jsonl":
-            with open(self.path, "r") as f:
+            with open(self.path) as f:
                 return f.read()
 
         raise ValueError(f"Unsupported export format: {format}")
 
-    def _dict_to_entry(self, data: dict) -> AuditEntry:
+    def _dict_to_entry(self, data: dict[str, Any]) -> AuditEntry:
         """Convert dict to AuditEntry."""
         return AuditEntry(
             entry_id=data.get("entry_id", ""),

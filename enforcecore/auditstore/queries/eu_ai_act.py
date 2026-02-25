@@ -141,7 +141,7 @@ class EUAIActQueries:
             limit=999999,
         )
 
-        redactions_by_category = {}
+        redactions_by_category: dict[str, int] = {}
         for entry in entries:
             for category in entry.redacted_categories:
                 redactions_by_category[category] = redactions_by_category.get(category, 0) + 1
@@ -171,7 +171,7 @@ class EUAIActQueries:
             limit=999999,
         )
 
-        violations_by_tool = {}
+        violations_by_tool: dict[str, int] = {}
         for v in violations:
             tool = v.tool_name
             violations_by_tool[tool] = violations_by_tool.get(tool, 0) + 1
@@ -197,7 +197,7 @@ class EUAIActQueries:
             limit=999999,
         )
 
-        costs_by_tool = {}
+        costs_by_tool: dict[str, float] = {}
         total_cost = 0.0
 
         for entry in entries:

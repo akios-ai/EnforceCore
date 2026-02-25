@@ -288,12 +288,13 @@ class ReportGenerator:
 """
         return html
 
-    def _parse_period(self, period: str) -> tuple:
+    def _parse_period(self, period: str) -> tuple[datetime, datetime]:
         """Parse period string to start and end dates.
 
         Supports: "Q1 2026", "Jan 2026", "2026-01", etc.
         """
         import re
+
         from dateutil.relativedelta import relativedelta
 
         # Try "Q1 2026" format
@@ -336,8 +337,8 @@ class ReportGenerator:
                 "dec": 12,
                 "december": 12,
             }
-            month = months.get(month_str.lower())
-            if month:
+            month = months.get(month_str.lower(), 0)
+            if month > 0:
                 start = datetime(year, month, 1)
                 end = start + relativedelta(months=1) - relativedelta(days=1)
                 return start, end
