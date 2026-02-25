@@ -1,9 +1,9 @@
 """EU AI Act compliance queries and templates."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ..core import AuditEntry, AuditStore
+from ..core import AuditStore
 
 
 class EUAIActQueries:
@@ -17,8 +17,8 @@ class EUAIActQueries:
         self,
         start_date: datetime,
         end_date: datetime,
-        policy_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        policy_name: str | None = None,
+    ) -> dict[str, Any]:
         """Article 9: List all decisions made by high-risk AI system.
 
         Per Article 9, high-risk systems must log all decisions.
@@ -42,8 +42,8 @@ class EUAIActQueries:
         self,
         start_date: datetime,
         end_date: datetime,
-        policy_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        policy_name: str | None = None,
+    ) -> dict[str, Any]:
         """Article 13: Evidence of human oversight (policy violations).
 
         Human oversight is demonstrated by policy violations (blocked calls).
@@ -69,8 +69,8 @@ class EUAIActQueries:
         self,
         start_date: datetime,
         end_date: datetime,
-        policy_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        policy_name: str | None = None,
+    ) -> dict[str, Any]:
         """Article 14: Transparency information for end users.
 
         Article 14 requires transparency about AI system behavior.
@@ -101,8 +101,8 @@ class EUAIActQueries:
         self,
         start_date: datetime,
         end_date: datetime,
-        policy_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        policy_name: str | None = None,
+    ) -> dict[str, Any]:
         """Article 52: Transparency log for AI Act compliance.
 
         Article 52 requires logging of all AI system activity for compliance.
@@ -131,8 +131,8 @@ class EUAIActQueries:
         self,
         start_date: datetime,
         end_date: datetime,
-        policy_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        policy_name: str | None = None,
+    ) -> dict[str, Any]:
         """Summary of PII exposure and redaction activity."""
         entries = self.store.list_entries(
             policy_name=policy_name,
@@ -158,8 +158,8 @@ class EUAIActQueries:
         self,
         start_date: datetime,
         end_date: datetime,
-        policy_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        policy_name: str | None = None,
+    ) -> dict[str, Any]:
         """Summary of policy violations and blocked calls."""
         violations = self.store.list_entries(
             policy_name=policy_name,
@@ -185,8 +185,8 @@ class EUAIActQueries:
         self,
         start_date: datetime,
         end_date: datetime,
-        policy_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        policy_name: str | None = None,
+    ) -> dict[str, Any]:
         """Cost analysis and budget utilization."""
         entries = self.store.list_entries(
             policy_name=policy_name,
