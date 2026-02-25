@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-05-15 (target)
+
+### Added
+
+- **Pluggable Audit Storage System** — New `enforcecore.auditstore` module enables flexible audit trail storage with multiple backends:
+  - JSONL backend (default, backward-compatible with existing Auditor)
+  - SQLite backend for local development
+  - PostgreSQL backend for production deployments with connection pooling, SSL/TLS, and partitioning support
+  - Production-grade Merkle chain verification for tamper-evidence detection
+
+- **Audit Store Backends** — Three fully-featured backends with identical query interface:
+  - `JSONLBackend`: Append-only JSONL files, compatible with v1.1.3 Auditor
+  - `SQLiteBackend`: Local SQLite database for development
+  - `PostgreSQLBackend`: Production database with connection pooling (default: 5), concurrent writes, SSL/TLS support
+
+- **Regulatory Compliance Reporting** — New `ReportGenerator` class with EU AI Act compliance templates:
+  - Article 9: High-risk AI system decisions logging
+  - Article 13: Human oversight evidence tracking
+  - Article 14: Transparency information for end users
+  - Article 52: Complete transparency log with Merkle chain verification
+  - HTML and JSON report formats with cost analysis and PII summary
+
+- **Auditor API Integration** — New `AuditStoreBackendAdapter` bridges existing Auditor with new auditstore backends:
+  - Seamless backward compatibility — existing Auditor code works unchanged
+  - Zero breaking changes to public API
+  - Dict-to-AuditEntry translation with automatic Merkle chain management
+  - Thread-safe integration with full test coverage
+
+- **EU AI Act Compliance Queries** — New `EUAIActQueries` class providing predefined queries:
+  - Article 9: List all decisions made by high-risk AI systems
+  - Article 13: Evidence of human oversight (blocked calls)
+  - Article 14: Transparency statistics (total/allowed/blocked calls)
+  - Article 52: Complete transparency log with Merkle verification
+  - PII exposure summary and cost analysis
+
+### Documentation
+
+- Complete user guide: `docs/auditstore.md` with 1800+ lines covering:
+  - Quick start guide for all three backends
+  - Backend comparison and selection guide
+  - API reference with code examples
+  - Configuration examples (YAML and Python)
+  - Performance benchmarks
+  - Troubleshooting guide
+  - Frequently asked questions
+
+### Testing
+
+- 4 new end-to-end integration tests validating Auditor ↔ auditstore flow
+- 1530+ total tests passing, 11 skipped
+- Code quality: ruff formatting clean, import validation passed
+- Backward compatibility: 100% compatible with v1.1.3 Auditor
+
+---
+
 ## [1.1.3] — 2026-02-25
 
 Patch release — test robustness and documentation improvements. Responds to beta
