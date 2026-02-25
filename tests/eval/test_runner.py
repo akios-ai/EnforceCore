@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from enforcecore.eval.runner import ScenarioRunner
 from enforcecore.eval.types import (
     ScenarioOutcome,
@@ -122,6 +124,7 @@ class TestContainmentRates:
         # With specific_tools policy, most scenarios should be contained
         assert suite.containment_rate >= 0.5
 
+    @pytest.mark.timeout(60)
     def test_allow_all_lower_containment(self, allow_all_policy: Policy) -> None:
         """An allow-all policy should have lower containment."""
         runner = ScenarioRunner(allow_all_policy)

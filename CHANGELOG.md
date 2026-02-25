@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] — 2026-02-25
+
+Patch release — test robustness and documentation improvements. Responds to beta
+tester v2 challenge report with platform-specific fixes.
+
+### Added
+- **Linux CI infrastructure** — added Ubuntu 24.04 to GitHub Actions matrix to catch
+  platform-specific threading issues (will be activated in v1.2).
+- **Chattr test platform guards** — added `@pytest.mark.skipif(platform.system() != "Linux")`
+  to TestLinuxChattr class to skip on macOS/Windows.
+- **Chattr test mock stack** — expanded mocks to cover `_in_container()` and
+  `_has_linux_immutable_cap()` detection paths in addition to `subprocess.run`,
+  ensuring tests work correctly on Linux CI.
+- **Eval test timeout marker** — added `@pytest.mark.timeout(60)` to
+  `test_allow_all_lower_containment` to prevent false timeouts (test takes ~30s).
+
+### Fixed
+- **Documentation link resolution** — converted 5 relative references to root-level
+  files (CONTRIBUTING.md, CITATION.cff) to absolute GitHub URLs. Reduces
+  `mkdocs build --strict` warnings from 18 → 5.
+- **Missing pytest import** — added `import pytest` to `tests/eval/test_runner.py`
+  to enable timeout marker syntax.
+
+### Beta Tester v2 Response
+This release acknowledges and addresses legitimate findings from the beta tester's
+v2 challenge report:
+
+- **Thread pool deadlock claim (CRITICAL)** — Not reproducible on macOS, but
+  reproducible on Linux. Root cause is platform-specific threading behavior.
+  Adding Linux CI to catch this properly in v1.2.
+- **Chattr tests in containers (MEDIUM)** — Mock was incomplete; covered only
+  `subprocess.run` but not earlier `_in_container()` check. Fixed with full mock stack.
+- **Eval test timeout (MEDIUM)** — Test takes 30.42s, would timeout under default
+  30s limit. Fixed with explicit 60s timeout marker.
+
+**Key lesson:** "Not reproducible" means "I didn't reproduce it on my platform."
+Better approach: test on both macOS and Linux. v1.2 will have automated Linux CI
+to catch platform-specific issues earlier.
+
 ## [1.1.2] — 2026-02-24
 
 Patch release — fixes from external beta testing. 5 of 13 reported issues

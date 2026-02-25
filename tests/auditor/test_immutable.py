@@ -331,11 +331,23 @@ class TestAuditorImmutable:
     platform.system() != "Linux",
     reason="Linux-only chattr tests",
 )
+@pytest.mark.skipif(
+    platform.system() != "Linux",
+    reason="chattr only available on Linux",
+)
 class TestLinuxChattr:
     """Linux-specific chattr tests (run only on Linux CI)."""
 
+    @patch("enforcecore.auditor.immutable._in_container", return_value=False)
+    @patch("enforcecore.auditor.immutable._has_linux_immutable_cap", return_value=True)
     @patch("enforcecore.auditor.immutable.subprocess.run")
-    def test_chattr_success(self, mock_run: MagicMock, tmp_path: Path) -> None:
+    def test_chattr_success(
+        self,
+        mock_run: MagicMock,
+        mock_cap: MagicMock,
+        mock_container: MagicMock,
+        tmp_path: Path,
+    ) -> None:
         mock_run.return_value = MagicMock(returncode=0)
         test_file = tmp_path / "test.txt"
         test_file.write_text("data\n")
@@ -347,8 +359,16 @@ class TestLinuxChattr:
         assert cmd[0] == "chattr"
         assert cmd[1] == "+a"
 
+    @patch("enforcecore.auditor.immutable._in_container", return_value=False)
+    @patch("enforcecore.auditor.immutable._has_linux_immutable_cap", return_value=True)
     @patch("enforcecore.auditor.immutable.subprocess.run")
-    def test_chattr_permission_denied(self, mock_run: MagicMock, tmp_path: Path) -> None:
+    def test_chattr_permission_denied(
+        self,
+        mock_run: MagicMock,
+        mock_cap: MagicMock,
+        mock_container: MagicMock,
+        tmp_path: Path,
+    ) -> None:
         mock_run.return_value = MagicMock(returncode=1, stderr="Operation not permitted")
         test_file = tmp_path / "test.txt"
         test_file.write_text("data\n")
