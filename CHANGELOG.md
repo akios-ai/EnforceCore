@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-02-28
+
+### Added
+
+- **Compliance Reporting** — Turn the audit trail into structured compliance
+  exports for EU AI Act, SOC2, and GDPR frameworks. Zero new dependencies —
+  everything runs on stdlib.
+
+  - **`ComplianceReporter`** — new class at `enforcecore.compliance.reporter`.
+    Reads a JSONL audit trail, filters entries to any reporting period
+    (quarterly, half-year, full-year, or arbitrary date range), and emits a
+    fully populated `ComplianceReport`.
+
+    ```python
+    from enforcecore import (
+        ComplianceReporter, ComplianceFormat, CompliancePeriod
+    )
+
+    reporter = ComplianceReporter(trail_path="audit_logs/trail.jsonl")
+    period   = CompliancePeriod.from_label("2026-Q4")
+    report   = reporter.export(ComplianceFormat.EU_AI_ACT, period)
+
+    print(report.compliance_score)           # e.g. 0.997
+    print(report.narratives[0])              # Article 13(1) paragraph
+    reporter.export_json(ComplianceFormat.EU_AI_ACT, period, "report.json")
+    reporter.export_html(ComplianceFormat.GDPR, period, "gdpr_q4.html")
+    ```
+
+  - **`ComplianceFormat`** — `StrEnum` with `EU_AI_ACT`, `SOC2`, `GDPR`.
+
+  - **`CompliancePeriod`** — frozen dataclass representing a reporting window.
+    Factory methods: `from_label("2026-Q4")` (quarterly / half-year / annual)
+    and `from_dates(start, end)`.
+
+  - **`ComplianceReport`** — dataclass with aggregated stats
+    (`total_calls`, `violations`, `pii_redactions`, `compliance_score`,
+    `policy_versions`, `tool_names`, `tenant_ids`, `narratives`) plus
+    `to_dict()` and `to_json()` for direct serialization.
+
+  - **`ComplianceError`** — raised when a report cannot be generated
+    (missing trail, I/O error, or webhook failure). Hierarchy:
+    `ComplianceError → Exception`.
+
+  - **Pre-built compliance narratives** — per-framework templates in
+    `enforcecore.compliance.templates`:
+    - `eu_ai_act` — EU AI Act Article 13(1) transparency,
+      Article 13(3)(b) human oversight, Article 13(3)(f) accuracy/data
+      protection.
+    - `soc2` — SOC2 CC6 (access controls), CC7 (system operations),
+      CC8 (change management), CC9 (risk mitigation).
+    - `gdpr` — GDPR Article 30(1) records of processing activities,
+      Article 30(1)(d) categories of personal data,
+      Article 30(1)(f) security measures.
+
+  - **Webhook dispatch** — `ComplianceReporter.send_webhook(report, url=..., token=...)`
+    POSTs the JSON report to any HTTP endpoint (Vanta, Drata, custom SIEM)
+    using stdlib `urllib` with Bearer-token auth.
+
+- **CLI: `enforcecore audit export`** — new sub-command for the operator CLI.
+
+  ```bash
+  # Pipe JSON to stdout
+  enforcecore audit export --format eu-ai-act --period 2026-Q4
+
+  # Write JSON file
+  enforcecore audit export --format soc2 --period 2026 \
+      --trail audit_logs/trail.jsonl --output soc2_2026.json
+
+  # Write HTML report
+  enforcecore audit export --format gdpr --period 2026-H1 \
+      --trail audit_logs/trail.jsonl --html --output gdpr_h1.html
+
+  # Push to Vanta
+  enforcecore audit export --format eu-ai-act --period 2026-Q4 \
+      --webhook-url https://app.vanta.com/api/v1/custom-tests/upload \
+      --webhook-token $VANTA_TOKEN
+  ```
+
+- **Public API** — 5 new symbols added to `enforcecore.__all__` (53 total):
+  `ComplianceError`, `ComplianceFormat`, `CompliancePeriod`,
+  `ComplianceReport`, `ComplianceReporter`.
+
+---
+
 ## [1.7.0] — 2026-02-27
 
 ### Added
