@@ -316,6 +316,132 @@ def dry_run(
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# enforcecore audit (sub-app)
+# ---------------------------------------------------------------------------
+
+audit_app = typer.Typer(
+    name="audit",
+    help="Audit trail management and compliance export commands.",
+    no_args_is_help=True,
+)
+app.add_typer(audit_app)
+
+
+@audit_app.command(name="export")
+def audit_export(
+    format_name: Annotated[
+        str,
+        typer.Option(
+            "--format",
+            "-f",
+            help="Report format: eu-ai-act | soc2 | gdpr",
+        ),
+    ],
+    period_label: Annotated[
+        str,
+        typer.Option(
+            "--period",
+            "-p",
+            help="Reporting period: YYYY-Q{1-4}, YYYY-H{1-2}, or YYYY (e.g. 2026-Q4)",
+        ),
+    ],
+    trail: Annotated[
+        Path | None,
+        typer.Option("--trail", "-t", help="Path to audit JSONL file"),
+    ] = None,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="Output file path (.json or .html)"),
+    ] = None,
+    html: Annotated[
+        bool,
+        typer.Option("--html", help="Render as HTML instead of JSON"),
+    ] = False,
+    webhook_url: Annotated[
+        str | None,
+        typer.Option("--webhook-url", help="POST report to this URL (Vanta, Drata, etc.)"),
+    ] = None,
+    webhook_token: Annotated[
+        str | None,
+        typer.Option("--webhook-token", help="Bearer token for webhook authorization"),
+    ] = None,
+) -> None:
+    """Export an audit trail as a structured compliance report.
+
+    Examples::
+
+        # Print EU AI Act JSON to stdout
+        enforcecore audit export --format eu-ai-act --period 2026-Q4
+
+        # Write to file
+        enforcecore audit export --format soc2 --period 2026 --output soc2_2026.json
+
+        # HTML report from a specific trail
+        enforcecore audit export --format gdpr --period 2026-H1 \\
+            --trail audit_logs/trail.jsonl --html --output gdpr_h1.html
+
+        # Push to Vanta
+        enforcecore audit export --format eu-ai-act --period 2026-Q4 \\
+            --webhook-url https://app.vanta.com/api/v1/custom-tests/upload \\
+            --webhook-token $VANTA_TOKEN
+    """
+    from enforcecore.compliance.reporter import ComplianceReporter
+    from enforcecore.compliance.types import ComplianceError, ComplianceFormat, CompliancePeriod
+
+    # Parse format
+    try:
+        fmt = ComplianceFormat(format_name)
+    except ValueError:
+        valid = ", ".join(f.value for f in ComplianceFormat)
+        err_console.print(f"[red]✗[/red] Unknown format {format_name!r}. Valid options: {valid}")
+        raise typer.Exit(code=1) from None
+
+    # Parse period
+    try:
+        period = CompliancePeriod.from_label(period_label)
+    except ValueError as exc:
+        err_console.print(f"[red]✗[/red] Invalid period: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    reporter = ComplianceReporter(trail_path=trail)
+
+    try:
+        if html and output:
+            reporter.export_html(fmt, period, output)
+            console.print(f"[green]✓[/green] HTML report written to [bold]{output}[/bold]")
+        elif output:
+            reporter.export_json(fmt, period, output)
+            console.print(f"[green]✓[/green] JSON report written to [bold]{output}[/bold]")
+        else:
+            # Print to stdout
+            report = reporter.export(fmt, period)
+            print(report.to_json())  # intentional stdout output
+
+        if webhook_url:
+            if not webhook_token:
+                err_console.print(
+                    "[red]✗[/red] --webhook-token is required when --webhook-url is set"
+                )
+                raise typer.Exit(code=1)
+            report = reporter.export(fmt, period)
+            try:
+                reporter.send_webhook(report, url=webhook_url, token=webhook_token)
+                console.print(f"[green]✓[/green] Report sent to webhook: {webhook_url}")
+            except ComplianceError as exc:
+                err_console.print(f"[red]✗[/red] Webhook failed: {exc}")
+                raise typer.Exit(code=1) from exc
+
+    except ComplianceError as exc:
+        err_console.print(f"[red]✗[/red] Compliance export failed: {exc}")
+        raise typer.Exit(code=1) from exc
+
+
+# ---------------------------------------------------------------------------
+# enforcecore inspect
+# ---------------------------------------------------------------------------
+
+
 @app.command()
 def inspect(
     path: Annotated[Path, typer.Argument(help="Path to audit JSONL file")],
