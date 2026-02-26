@@ -194,6 +194,24 @@ class PolicyValidationError(PolicyError):
     """Policy does not conform to the expected schema."""
 
 
+class PolicyServerError(PolicyError):
+    """Remote policy server request failed.
+
+    Raised when:
+
+    - The policy server returns an HTTP error (4xx, 5xx).
+    - The server is unreachable and no cached policy exists as fallback.
+    - HMAC signature verification of the server response fails.
+    - The server response is not valid YAML or does not match the schema.
+
+    If a previously cached policy exists,
+    :class:`~enforcecore.core.policy_server.PolicyServerClient` will return
+    the stale cache instead of raising this exception.
+
+    .. versionadded:: 1.7.0
+    """
+
+
 class EnforcementViolation(EnforceCoreError):  # noqa: N818 — intentionally named Violation, not Error
     """A call was blocked due to a policy violation.
 

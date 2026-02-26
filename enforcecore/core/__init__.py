@@ -16,6 +16,7 @@ from enforcecore.core.policy import (
     ResourceLimits,
     load_policy,
 )
+from enforcecore.core.policy_server import PolicyServerClient
 from enforcecore.core.types import (
     AuditError,
     CallContext,
@@ -28,6 +29,7 @@ from enforcecore.core.types import (
     GuardError,
     PolicyError,
     PolicyLoadError,
+    PolicyServerError,
     PolicyValidationError,
     RedactionError,
     RedactionEvent,
@@ -63,6 +65,8 @@ __all__ = [
     "PolicyError",
     "PolicyLoadError",
     "PolicyRules",
+    "PolicyServerClient",
+    "PolicyServerError",
     "PolicyValidationError",
     "RateLimitPolicyConfig",
     "RedactionError",
