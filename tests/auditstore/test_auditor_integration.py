@@ -9,10 +9,8 @@ Auditor API via the AuditStoreBackendAdapter. Covers:
 """
 
 import tempfile
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-
-import pytest
 
 from enforcecore.auditor import Auditor
 from enforcecore.auditstore import AuditStore, AuditStoreBackendAdapter
@@ -125,13 +123,8 @@ class TestAuditorWithJSONLBackend:
 
 
 class TestAuditorWithSQLiteBackend:
-    """Test Auditor using the auditstore SQLite backend.
+    """Test Auditor using the auditstore SQLite backend."""
 
-    Note: SQLite tests are skipped due to schema issues with older databases.
-    JSONL tests cover the same integration pattern successfully.
-    """
-
-    @pytest.mark.skip(reason="SQLite schema versioning issue - JSONL tests cover this pattern")
     def test_record_and_query_sqlite(self):
         """Record via Auditor and query via auditstore SQLite."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -178,7 +171,6 @@ class TestAuditorWithSQLiteBackend:
             assert len(blocked) == 1
             assert blocked[0].decision == "blocked"
 
-    @pytest.mark.skip(reason="SQLite schema versioning issue - JSONL tests cover this pattern")
     def test_time_range_query_sqlite(self):
         """Test time-based queries on SQLite backend."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -199,8 +191,8 @@ class TestAuditorWithSQLiteBackend:
 
             # Query with time range
             store = AuditStore(backend=auditstore_backend)
-            past = datetime.utcnow() - timedelta(hours=1)
-            future = datetime.utcnow() + timedelta(hours=1)
+            past = datetime.now(tz=UTC) - timedelta(hours=1)
+            future = datetime.now(tz=UTC) + timedelta(hours=1)
 
             entries = store.list_entries(start_time=past, end_time=future)
             assert len(entries) >= 1
@@ -209,7 +201,6 @@ class TestAuditorWithSQLiteBackend:
 class TestReportGenerationFromAuditor:
     """Test generating compliance reports from Auditor entries."""
 
-    @pytest.mark.skip(reason="SQLite schema versioning issue - JSONL tests cover this pattern")
     def test_eu_ai_act_report_from_auditor(self):
         """Generate EU AI Act report from entries recorded via Auditor."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -253,7 +244,6 @@ class TestReportGenerationFromAuditor:
             # Should contain compliance metrics
             assert "Article 9" in report.content or "High-Risk" in report.content
 
-    @pytest.mark.skip(reason="SQLite schema versioning issue - JSONL tests cover this pattern")
     def test_json_report_generation(self):
         """Generate JSON format compliance report."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -331,7 +321,6 @@ class TestMerkleChainWithAdapter:
 class TestBackendSwitching:
     """Test switching between different auditstore backends."""
 
-    @pytest.mark.skip(reason="SQLite schema versioning issue - single backend tests cover this")
     def test_query_compatibility_across_backends(self):
         """Verify query interface is consistent across backends."""
         test_records = [

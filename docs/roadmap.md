@@ -269,6 +269,21 @@ Polish release focused on production readiness:
 - Updated architecture diagrams
 - AgentSecBench standalone benchmark extraction
 
+### v1.11.0 — AsyncIO Streaming Enforcement
+
+Token-by-token enforcement for streaming LLM outputs — the dominant consumption
+pattern for production AI agents:
+
+- `stream_enforce()` context manager — wraps any async generator, enforcing
+  policy on each token as it arrives
+- Streaming PII redaction — detect and redact PII within partial token chunks
+  without buffering the full response
+- `StreamAuditEntry` — audit record per stream, with token counts and
+  redaction events
+- Framework adapters — LangChain `streaming_callback`, AutoGen `stream_reply`,
+  LangGraph `astream` integration
+- Zero-buffer mode — enforce without holding the full response in memory
+
 ### v2.0.0 — Distributed Enforcement
 
 Major API evolution for multi-node, multi-agent deployments. Cross-agent audit
