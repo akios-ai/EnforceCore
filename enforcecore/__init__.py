@@ -63,6 +63,13 @@ from enforcecore.auditor.engine import (
     verify_trail,
 )
 from enforcecore.auditor.rotation import AuditRotator as AuditRotator
+from enforcecore.compliance.reporter import ComplianceReporter
+from enforcecore.compliance.types import (
+    ComplianceError,
+    ComplianceFormat,
+    CompliancePeriod,
+    ComplianceReport,
+)
 from enforcecore.core.config import Settings, settings
 from enforcecore.core.enforcer import Enforcer, enforce
 from enforcecore.core.enforcer import (
@@ -342,7 +349,7 @@ from enforcecore.telemetry import (
     EnforceCorePrometheusExporter as EnforceCorePrometheusExporter,
 )
 
-__version__ = "1.7.0"
+__version__ = "1.8.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -354,11 +361,16 @@ _logging.getLogger("enforcecore").setLevel(
 )
 
 # ── Public API contract ──────────────────────────────────────────────────
-# Only these ~30 symbols are guaranteed stable across minor versions.
+# Only these symbols are guaranteed stable across minor versions.
 # Everything else is importable but may move in future releases.
 __all__ = [
     "AuditEntry",
     "Auditor",
+    "ComplianceError",
+    "ComplianceFormat",
+    "CompliancePeriod",
+    "ComplianceReport",
+    "ComplianceReporter",
     "ContentViolationError",
     "CostLimitError",
     "CostTracker",
