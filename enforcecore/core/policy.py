@@ -38,6 +38,7 @@ from enforcecore.core.types import (
     ViolationAction,
     ViolationType,
 )
+from enforcecore.sandbox.config import SandboxConfig, SandboxStrategy
 
 logger = structlog.get_logger("enforcecore.policy")
 
@@ -116,6 +117,59 @@ class RateLimitPolicyConfig(BaseModel):
     global_limit: dict[str, float] | None = None
 
 
+class SandboxPolicyConfig(BaseModel):
+    """Subprocess sandbox configuration in a policy.
+
+    Controls whether tool calls are executed in an isolated subprocess
+    after the policy has approved them.
+
+    Example YAML::
+
+        sandbox:
+          enabled: true
+          strategy: subprocess
+          max_memory_mb: 256
+          max_cpu_seconds: 30.0
+          allowed_env_vars:
+            - PATH
+            - HOME
+          working_directory: /tmp/sandbox
+
+    """
+
+    enabled: bool = False
+    strategy: str = "subprocess"
+    max_memory_mb: int | None = None
+    max_cpu_seconds: float | None = None
+    allowed_env_vars: list[str] | None = None
+    working_directory: str | None = None
+
+    def to_sandbox_config(self) -> SandboxConfig:
+        """Convert this policy config to a :class:`SandboxConfig`.
+
+        Returns ``SandboxConfig.disabled()`` when ``enabled`` is False.
+        """
+        if not self.enabled:
+            return SandboxConfig.disabled()
+
+        try:
+            strategy = SandboxStrategy(self.strategy)
+        except ValueError:
+            strategy = SandboxStrategy.SUBPROCESS
+
+        from enforcecore.sandbox.config import _DEFAULT_ALLOWED_ENV_VARS
+
+        return SandboxConfig(
+            strategy=strategy,
+            max_memory_mb=self.max_memory_mb,
+            max_cpu_seconds=self.max_cpu_seconds,
+            allowed_env_vars=self.allowed_env_vars
+            if self.allowed_env_vars is not None
+            else list(_DEFAULT_ALLOWED_ENV_VARS),
+            working_directory=self.working_directory,
+        )
+
+
 # Mapping of common aliases to their canonical field names.
 _RULES_ALIASES: dict[str, str] = {
     "pii": "pii_redaction",
@@ -140,6 +194,7 @@ class PolicyRules(BaseModel):
     network: NetworkPolicy = NetworkPolicy()
     content_rules: ContentRulesPolicyConfig = ContentRulesPolicyConfig()
     rate_limits: RateLimitPolicyConfig = RateLimitPolicyConfig()
+    sandbox: SandboxPolicyConfig = SandboxPolicyConfig()
     max_output_size_bytes: int | None = None
     redact_output: bool = True
 
@@ -380,6 +435,10 @@ class Policy(BaseModel):
         over_per_tool = override.rules.rate_limits.per_tool
         merged_per_tool = {**base_per_tool, **over_per_tool}
         merged["rules"].setdefault("rate_limits", {})["per_tool"] = merged_per_tool
+
+        # Sandbox: override wins entirely when enabled
+        if override.rules.sandbox.enabled:
+            merged["rules"]["sandbox"] = override.rules.sandbox.model_dump()
 
         return cls.from_dict(merged, source="<merge>")
 

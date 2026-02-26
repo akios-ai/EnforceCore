@@ -96,6 +96,7 @@ class Enforcer:
         "_rate_limiter",
         "_redactor",
         "_rule_engine",
+        "_sandbox",
     )
 
     def __init__(self, policy: Policy) -> None:
@@ -111,6 +112,7 @@ class Enforcer:
         self._rule_engine = self._build_rule_engine(policy)
         self._rate_limiter = self._build_rate_limiter(policy)
         self._domain_checker = self._build_domain_checker(policy)
+        self._sandbox = self._build_sandbox(policy)
 
     @classmethod
     def from_file(cls, path: str | Path) -> Enforcer:
@@ -195,6 +197,20 @@ class Enforcer:
     def _build_domain_checker(policy: Policy) -> DomainChecker | None:
         """Create a DomainChecker from the policy's network config."""
         return DomainChecker.from_policy(policy.rules.network)
+
+    @staticmethod
+    def _build_sandbox(policy: Policy) -> Any:
+        """Create a SubprocessSandbox from the policy's sandbox config.
+
+        Returns ``None`` when sandbox is disabled (``strategy=none``).
+
+        """
+        sandbox_cfg = policy.rules.sandbox.to_sandbox_config()
+        if not sandbox_cfg.enabled:
+            return None
+        from enforcecore.sandbox.runner import SubprocessSandbox
+
+        return SubprocessSandbox(sandbox_cfg)
 
     def _redact_args(
         self,
@@ -577,18 +593,27 @@ class Enforcer:
                     )
                 )
 
-            # Execute with resource guards
+            # Execute with resource guards (+ optional subprocess sandbox)
             limits = self._engine.policy.rules.resource_limits
             call_t0 = time.perf_counter()
-            result: T = self._guard.execute_sync(
-                func,
-                r_args,
-                r_kwargs,
-                max_duration_seconds=limits.max_call_duration_seconds,
-                max_memory_mb=limits.max_memory_mb,
-                tool_name=resolved_name,
-                policy_name=self.policy_name,
-            )
+            if self._sandbox is not None:
+                result: T = self._sandbox.run(
+                    func,
+                    *r_args,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                    **r_kwargs,
+                )
+            else:
+                result = self._guard.execute_sync(
+                    func,
+                    r_args,
+                    r_kwargs,
+                    max_duration_seconds=limits.max_call_duration_seconds,
+                    max_memory_mb=limits.max_memory_mb,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
             call_duration = (time.perf_counter() - call_t0) * 1000
 
             # Shared post-call processing
@@ -712,18 +737,27 @@ class Enforcer:
                     )
                 )
 
-            # Execute with resource guards
+            # Execute with resource guards (+ optional subprocess sandbox)
             limits = self._engine.policy.rules.resource_limits
             call_t0 = time.perf_counter()
-            result = await self._guard.execute_async(
-                func,
-                r_args,
-                r_kwargs,
-                max_duration_seconds=limits.max_call_duration_seconds,
-                max_memory_mb=limits.max_memory_mb,
-                tool_name=resolved_name,
-                policy_name=self.policy_name,
-            )
+            if self._sandbox is not None:
+                result = await self._sandbox.run_async(
+                    func,
+                    *r_args,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                    **r_kwargs,
+                )
+            else:
+                result = await self._guard.execute_async(
+                    func,
+                    r_args,
+                    r_kwargs,
+                    max_duration_seconds=limits.max_call_duration_seconds,
+                    max_memory_mb=limits.max_memory_mb,
+                    tool_name=resolved_name,
+                    policy_name=self.policy_name,
+                )
             call_duration = (time.perf_counter() - call_t0) * 1000
 
             # Shared post-call processing

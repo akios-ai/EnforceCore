@@ -16,7 +16,7 @@ Basic usage::
 
 See https://github.com/akios-ai/EnforceCore for documentation.
 
-**API surface (v1.0.0+):** This package exports 30 core symbols (Tier 1).
+**API surface (v1.0.0+):** This package exports 35 core symbols (Tier 1).
 Advanced types remain importable for backwards compatibility but emit a
 ``DeprecationWarning`` — migrate to submodule imports::
 
@@ -293,6 +293,14 @@ from enforcecore.redactor.unicode import (
 from enforcecore.redactor.unicode import (
     prepare_for_detection as prepare_for_detection,
 )
+from enforcecore.sandbox import (
+    SandboxConfig,
+    SandboxMemoryError,
+    SandboxStrategy,
+    SandboxTimeoutError,
+    SandboxViolationError,
+    SubprocessSandbox,
+)
 from enforcecore.telemetry import (
     EnforceCoreInstrumentor as EnforceCoreInstrumentor,
 )
@@ -300,7 +308,7 @@ from enforcecore.telemetry import (
     EnforceCoreMetrics as EnforceCoreMetrics,
 )
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -316,39 +324,36 @@ _logging.getLogger("enforcecore").setLevel(
 # Everything else is importable but may move in future releases.
 __all__ = [
     "AuditEntry",
-    # ── Audit ──
     "Auditor",
     "ContentViolationError",
     "CostLimitError",
     "CostTracker",
-    # ── Core types ──
     "Decision",
-    # ── Errors ──
     "EnforceCoreError",
     "EnforcementResult",
     "EnforcementViolation",
     "Enforcer",
     "KillSwitch",
-    # ── Policy ──
     "Policy",
     "PolicyError",
     "PolicyLoadError",
     "RateLimiter",
     "RedactionResult",
     "RedactionStrategy",
-    # ── Redaction ──
     "Redactor",
-    # ── Guards ──
     "ResourceGuard",
     "ResourceLimitError",
+    "SandboxConfig",
+    "SandboxMemoryError",
+    "SandboxStrategy",
+    "SandboxTimeoutError",
+    "SandboxViolationError",
     "SecretScanner",
-    # ── Configuration ──
     "Settings",
+    "SubprocessSandbox",
     "ToolDeniedError",
     "VerificationResult",
-    # ── Meta ──
     "__version__",
-    # ── Enforcement ──
     "enforce",
     "load_policy",
     "load_trail",
