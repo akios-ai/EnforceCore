@@ -194,7 +194,7 @@ Key properties:
 **Quality metrics:** 1817 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
-### v1.8.0 — Compliance Reporting ✅ **Latest**
+### v1.8.0 — Compliance Reporting ✅ Shipped
 
 Available on [PyPI](https://pypi.org/project/enforcecore/1.8.0/):
 
@@ -225,27 +225,45 @@ Key additions:
 **Quality metrics:** 1898 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
+### v1.9.0 — Plugin Ecosystem ✅ **Latest**
+
+Available on [PyPI](https://pypi.org/project/enforcecore/1.9.0/):
+
+```bash
+pip install enforcecore
+```
+
+First-class plugin SDK — publish and consume custom guards, redactors, and audit
+backends from PyPI without forking the core:
+
+```python
+# pip install enforcecore-guard-pii-enterprise
+from enforcecore import PluginManager
+
+manager = PluginManager()
+manager.load_all()
+print(manager.guards)  # [<EnterpriseGuard allow-guard v1.0.0>]
+```
+
+Key additions:
+- `GuardPlugin`, `RedactorPlugin`, `AuditBackendPlugin` — stable ABCs for plugin authors
+- `GuardResult`, `RedactResult`, `PluginInfo` — frozen dataclasses
+- `PluginManager` — thread-safe entry-point discovery (`enforcecore.guards`, `enforcecore.redactors`, `enforcecore.audit_backends`)
+- `PluginLoadError` — typed exception for import/instantiation failures
+- `enforcecore plugin list` — discover all installed plugins
+- `enforcecore plugin info <name>` — inspect a specific plugin
+
+**Quality metrics:** 1972 tests passing, mypy strict, ruff-formatted,
+CI-verified on Linux and macOS.
+
 ---
 
 ## Upcoming
 
-### v1.9.0 — Plugin Ecosystem
+### v2.0.0 — Distributed Enforcement
 
-First-class plugin SDK: publish and consume custom guards, redactors, and audit
-backends from PyPI without forking the core.
-
-```python
-# pip install enforcecore-guard-pii-enterprise
-from enforcecore_guard_pii_enterprise import EnterprisePIIGuard
-
-policy = PolicyRules(extra_guards=[EnterprisePIIGuard()])
-```
-
-Key properties:
-- Plugin entry-point discovery (`enforcecore.guards`, `enforcecore.redactors`)
-- Versioned plugin API with stability guarantees
-- Official plugin template repository
-- Plugin registry CLI: `enforcecore plugin list`
+Major API evolution for multi-node, multi-agent deployments. Cross-agent audit
+trail merging, distributed rate limits, and consensus-based policy updates.
 
 ---
 
