@@ -512,3 +512,412 @@ enforcement enabled.
 See [Defense-in-Depth Architecture](defense-in-depth.md) for full deployment
 guidance and [Tool Selection Guide](security/tool-selection.md) for when to
 use each layer.
+
+
+---
+
+## Architecture Evolution: v1.2 – v1.9
+
+EnforceCore has grown substantially since v1.0. The four core components
+(Policy Engine, Redactor, Auditor, Guard) are unchanged and remain the
+critical enforcement path. Eight new subsystems were added across v1.2–v1.9,
+all optional and composable.
+
+### Complete Component Map (v1.9)
+
+```mermaid
+flowchart TB
+    subgraph APP["Agent Application Layer"]
+        A1["LangGraph"] ~~~ A2["CrewAI"] ~~~ A3["AutoGen"] ~~~ A4["Custom"]
+    end
+
+    APP -->|tool_call| MT
+
+    subgraph MT["Multi-Tenant Router (v1.6)"]
+        MT1["tenant_id → Enforcer"]
+    end
+
+    MT --> API
+
+    subgraph API["EnforceCore Public API"]
+        DEC["@enforce / enforce()"]
+    end
+
+    API --> RPS
+    RPS["Remote Policy Client (v1.7)
+HTTPS pull + HMAC verify + cache"] --> ENF
+
+    subgraph ENF["Enforcer — Enforcement Pipeline"]
+        direction TB
+        S1["1. Load policy"] --> S2["2. Pre-call checks"]
+        S2 --> S3["3. Redact inputs"]
+        S3 --> S4["4. Resource limits"]
+        S4 --> S5["5. Execute / Sandbox"]
+        S5 --> S6["6. Redact outputs"]
+        S6 --> S7["7. Post-call checks"]
+        S7 --> S8["8. Record audit"]
+        S8 --> S9["9. Return result"]
+    end
+
+    ENF --> PE["Policy Engine
+YAML + Pydantic + rules"]
+    ENF --> RD["Redactor
+Regex + NER (v1.4)"]
+    ENF --> AU["Auditor
+Merkle chain"]
+    ENF --> GU["Guard
+Rate + Cost + Kill"]
+    ENF --> SB["Subprocess Sandbox (v1.3)
+timeout + memory + isolation"]
+    ENF --> SL["Sensitivity Labels (v1.4)
+data flow classification"]
+
+    AU --> AS["AuditStore (v1.2)
+JSONL · SQLite · PostgreSQL"]
+    AS --> CR["Compliance Reporter (v1.8)
+EU AI Act · SOC2 · GDPR"]
+
+    ENF --> TL["Telemetry (v1.5)
+OTel spans · Prometheus metrics"]
+    ENF --> PM["Plugin Manager (v1.9)
+guards · redactors · backends"]
+
+    style APP fill:#e3f2fd,stroke:#1565c0
+    style MT fill:#e0f7fa,stroke:#006064
+    style RPS fill:#e0f7fa,stroke:#006064
+    style ENF fill:#fff3e0,stroke:#e65100
+    style PE fill:#f3e5f5,stroke:#7b1fa2
+    style RD fill:#f3e5f5,stroke:#7b1fa2
+    style AU fill:#f3e5f5,stroke:#7b1fa2
+    style GU fill:#f3e5f5,stroke:#7b1fa2
+    style SB fill:#fce4ec,stroke:#c62828
+    style SL fill:#fce4ec,stroke:#c62828
+    style AS fill:#e8f5e9,stroke:#2e7d32
+    style CR fill:#e8f5e9,stroke:#2e7d32
+    style TL fill:#e0f2f1,stroke:#00695c
+    style PM fill:#fff8e1,stroke:#f57f17
+```
+
+### Updated Module Dependency Graph
+
+```mermaid
+graph LR
+    subgraph core["enforcecore/core/"]
+        TYPES["types.py"]
+        POLICY["policy.py"]
+        CONFIG["config.py"]
+        RULES["rules.py"]
+        ENFORCER["enforcer.py"]
+        HARDENING["hardening.py"]
+    end
+
+    subgraph redactor["enforcecore/redactor/"]
+        REDACT_ENG["engine.py"]
+        PATTERNS["patterns.py"]
+        SECRETS["secrets.py"]
+        UNICODE["unicode.py"]
+    end
+
+    subgraph auditor["enforcecore/auditor/"]
+        MERKLE["merkle.py"]
+        LOGGER["logger.py"]
+        BACKENDS_OLD["backends.py"]
+        ROTATION["rotation.py"]
+    end
+
+    subgraph auditstore["enforcecore/auditstore/ (v1.2)"]
+        AS_STORE["store.py"]
+        AS_ENTRY["entry.py"]
+        AS_SQLITE["backends/sqlite.py"]
+        AS_JSONL["backends/jsonl.py"]
+        AS_PG["backends/postgresql.py"]
+        AS_QUERIES["queries/eu_ai_act.py"]
+        AS_REPORTS["reports/generator.py"]
+    end
+
+    subgraph sandbox["enforcecore/sandbox/ (v1.3)"]
+        SB_RUNNER["runner.py"]
+        SB_CONFIG["config.py"]
+    end
+
+    subgraph guard["enforcecore/guard/"]
+        GUARD_ENG["engine.py"]
+        NETWORK["network.py"]
+        RATELIMIT["ratelimit.py"]
+        NER["ner.py (v1.4)"]
+        SENSITIVITY["sensitivity.py (v1.4)"]
+    end
+
+    subgraph plugins["enforcecore/plugins/"]
+        HOOKS["hooks.py"]
+        WEBHOOKS["webhooks.py"]
+        PLUGIN_MGR["manager.py (v1.9)"]
+        PLUGIN_BASE["base.py (v1.9)"]
+    end
+
+    subgraph telemetry["enforcecore/telemetry/"]
+        INSTRUMENTOR["instrumentor.py"]
+        METRICS["metrics.py"]
+        PROMETHEUS["prometheus.py (v1.5)"]
+        SINKS["sinks.py (v1.5)"]
+    end
+
+    subgraph integrations["enforcecore/integrations/"]
+        INT_BASE["_base.py"]
+        INT_LG["langgraph.py"]
+        INT_CA["crewai.py"]
+        INT_AG["autogen.py"]
+        POLICY_CLIENT["policy_server.py (v1.7)"]
+    end
+
+    ENFORCER --> POLICY
+    ENFORCER --> REDACT_ENG
+    ENFORCER --> MERKLE
+    ENFORCER --> GUARD_ENG
+    ENFORCER --> RULES
+    ENFORCER --> HOOKS
+    ENFORCER --> SB_RUNNER
+    ENFORCER --> SENSITIVITY
+    ENFORCER --> PLUGIN_MGR
+    LOGGER --> MERKLE
+    LOGGER --> BACKENDS_OLD
+    LOGGER --> ROTATION
+    REDACT_ENG --> PATTERNS
+    REDACT_ENG --> SECRETS
+    REDACT_ENG --> UNICODE
+    REDACT_ENG --> NER
+    AS_STORE --> AS_ENTRY
+    AS_STORE --> AS_SQLITE
+    AS_STORE --> AS_JSONL
+    AS_STORE --> AS_PG
+    AS_REPORTS --> AS_QUERIES
+    AS_QUERIES --> AS_STORE
+    SB_RUNNER --> SB_CONFIG
+    INSTRUMENTOR --> METRICS
+    INSTRUMENTOR --> PROMETHEUS
+    INSTRUMENTOR --> SINKS
+    POLICY_CLIENT --> POLICY
+    PLUGIN_MGR --> PLUGIN_BASE
+
+    style core fill:#e3f2fd,stroke:#1565c0
+    style redactor fill:#e8f5e9,stroke:#2e7d32
+    style auditor fill:#fff3e0,stroke:#e65100
+    style auditstore fill:#e8f5e9,stroke:#1b5e20
+    style sandbox fill:#fce4ec,stroke:#c62828
+    style guard fill:#fce4ec,stroke:#880e4f
+    style plugins fill:#f3e5f5,stroke:#7b1fa2
+    style telemetry fill:#e0f2f1,stroke:#00695c
+    style integrations fill:#e0f7fa,stroke:#006064
+```
+
+---
+
+### New Subsystem Descriptions
+
+#### v1.2 — AuditStore
+
+A structured, queryable audit storage layer sitting above the existing Merkle
+Auditor. While the Auditor writes append-only JSONL, the AuditStore provides
+SQL-level queries, chain integrity verification on read, and multiple backend
+options.
+
+```
+Auditor (Merkle chain write) → AuditStoreBackendAdapter → AuditBackend
+                                                               ↓
+                                                    JSONLBackend / SQLiteBackend
+                                                          / PostgreSQLBackend
+```
+
+**Key invariant:** Every write goes through the Merkle chain regardless of
+storage backend. `verify_chain()` can always be called after any sequence of
+reads to prove no entries were tampered with.
+
+---
+
+#### v1.3 — Subprocess Sandbox
+
+Provides POSIX-level resource isolation for tool execution: memory caps
+(`RLIMIT_AS`), CPU time limits (`RLIMIT_CPU`), and environment variable
+stripping. All enforcement still happens at the Python call boundary — the
+subprocess sandbox is a defence-in-depth layer on top.
+
+```
+Enforcer.execute()
+  → SubprocessSandbox.run(func, *args)
+      → multiprocessing.Process (isolated child)
+          → resource limits applied
+          → func(*args) executes
+          → result pickled back to parent
+```
+
+**Platform matrix:** Full limits on Linux and macOS. Process isolation only
+on Windows.
+
+---
+
+#### v1.4 — NER PII Detection + Sensitivity Labels
+
+Two independent v1.4 features:
+
+**NER PII Detection** (`enforcecore[ner]`): Presidio + spaCy neural entity
+recognition as an alternative to regex-only detection. Higher recall for
+names, locations, and languages without Latin character dominance. Configured
+via `pii_redaction.backend: "ner"` in policy YAML.
+
+**Sensitivity Labels**: A compile-time data-flow classification system.
+Tools declare their clearance level; input kwargs declare their sensitivity.
+Violations are caught before execution, before any redaction is attempted.
+This is inspired by Bell-LaPadula mandatory access control but operates at
+the Python argument level.
+
+```
+SensitivityEnforcer.check_kwargs({"body": "...", "to": "..."})
+  → field "body" has CONFIDENTIAL sensitivity
+  → tool has INTERNAL clearance
+  → CONFIDENTIAL > INTERNAL → SensitivityViolation raised
+```
+
+---
+
+#### v1.5 — OpenTelemetry + Observability
+
+Every `@enforce()` call is automatically instrumented as an OTel span.
+Prometheus metrics are exported on a configurable HTTP endpoint.
+
+```
+@enforce()
+async def my_tool(...):      # ← span begins: "enforcecore.my_tool"
+    ...                      # ← span attributes set: decision, overhead_ms, redactions
+                             # ← span ends; counters incremented
+```
+
+No code changes required: install `enforcecore[otel]` and call
+`EnforceCoreInstrumentor().instrument()` at startup.
+
+---
+
+#### v1.6 — Multi-Tenant + Policy Inheritance
+
+`MultiTenantEnforcer` maps tenant IDs to independent `Enforcer` instances,
+each with its own policy. Policy inheritance (`extends:` in YAML) allows
+child policies to override only the fields they need.
+
+```
+MultiTenantEnforcer
+  ├── "default" → Enforcer(base_policy.yaml)
+  ├── "team_a"  → Enforcer(team_a.yaml extends base_policy.yaml)
+  └── "team_b"  → Enforcer(team_b.yaml extends base_policy.yaml)
+```
+
+Inheritance is resolved at load time (depth-first, cycle-detected). The
+resolved policy is a flat `Policy` object — no runtime inheritance overhead.
+
+---
+
+#### v1.7 — Remote Policy Server
+
+`PolicyServerClient` implements a pull-only remote policy distribution
+model. Policies are fetched over HTTPS, verified by HMAC-SHA256 signature,
+and cached locally with a configurable TTL.
+
+```
+PolicyServerClient.get_policy()
+  → cache hit?  → return cached Policy
+  → cache miss  → GET /policy endpoint
+                  → verify X-Policy-Signature header (if present)
+                  → parse + validate Policy
+                  → cache for cache_ttl seconds
+                  → return Policy
+
+  → server down + cache stale → raise PolicyServerError
+  → server down + cache valid → return stale-but-valid Policy (fail-safe)
+```
+
+**Security design:** Server can only serve policies; it cannot push or
+execute. The policy version is embedded in every audit entry.
+
+---
+
+#### v1.8 — Compliance Reporting
+
+`ComplianceReporter` queries the AuditStore and generates structured
+compliance reports. EU AI Act mapping:
+
+| EU AI Act Article | AuditStore Query |
+|---|---|
+| Article 9 — Risk management | High-risk decisions (blocked tool calls) |
+| Article 13 — Transparency | Human oversight evidence (blocked calls with reasons) |
+| Article 14 — Human oversight | PII redaction statistics |
+| Article 52 — Transparency for GPAI | Full audit trail + Merkle chain proof |
+
+Reports render to HTML or JSON and include a `score` (0.0–1.0) and a list
+of human-readable `narratives` for regulatory submission.
+
+---
+
+#### v1.9 — Plugin Ecosystem
+
+Three plugin types, each loaded from Python package entry points
+(`enforcecore.guards`, `enforcecore.redactors`, `enforcecore.audit_backends`):
+
+| Type | ABC | Loaded by |
+|---|---|---|
+| `GuardPlugin` | `check(tool, args, kwargs) → GuardResult` | Enforcer pre-call |
+| `RedactorPlugin` | `redact(text) → RedactResult` | Redactor pipeline |
+| `AuditBackendPlugin` | `record(entry_dict)` | AuditStore write path |
+
+Plugins are discovered at import time (`PluginManager.discover()`) and
+loaded explicitly (`PluginManager.load_all()`). Failed plugin loads raise
+`PluginLoadError` unless `ignore_errors=True`.
+
+---
+
+### Error Hierarchy (Updated v1.9)
+
+```mermaid
+classDiagram
+    class EnforceCoreError {
+        <<base>>
+    }
+    class PolicyError
+    class PolicyLoadError
+    class PolicyValidationError
+    class PolicyEvaluationError
+    class PolicyServerError
+    class EnforcementViolation
+    class ToolDeniedError
+    class DomainDeniedError
+    class CostLimitError
+    class ResourceLimitError
+    class ContentViolationError
+    class SensitivityViolation
+    class RedactionError
+    class AuditError
+    class GuardError
+    class SandboxTimeoutError
+    class SandboxMemoryError
+    class SandboxViolationError
+    class PluginLoadError
+    class ComplianceError
+
+    EnforceCoreError <|-- PolicyError
+    EnforceCoreError <|-- EnforcementViolation
+    EnforceCoreError <|-- RedactionError
+    EnforceCoreError <|-- AuditError
+    EnforceCoreError <|-- GuardError
+    EnforceCoreError <|-- PluginLoadError
+    EnforceCoreError <|-- ComplianceError
+    PolicyError <|-- PolicyLoadError
+    PolicyError <|-- PolicyValidationError
+    PolicyError <|-- PolicyEvaluationError
+    PolicyError <|-- PolicyServerError
+    EnforcementViolation <|-- ToolDeniedError
+    EnforcementViolation <|-- DomainDeniedError
+    EnforcementViolation <|-- CostLimitError
+    EnforcementViolation <|-- ResourceLimitError
+    EnforcementViolation <|-- ContentViolationError
+    EnforcementViolation <|-- SensitivityViolation
+    GuardError <|-- SandboxTimeoutError
+    GuardError <|-- SandboxMemoryError
+    GuardError <|-- SandboxViolationError
+```
