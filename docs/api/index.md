@@ -2,7 +2,7 @@
 
 Auto-generated documentation for all public EnforceCore APIs.
 
-EnforceCore exports **30 core symbols** (Tier 1) in `__all__`.
+EnforceCore exports **58 core symbols** (Tier 1) in `__all__`.
 An additional ~80 advanced symbols (Tier 2) remain importable from the
 top-level package for backwards compatibility, but emit a
 `DeprecationWarning` — use submodule imports instead.
@@ -68,12 +68,41 @@ Resource enforcement and rate limiting.
 
 ## Plugins
 
-Extensibility hooks and integrations.
+Extensibility hooks, plugin SDK, and integrations.
 
 | Module | Description |
 |--------|-------------|
+| [Plugin Base](plugin-base.md) | `GuardPlugin`, `RedactorPlugin`, `AuditBackendPlugin` ABCs and dataclasses |
+| [Plugin Manager](plugin-manager.md) | Entry-point discovery and loading (`PluginManager`, `PluginLoadError`) |
 | [Hooks](hooks.md) | Lifecycle hook registry (pre-call, post-call, violation, redaction) |
 | [Webhooks](webhooks.md) | HTTP webhook dispatcher for enforcement events |
+
+## Compliance
+
+Compliance reporting and regulatory exports.
+
+| Module | Description |
+|--------|-------------|
+| [Reporter](compliance-reporter.md) | `ComplianceReporter` — EU AI Act, SOC2, GDPR export engine |
+| [Types](compliance-types.md) | `ComplianceFormat`, `CompliancePeriod`, `ComplianceReport`, `ComplianceError` |
+
+## Sandbox
+
+Subprocess isolation and resource containment.
+
+| Module | Description |
+|--------|-------------|
+| [Runner](sandbox-runner.md) | `SubprocessSandbox` — sandboxed process execution |
+| [Config](sandbox-config.md) | `SandboxConfig`, `SandboxStrategy` |
+| [Errors](sandbox-errors.md) | `SandboxTimeoutError`, `SandboxMemoryError`, `SandboxViolationError` |
+
+## Sensitivity
+
+Data classification and sensitivity enforcement.
+
+| Module | Description |
+|--------|-------------|
+| [Sensitivity](sensitivity.md) | `SensitivityEnforcer`, `SensitivityLabel`, NER-based classification |
 
 ## Telemetry
 

@@ -33,7 +33,7 @@ with open("results/eval_report.md", "w") as f:
 
 ## Threat Categories
 
-The evaluation suite tests 10 adversarial threat categories:
+The evaluation suite tests 11 adversarial threat categories:
 
 | Category | Description | Scenarios |
 |----------|-------------|-----------|
@@ -46,7 +46,7 @@ The evaluation suite tests 10 adversarial threat categories:
 | `prompt_injection` | Injection payloads in arguments or tool names | 2 |
 | `ransomware` | Destructive multi-stage file encryption campaigns | 2 |
 | `supply_chain` | Compromised dependency credential harvesting & exfiltration | 2 |
-| `collusion` | Multi-agent coordinated policy evasion via data relay | 1 |
+| `collusion` | Multi-agent coordinated policy evasion via data relay | 1 |\n| `audit_completeness` | Verifying audit trail integrity and coverage | 7 |
 
 ## Adversarial Scenarios
 

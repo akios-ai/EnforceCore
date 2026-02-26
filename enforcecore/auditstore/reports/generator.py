@@ -1,6 +1,6 @@
 """Report generation for regulatory compliance."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from ..core import AuditStore
@@ -15,7 +15,7 @@ class Report:
         self.title = title
         self.content = content
         self.format = format
-        self.generated_at = datetime.utcnow()
+        self.generated_at = datetime.now(tz=UTC)
 
     def render(self) -> str:
         """Return report content as string."""
@@ -63,7 +63,7 @@ class ReportGenerator:
             "period": period,
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(tz=UTC).isoformat(),
             "article_9": self.queries.article_9_high_risk_decisions(start_date, end_date),
             "article_13": self.queries.article_13_human_oversight(start_date, end_date),
             "article_14": self.queries.article_14_information_requirements(start_date, end_date),
@@ -344,6 +344,6 @@ class ReportGenerator:
                 return start, end
 
         # Default: last 30 days
-        end = datetime.utcnow()
+        end = datetime.now(tz=UTC)
         start = end - relativedelta(days=30)
         return start, end

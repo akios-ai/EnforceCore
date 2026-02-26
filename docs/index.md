@@ -34,11 +34,16 @@ async def search_web(query: str) -> str:
 | ⚡ **Rate Limiting** | Sliding-window per-tool and global rate limits |
 | 🔌 **Framework Integrations** | LangGraph, CrewAI, AutoGen adapters |
 | 📊 **OpenTelemetry** | Traces, metrics, and spans for observability |
-| 🧪 **Evaluation Suite** | 20 adversarial scenarios across 10 threat categories + benchmarks |
+| 🧪 **Evaluation Suite** | 26 adversarial scenarios across 11 threat categories + benchmarks |
+| 🔌 **Plugin Ecosystem** | Custom guards, redactors, and audit backends via PyPI entry-points |
+| 📋 **Compliance Reporting** | EU AI Act, SOC2, GDPR compliance exports |
+| 🏗️ **Multi-Tenant** | Hierarchical policies with tenant-level isolation |
 
 ## Navigation
 
 - **[Getting Started](quickstart.md)** — Installation, first policy, first enforcement
 - **[Architecture](architecture.md)** — How EnforceCore works under the hood
-- **[API Reference](api/index.md)** — Auto-generated from source docstrings
+- **[API Reference](api/index.md)** — All 58 public API symbols documented
+- **[Plugin System](api/plugin-base.md)** — Build custom guards and redactors
+- **[Compliance](api/compliance-reporter.md)** — Regulatory export guides
 - **[Research](vision.md)** — Vision, related work, and roadmap

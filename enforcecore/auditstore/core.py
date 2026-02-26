@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ class AuditEntry:
         """Create new audit entry with auto-generated ID."""
         return cls(
             entry_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(tz=UTC),
             policy_name=policy_name,
             policy_version=policy_version,
             tool_name=tool_name,

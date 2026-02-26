@@ -9,14 +9,16 @@
 | **pydantic-settings** | >= 2.0 | Configuration (env vars + files) | Clean config management without custom code. |
 | **PyYAML** | >= 6.0 | Policy file parsing | The standard YAML parser for Python. Policies are YAML. |
 | **structlog** | >= 24.1 | Structured logging | Clean, structured, machine-readable logs. Much better than stdlib logging for enforcement audit. |
-| **cryptography** | >= 42.0 | Merkle tree hashing, signing | Well-maintained, audited crypto library. Don't roll your own crypto. |
 
-### PII Redaction (v1.0.1+)
+### PII Redaction
+
+The core PII redactor uses **pure regex** (zero extra dependencies).
+For higher-accuracy NER-based detection, install the optional `pii` extra:
 
 | Dependency | Version | Purpose | Why this one |
 |---|---|---|---|
-| **presidio-analyzer** | >= 2.2 | PII entity detection | Microsoft's battle-tested PII detection. Supports 10+ entity types, multiple languages. |
-| **presidio-anonymizer** | >= 2.2 | PII redaction/anonymization | Pairs with analyzer for clean redaction strategies. |
+| **presidio-analyzer** | >= 2.2 | NER-based PII entity detection | Microsoft's battle-tested PII detection. Optional since v1.4.0. |
+| **presidio-anonymizer** | >= 2.2 | PII redaction/anonymization | Pairs with analyzer for entity-level redaction. |
 
 ### Optional Linux Hardening (v1.0.3+)
 
@@ -92,7 +94,9 @@ EnforceCore uses compiled regex patterns for PII detection by default. This was 
 - **Fast:** ~0.028ms per short text — critical for a security enforcement layer
 - **Portable:** Works on all Python 3.11+ without platform-specific issues
 
-The tradeoff is lower coverage on novel PII formats. NER-based detection (via optional Presidio integration) is planned for v1.3.0 as an opt-in tier.
+The tradeoff is lower coverage on novel PII formats. Since **v1.4.0**,
+NER-based detection via optional Presidio integration is available as an
+opt-in tier (`pip install enforcecore[pii]`).
 
 ### 2. Why Pydantic v2 for policies (not raw YAML dicts)
 
@@ -115,11 +119,15 @@ The tradeoff is lower coverage on novel PII formats. NER-based detection (via op
 - **Context binding:** Attach enforcement metadata to all log entries in a call
 - **Researcher-friendly:** Clean, readable output by default
 
-### 5. Why NOT hashlib-only for crypto (using `cryptography` library)
+### 5. Why hashlib for crypto (not the `cryptography` library)
 
-`hashlib` is fine for SHA-256 hashing. But we also need:
-- HMAC for signed audit entries
-- Potential future: asymmetric signing of audit trails
-- The `cryptography` library is maintained by security professionals and regularly audited
+EnforceCore uses `hashlib` (stdlib) for all cryptographic operations:
+- SHA-256 for Merkle chain hashing
+- HMAC for signed audit entries (via `hmac` stdlib module)
+
+This keeps the dependency footprint minimal. The `cryptography` library
+is not needed because we don't perform asymmetric signing or key
+management. If future versions require asymmetric signing of audit
+trails, `cryptography` would be added as an optional dependency.
 
 Using `hashlib` for hashing + `cryptography` for signing gives us the best of both worlds.

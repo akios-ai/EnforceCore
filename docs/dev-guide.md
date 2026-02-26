@@ -5,82 +5,126 @@
 ```
 enforcecore/
 ├── enforcecore/                # Main package
-│   ├── __init__.py             # Public API exports
+│   ├── __init__.py             # Public API exports (58 Tier 1 symbols)
+│   ├── __main__.py             # python -m enforcecore entry point
+│   ├── py.typed                # PEP 561 marker
+│   ├── utils.py                # Shared utilities
 │   ├── core/                   # Core enforcement engine
 │   │   ├── __init__.py
-│   │   ├── types.py            # Shared types, enums, dataclasses
+│   │   ├── types.py            # Shared types, enums, exceptions, dataclasses
 │   │   ├── config.py           # Global configuration (pydantic-settings)
-│   │   ├── policy.py           # Policy models + engine
-│   │   └── enforcer.py         # Main enforcer (coordinator)
-│   ├── redactor/               # PII redaction (v1.0.1+)
+│   │   ├── policy.py           # Policy models + engine + YAML loading
+│   │   ├── enforcer.py         # Main enforcer (coordinator + @enforce decorator)
+│   │   ├── hardening.py        # Input validation, size checks, depth tracking
+│   │   ├── rules.py            # Content rule engine for argument inspection
+│   │   ├── multitenant.py      # Multi-tenant policy inheritance (v1.6.0)
+│   │   ├── policy_server.py    # Remote policy server client (v1.7.0)
+│   │   └── sensitivity.py      # Sensitivity labels + NER classification (v1.4.0)
+│   ├── redactor/               # PII redaction pipeline
 │   │   ├── __init__.py
-│   │   ├── engine.py           # Regex-based PII detection + redaction
-│   │   └── strategies.py       # Redaction strategies (mask, hash, etc.)
-│   ├── auditor/                # Merkle audit trail (v1.0.2+)
+│   │   ├── engine.py           # Regex-based PII detection + redaction (6 categories)
+│   │   ├── patterns.py         # Custom pattern registry for domain-specific PII
+│   │   ├── secrets.py          # API key, token, and credential detection (11 categories)
+│   │   ├── unicode.py          # Homoglyph normalization and encoded PII decoding
+│   │   └── ner.py              # Optional Presidio/spaCy NER backend (v1.4.0)
+│   ├── auditor/                # Merkle audit trail
 │   │   ├── __init__.py
-│   │   ├── merkle.py           # Merkle tree implementation
-│   │   ├── logger.py           # Audit log writer (JSONL)
-│   │   └── verifier.py         # Trail integrity verification
-│   ├── guard/                  # Resource limits + kill switch (v1.0.3+)
+│   │   ├── engine.py           # Merkle-chained audit writer and verifier
+│   │   ├── backends.py         # Pluggable storage backends (JSONL, callback, multi)
+│   │   ├── rotation.py         # Size-based rotation, retention, compression
+│   │   ├── witness.py          # Hash-only remote witnesses for tamper detection
+│   │   └── immutable.py        # OS-enforced append-only file protection
+│   ├── auditstore/             # Structured audit storage (v1.2.0)
 │   │   ├── __init__.py
-│   │   ├── platform.py         # Platform detection + abstraction
-│   │   ├── resource.py         # Resource limits (cross-platform)
-│   │   ├── killswitch.py       # Hard termination
-│   │   └── sandbox_linux.py    # Optional seccomp/cgroups (Linux only)
-│   ├── integrations/           # Framework adapters (v1.0.4+)
+│   │   ├── core.py             # Core audit store logic
+│   │   ├── adapters.py         # Storage adapters
+│   │   ├── backends/           # SQLite, PostgreSQL, JSONL backends
+│   │   ├── merkle/             # Merkle tree implementation
+│   │   ├── queries/            # Pre-built compliance queries (EU AI Act)
+│   │   └── reports/            # Report generation
+│   ├── guard/                  # Resource limits + kill switch
 │   │   ├── __init__.py
-│   │   ├── base.py             # Base adapter interface
-│   │   ├── langgraph.py
-│   │   ├── crewai.py
-│   │   └── autogen.py
-│   └── cli/                    # CLI commands (v1.0.2+)
+│   │   ├── engine.py           # ResourceGuard, CostTracker, KillSwitch
+│   │   ├── network.py          # Domain allow/deny enforcement
+│   │   └── ratelimit.py        # Sliding-window rate limiting
+│   ├── sandbox/                # Subprocess sandbox (v1.3.0)
+│   │   ├── __init__.py
+│   │   ├── config.py           # SandboxConfig, SandboxStrategy
+│   │   ├── runner.py           # SubprocessSandbox execution
+│   │   └── errors.py           # SandboxTimeoutError, SandboxMemoryError
+│   ├── plugins/                # Plugin SDK + extensibility (v1.9.0)
+│   │   ├── __init__.py
+│   │   ├── base.py             # GuardPlugin, RedactorPlugin, AuditBackendPlugin ABCs
+│   │   ├── manager.py          # PluginManager + entry-point discovery
+│   │   ├── hooks.py            # Lifecycle hook registry
+│   │   └── webhooks.py         # HTTP webhook dispatcher
+│   ├── compliance/             # Compliance reporting (v1.8.0)
+│   │   ├── __init__.py
+│   │   ├── reporter.py         # ComplianceReporter (EU AI Act, SOC2, GDPR)
+│   │   ├── types.py            # ComplianceFormat, CompliancePeriod, ComplianceReport
+│   │   └── templates/          # Pre-built report templates
+│   ├── integrations/           # Framework adapters
+│   │   ├── __init__.py
+│   │   ├── _base.py            # Base adapter interface
+│   │   ├── langgraph.py        # LangGraph adapter
+│   │   ├── crewai.py           # CrewAI adapter
+│   │   └── autogen.py          # AutoGen adapter
+│   ├── eval/                   # Evaluation suite (26 scenarios, 11 categories)
+│   │   ├── __init__.py
+│   │   ├── scenarios.py        # All adversarial scenarios
+│   │   ├── runner.py           # Scenario runner
+│   │   ├── benchmarks.py       # Performance benchmarks
+│   │   ├── types.py            # Eval types and enums
+│   │   ├── report.py           # Markdown/HTML report generation
+│   │   └── framework_comparison.py  # Framework comparison runner
+│   ├── telemetry/              # Observability (v1.5.0)
+│   │   ├── __init__.py
+│   │   ├── instrumentor.py     # OpenTelemetry auto-instrumentor
+│   │   ├── metrics.py          # In-process metrics collector
+│   │   ├── logexport.py        # Log export
+│   │   └── prometheus.py       # Prometheus metrics
+│   └── cli/                    # CLI commands
 │       ├── __init__.py
-│       └── main.py
-├── tests/                      # Test suite
-│   ├── __init__.py
+│       └── main.py             # Typer app (validate, verify, inspect, audit, plugin)
+├── tests/                      # 1972 tests, 12 skipped
 │   ├── conftest.py             # Shared fixtures
-│   ├── core/
-│   │   ├── test_policy.py
-│   │   ├── test_enforcer.py
-│   │   └── test_types.py
-│   ├── redactor/
-│   │   └── test_engine.py
-│   ├── auditor/
-│   │   ├── test_merkle.py
-│   │   └── test_verifier.py
-│   ├── guard/
-│   │   └── test_resource.py
-│   └── integrations/
-│       └── test_langgraph.py
+│   ├── api/                    # Public API stability tests
+│   ├── auditor/                # Audit trail tests
+│   ├── auditstore/             # Audit store tests
+│   ├── cli/                    # CLI tests
+│   ├── core/                   # Core engine tests
+│   ├── eval/                   # Eval suite tests
+│   ├── guard/                  # Guard tests
+│   ├── integration/            # End-to-end integration tests
+│   ├── integrations/           # Framework adapter tests
+│   ├── plugins/                # Plugin ecosystem tests
+│   ├── redactor/               # Redactor tests
+│   ├── sandbox/                # Sandbox tests
+│   └── telemetry/              # Telemetry tests
 ├── examples/                   # Working examples
-│   ├── quickstart.py
-│   ├── langgraph_example.py
-│   ├── crewai_example.py
-│   ├── autogen_example.py
-│   └── policies/
-│       ├── default.yaml
-│       ├── strict.yaml
-│       └── permissive.yaml
-├── eval/                       # Evaluation suite (v1.0.5+)
-│   ├── scenarios/
-│   ├── harness.py
-│   └── report.py
-├── docs/                       # Documentation
-│   ├── vision.md
-│   ├── architecture.md
-│   ├── roadmap.md
-│   ├── api-design.md
-│   ├── tech-stack.md
-│   ├── dev-guide.md
-│   └── contributing.md
-├── .github/
-│   └── workflows/
-│       └── ci.yml              # GitHub Actions CI
+│   ├── quickstart.py           # Basic usage
+│   ├── quickstart_langgraph.py
+│   ├── quickstart_crewai.py
+│   ├── quickstart_autogen.py
+│   ├── audit_trail.py
+│   ├── evaluation_suite.py
+│   ├── framework_integrations.py
+│   ├── pii_redaction.py
+│   ├── resource_guard.py
+│   └── policies/              # Example YAML policies
+├── docs/                       # Documentation (MkDocs)
+├── benchmarks/                 # Performance benchmarks
+├── scripts/                    # Utility scripts
+├── internal/                   # Internal docs (not published)
 ├── pyproject.toml
+├── Dockerfile
+├── docker-compose.yml
 ├── README.md
 ├── LICENSE
-├── .gitignore
-└── CHANGELOG.md
+├── CHANGELOG.md
+├── SECURITY.md
+├── CITATION.cff
+└── CONTRIBUTING.md
 ```
 
 ## Setting Up the Development Environment

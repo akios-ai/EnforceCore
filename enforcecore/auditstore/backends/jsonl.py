@@ -1,7 +1,7 @@
 """JSONL file backend for audit storage (existing implementation)."""
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -160,7 +160,9 @@ class JSONLBackend(AuditBackend):
         """Convert dict to AuditEntry."""
         return AuditEntry(
             entry_id=data.get("entry_id", ""),
-            timestamp=datetime.fromisoformat(data.get("timestamp", datetime.utcnow().isoformat())),
+            timestamp=datetime.fromisoformat(
+                data.get("timestamp", datetime.now(tz=UTC).isoformat())
+            ),
             policy_name=data.get("policy_name", ""),
             policy_version=data.get("policy_version", ""),
             tool_name=data.get("tool_name", ""),
