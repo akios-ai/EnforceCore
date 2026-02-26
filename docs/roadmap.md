@@ -260,6 +260,15 @@ CI-verified on Linux and macOS.
 
 ## Upcoming
 
+### v1.10.0 — Quality Hardening + Adoption Readiness
+
+Polish release focused on production readiness:
+- Fix SQLite backend integration edge cases
+- Complete API design documentation for v1.2–v1.9 additions
+- Comprehensive docstrings on all 58 public API symbols
+- Updated architecture diagrams
+- AgentSecBench standalone benchmark extraction
+
 ### v2.0.0 — Distributed Enforcement
 
 Major API evolution for multi-node, multi-agent deployments. Cross-agent audit
