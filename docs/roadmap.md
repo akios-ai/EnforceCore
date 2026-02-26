@@ -113,7 +113,7 @@ regex engine. Lightweight sensitivity labels (`public` / `restricted` /
 `confidential` / `secret`) on tool schemas and data fields — the first step
 toward label-based IFC. `pip install enforcecore[ner]`.
 
-### v1.5.0 — OpenTelemetry + Observability ✅ Latest
+### v1.5.0 — OpenTelemetry + Observability ✅
 
 Available on [PyPI](https://pypi.org/project/enforcecore/):
 
@@ -137,14 +137,21 @@ First-class observability for every enforcement decision:
 **Quality metrics:** 1717 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
----
+### v1.6.0 — Multi-Tenant + Policy Inheritance ✅ Latest
 
-## Upcoming
+Available on [PyPI](https://pypi.org/project/enforcecore/1.6.0/):
 
-### v1.6.0 — Multi-Tenant + Policy Inheritance
+```bash
+pip install enforcecore  # includes MultiTenantEnforcer
+```
 
-Hierarchical policy support: `extends:` keyword in policy YAML lets teams compose
-policies at org / team / agent granularity.
+Hierarchical policy support and multi-tenant enforcement:
+- `extends:` keyword in policy YAML for composable policies at org / team / agent
+  granularity
+- `MultiTenantEnforcer` — registry with lazy enforcer init, thread-safe, per-tenant
+  audit trail
+- `tenant_id` on `Enforcer` propagated to every `AuditEntry`
+- Circular-extends detection raises `PolicyLoadError` before boot
 
 ```yaml
 # agent_deployer.yaml
@@ -155,10 +162,33 @@ tools:
     environment: [staging]
 ```
 
-Child policies override only what they declare; everything else inherits from
-parent. Circular-extends detection prevents misconfigurations. Each enforcer
-accepts a `tenant_id` that is propagated to the audit trail for per-tenant
-filtering.
+**Quality metrics:** 1756 tests passing, mypy strict, ruff-formatted,
+CI-verified on Linux and macOS.
+
+---
+
+## Upcoming
+
+### v1.7.0 — Remote Policy Server
+
+Centralized policy management: policies stored and versioned server-side, agents
+pull at startup or on cache miss.
+
+```python
+# v1.7.0 API
+Enforcer.from_server(
+    "https://policy.acme.com/agents/chatbot-v2",
+    token=os.environ["POLICY_SERVER_TOKEN"],
+    cache_ttl=300,  # refresh every 5 minutes
+)
+```
+
+Key properties:
+- `PolicyServerClient` with HMAC signature verification before applying
+- Pull-only (server never pushes; trust model is explicit)
+- TTL cache with stale-on-error fallback (graceful degradation)
+- `PolicyServerError` raised on unrecoverable fetch failures
+- Policy version recorded in audit trail for every enforcement decision
 
 ---
 
@@ -167,7 +197,6 @@ filtering.
 These are **not committed** — they represent potential future work based on
 adoption and community input:
 
-- **Policy server (v1.7.0)** — centralized signed policies, pull-only, TTL caching
 - **Compliance reporting (v1.8.0)** — EU AI Act / SOC2 / GDPR export templates
 - **Distributed enforcement (v2.0.0)** — multi-node, multi-agent with global Merkle root
 - **Policy Hub** — community repository of reusable, audited policies

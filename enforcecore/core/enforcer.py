@@ -93,6 +93,7 @@ class Enforcer:
         "_domain_checker",
         "_engine",
         "_guard",
+        "_policy_server",
         "_rate_limiter",
         "_redactor",
         "_rule_engine",
@@ -118,6 +119,7 @@ class Enforcer:
         self._domain_checker = self._build_domain_checker(policy)
         self._sandbox = self._build_sandbox(policy)
         self._tenant_id = tenant_id
+        self._policy_server: object = None  # set by from_server()
 
     @classmethod
     def from_file(cls, path: str | Path, *, tenant_id: str | None = None) -> Enforcer:
@@ -132,6 +134,62 @@ class Enforcer:
         """
         return cls(Policy.from_file(path), tenant_id=tenant_id)
 
+    @classmethod
+    def from_server(
+        cls,
+        url: str,
+        token: str,
+        *,
+        cache_ttl: int = 300,
+        verify_signature: bool = True,
+        tenant_id: str | None = None,
+    ) -> Enforcer:
+        """Create an enforcer with a policy fetched from a remote policy server.
+
+        The policy is fetched synchronously at construction time.  A
+        :class:`~enforcecore.core.policy_server.PolicyServerClient` is
+        stored on the enforcer and is accessible via
+        :attr:`policy_server_client` for cache management.
+
+        Example::
+
+            import os
+            enforcer = Enforcer.from_server(
+                "https://policy.acme.com/agents/chatbot-v2",
+                token=os.environ["POLICY_SERVER_TOKEN"],
+                cache_ttl=300,
+            )
+
+        Args:
+            url: Full URL of the policy endpoint.
+            token: Bearer token for authentication and (optionally) HMAC
+                signature verification.
+            cache_ttl: Seconds before the cached policy expires.  Defaults
+                to ``300`` (5 minutes).  Pass ``0`` to disable caching.
+            verify_signature: When ``True`` (default), the
+                ``X-Policy-Signature`` response header is verified.
+            tenant_id: Optional tenant identifier propagated to audit entries.
+
+        Returns:
+            A new :class:`Enforcer` configured with the policy fetched from
+            the server.
+
+        Raises:
+            PolicyServerError: If the policy cannot be fetched and no cached
+                policy exists.
+
+        .. versionadded:: 1.7.0
+        """
+        from enforcecore.core.policy_server import PolicyServerClient
+
+        client = PolicyServerClient(
+            url, token, cache_ttl=cache_ttl, verify_signature=verify_signature
+        )
+        policy = client.get_policy()
+        enforcer = cls(policy, tenant_id=tenant_id)
+        enforcer._policy_server = client
+        return enforcer
+
     @property
     def policy(self) -> Policy:
         return self._engine.policy
@@ -144,6 +202,19 @@ class Enforcer:
     def tenant_id(self) -> str | None:
         """The tenant identifier for this enforcer, or ``None`` if not set."""
         return self._tenant_id
+
+    @property
+    def policy_server_client(self) -> object:
+        """The :class:`~enforcecore.core.policy_server.PolicyServerClient` used
+        to fetch this enforcer's policy, or ``None`` if the enforcer was created
+        via :meth:`from_file` or the constructor.
+
+        Use this to inspect cache state, call :meth:`~enforcecore.core.policy_server.PolicyServerClient.invalidate`,
+        or retrieve the server-reported :attr:`~enforcecore.core.policy_server.PolicyServerClient.policy_version`.
+
+        .. versionadded:: 1.7.0
+        """
+        return self._policy_server
 
     @property
     def guard(self) -> ResourceGuard:
