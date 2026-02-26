@@ -219,7 +219,11 @@ class PolicyServerClient:
         after invalidation.
         """
         with self._lock:
-            self._cached_at = 0.0
+            # Use -inf so that age = monotonic() - (-inf) = +inf, which is
+            # always >= cache_ttl regardless of how long the process has run.
+            # Setting 0.0 is unreliable because time.monotonic() may be
+            # smaller than cache_ttl on freshly booted machines.
+            self._cached_at = float("-inf")
 
     # ------------------------------------------------------------------
     # Internal helpers
