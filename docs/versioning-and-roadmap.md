@@ -44,7 +44,7 @@ Think of it like building a house:
 
 ## Where EnforceCore Is Today
 
-**Current version: `1.8.0` (Stable)**
+**Current version: `1.9.0` (Stable)**
 **Published:** February 28, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
 
 ### What Stable Means for You
@@ -59,8 +59,8 @@ Think of it like building a house:
 - Policy-as-YAML configuration
 - Async support
 - Framework adapters (LangGraph, AutoGen, CrewAI)
-- 1,510 tests passing, 95%+ code coverage
-- 30-symbol public API, frozen since beta
+- 1,972 tests passing, 95%+ code coverage
+- 58-symbol public API, frozen since v1.0.0
 - 147-point post-release audit: 100% pass rate
 
 ✅ **API guarantees:**
