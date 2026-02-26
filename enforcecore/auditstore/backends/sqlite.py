@@ -85,7 +85,12 @@ class SQLiteBackend(AuditBackend):
         # Insert entry
         cursor.execute(
             """
-            INSERT INTO audit_entries VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO audit_entries
+                (entry_id, timestamp, policy_name, policy_version, tool_name, decision,
+                 call_duration_ms, enforcement_overhead_ms, input_redactions, output_redactions,
+                 redacted_categories, cost_usd, tokens_used, violation_type, violation_reason,
+                 merkle_hash, parent_hash, chain_index, context)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 entry.entry_id,

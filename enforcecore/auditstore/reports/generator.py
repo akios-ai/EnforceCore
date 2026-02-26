@@ -212,7 +212,7 @@ class ReportGenerator:
                 </tr>
                 <tr>
                     <td>PII Redactions</td>
-                    <td>{data["article_14"]["statistics"]["pii_redactions"]}</td>
+                    <td>{data["article_14"]["statistics"]["total_redactions"]}</td>
                 </tr>
             </table>
             <div class="status pass">
@@ -293,18 +293,19 @@ class ReportGenerator:
 
         Supports: "Q1 2026", "Jan 2026", "2026-01", etc.
         """
+        import calendar
         import re
-
-        from dateutil.relativedelta import relativedelta
 
         # Try "Q1 2026" format
         match = re.match(r"Q(\d)[ -]?(\d{4})", period)
         if match:
             quarter = int(match.group(1))
             year = int(match.group(2))
-            month = (quarter - 1) * 3 + 1
-            start = datetime(year, month, 1)
-            end = start + relativedelta(months=3) - relativedelta(days=1)
+            start_month = (quarter - 1) * 3 + 1
+            end_month = start_month + 2
+            last_day = calendar.monthrange(year, end_month)[1]
+            start = datetime(year, start_month, 1)
+            end = datetime(year, end_month, last_day)
             return start, end
 
         # Try "Jan 2026" or "January 2026" format
@@ -339,11 +340,14 @@ class ReportGenerator:
             }
             month = months.get(month_str.lower(), 0)
             if month > 0:
+                last_day = calendar.monthrange(year, month)[1]
                 start = datetime(year, month, 1)
-                end = start + relativedelta(months=1) - relativedelta(days=1)
+                end = datetime(year, month, last_day)
                 return start, end
 
         # Default: last 30 days
+        from datetime import timedelta
+
         end = datetime.now(tz=UTC)
-        start = end - relativedelta(days=30)
+        start = end - timedelta(days=30)
         return start, end
