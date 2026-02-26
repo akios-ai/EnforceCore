@@ -275,8 +275,9 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.2.0** | Audit Storage System + Compliance (JSONL / SQLite / PostgreSQL, EU AI Act) | ✅ Shipped |
 | **v1.3.0** | Subprocess Sandbox (post-execution isolation, resource limits) | ✅ Shipped |
 | **v1.4.0** | NER PII + Sensitivity Labels (`enforcecore[ner]`) | ✅ Shipped |
-| **v1.5.0** | OpenTelemetry + Observability (Prometheus, OTLP traces, Grafana dashboard) | ✅ **Latest** |
-| **v1.6.0** | Multi-Tenant + Policy Inheritance (`extends:` keyword, tenant audit trails) | 🔄 In Progress |
+| **v1.5.0** | OpenTelemetry + Observability (Prometheus, OTLP traces, Grafana dashboard) | ✅ Shipped |
+| **v1.6.0** | Multi-Tenant + Policy Inheritance (`extends:` keyword, tenant audit trails) | ✅ **Latest** |
+| **v1.7.0** | Remote Policy Server (signed policies, pull-only, `Enforcer.from_server`) | 🔄 In Progress |
 
 See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.
 

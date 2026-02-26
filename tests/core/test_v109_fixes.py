@@ -264,7 +264,7 @@ class TestMissingExports:
         import enforcecore
 
         # v1.4.0: 45 Tier 1 symbols (was 36 in v1.3.0; +9 NER + sensitivity)
-        assert len(enforcecore.__all__) == 46
+        assert len(enforcecore.__all__) == 48
 
 
 # ---------------------------------------------------------------------------

@@ -130,6 +130,7 @@ from enforcecore.core.policy import (
 from enforcecore.core.policy import (
     SensitivityLabelConfig as SensitivityLabelConfig,
 )
+from enforcecore.core.policy_server import PolicyServerClient
 from enforcecore.core.rules import (
     ContentRule as ContentRule,
 )
@@ -180,6 +181,9 @@ from enforcecore.core.types import (
 )
 from enforcecore.core.types import (
     GuardError as GuardError,
+)
+from enforcecore.core.types import (
+    PolicyServerError as PolicyServerError,
 )
 from enforcecore.core.types import (
     PolicyValidationError as PolicyValidationError,
@@ -338,7 +342,7 @@ from enforcecore.telemetry import (
     EnforceCorePrometheusExporter as EnforceCorePrometheusExporter,
 )
 
-__version__ = "1.6.0"
+__version__ = "1.7.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -369,6 +373,8 @@ __all__ = [
     "Policy",
     "PolicyError",
     "PolicyLoadError",
+    "PolicyServerClient",
+    "PolicyServerError",
     "RateLimiter",
     "RedactionResult",
     "RedactionStrategy",
