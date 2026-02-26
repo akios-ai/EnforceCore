@@ -9,6 +9,9 @@ Commands:
     enforcecore info                    — show version, platform, installed extras
     enforcecore dry-run <policy.yaml> --tool <name>  — preview policy decision
     enforcecore inspect <audit.jsonl>   — explore audit trail entries
+    enforcecore audit export            — export compliance report (EU AI Act, SOC2, GDPR)
+    enforcecore plugin list             — discover installed plugins
+    enforcecore plugin info <name>      — inspect a specific plugin
 
 Requires the ``cli`` extra::
 

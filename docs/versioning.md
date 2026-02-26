@@ -65,7 +65,7 @@ code changes. Specifically:
 
 The **public API** consists of:
 
-1. **All symbols in `enforcecore.__all__`** — currently 30 symbols.
+1. **All symbols in `enforcecore.__all__`** — currently 58 symbols.
 2. **All public methods** on exported classes (methods without a leading underscore).
 3. **All public attributes** on exported dataclasses and Pydantic models.
 4. **Policy YAML schema** — the structure and semantics of policy files.

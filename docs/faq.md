@@ -96,13 +96,24 @@ This prevents infinite recursion in enforcement chains.
 | `ssn` | `123-45-6789` | `<SSN>` |
 | `credit_card` | `4111-1111-1111-1111` | `<CREDIT_CARD>` |
 | `ip_address` | `192.168.1.100` | `<IP_ADDRESS>` |
+| `passport` | `AB1234567` | `<PASSPORT>` |
 
 ### Why not use spaCy or Presidio?
 
-Presidio requires spaCy + Pydantic v1, which is incompatible with
-Python 3.14. EnforceCore uses pure regex for zero heavy dependencies,
-portability, and speed (~0.1--0.5ms per call). Presidio can be added as
-an optional enhanced backend in a future release.
+EnforceCore uses **pure regex by default** for zero heavy dependencies,
+portability, and speed (~0.03ms per call). Since **v1.4.0**, Presidio +
+spaCy are available as an optional NER backend for higher-accuracy
+detection:
+
+```bash
+pip install enforcecore[pii]  # installs presidio-analyzer + spaCy
+```
+
+```python
+from enforcecore import NERBackend, is_ner_available
+if is_ner_available():
+    redactor = Redactor(ner_backend=NERBackend.PRESIDIO)
+```
 
 ### Does redaction work on nested data structures?
 
@@ -128,14 +139,14 @@ string leaves. This is automatically used by `enforce_sync()` and
 
 | Component | Overhead |
 |---|---|
-| Policy evaluation | < 1ms |
-| PII redaction | 5--15ms |
-| Audit entry | < 1ms |
-| Resource guard | < 1ms |
-| **Typical total** | **8--20ms** (full stack) |
+| Policy evaluation | < 0.05ms |
+| PII redaction (regex) | ~0.03ms |
+| Audit entry | ~0.001ms |
+| Resource guard | < 0.01ms |
+| **Typical total** | **~0.09ms** (full stack, p50) |
 
-This is negligible compared to typical tool call latency (100ms--10s for
-API calls).
+This is negligible compared to typical tool call latency (100ms–10s for
+API calls). Benchmarks measured on Python 3.14 with 20 scenarios.
 
 ### Is the policy cache thread-safe?
 
