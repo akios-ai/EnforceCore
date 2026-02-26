@@ -1,4 +1,4 @@
-# EnforceCore — API Design (v1.0)
+# EnforceCore — API Design (v1.0 – v1.9)
 
 ## Design Principles
 
@@ -1466,3 +1466,1015 @@ class S3Backend(AuditBackend):
     def close(self) -> None:
         pass  # flush buffers if any
 ```
+
+
+---
+
+## API Added in v1.2.0 — Audit Storage System
+
+### `AuditEntry` (dataclass)
+
+```python
+from enforcecore import AuditEntry
+```
+
+Full-fidelity audit record stored by `AuditStore` backends. All fields are
+typed; `merkle_hash`, `parent_hash`, and `chain_index` are set by the backend
+on write.
+
+| Field | Type | Notes |
+|---|---|---|
+| `entry_id` | `str` | UUID4 string, set by `create()` |
+| `timestamp` | `datetime` | UTC, set by `create()` |
+| `policy_name` | `str` | — |
+| `policy_version` | `str` | — |
+| `tool_name` | `str` | — |
+| `decision` | `str` | `"allowed"` \| `"blocked"` \| `"redacted"` |
+| `call_duration_ms` | `float` | End-to-end call time |
+| `enforcement_overhead_ms` | `float` | EnforceCore overhead only |
+| `input_redactions` | `int` | Default `0` |
+| `output_redactions` | `int` | Default `0` |
+| `redacted_categories` | `list[str]` | Default `[]` |
+| `cost_usd` | `float \| None` | Optional cost tracking |
+| `tokens_used` | `int \| None` | Optional token count |
+| `violation_type` | `str \| None` | — |
+| `violation_reason` | `str \| None` | — |
+| `merkle_hash` | `str \| None` | Set by backend on write |
+| `parent_hash` | `str \| None` | Set by backend on write |
+| `chain_index` | `int \| None` | Set by backend on write |
+| `context` | `dict[str, Any]` | Default `{}` |
+
+```python
+@classmethod
+def create(
+    cls,
+    policy_name: str,
+    policy_version: str,
+    tool_name: str,
+    decision: str,
+    call_duration_ms: float,
+    enforcement_overhead_ms: float,
+    input_redactions: int = 0,
+    output_redactions: int = 0,
+    **kwargs: Any,
+) -> AuditEntry
+
+def to_dict(self) -> dict[str, Any]
+```
+
+---
+
+### `AuditStore`
+
+```python
+from enforcecore.auditstore import AuditStore
+```
+
+High-level query interface over an `AuditBackend`. All reads go through here.
+
+```python
+def __init__(self, backend: AuditBackend, verify_on_read: bool = True) -> None
+
+def record(self, **kwargs: Any) -> AuditEntry
+
+def get_entry(self, entry_id: str) -> AuditEntry | None
+
+def list_entries(
+    self,
+    policy_name: str | None = None,
+    tool_name: str | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    decision: str | None = None,
+    limit: int = 1000,
+    offset: int = 0,
+) -> list[AuditEntry]
+
+def verify_chain(self, start_index: int = 0, end_index: int | None = None) -> bool
+
+def verify_entry(self, entry: AuditEntry) -> bool
+
+def export(self, format: str = "jsonl") -> str
+```
+
+---
+
+### `AuditBackend` (abstract base class)
+
+```python
+from enforcecore.auditstore.backends import AuditBackend
+```
+
+Implement all abstract methods to create a custom storage backend.
+
+```python
+@abstractmethod
+def record(self, entry: AuditEntry) -> AuditEntry
+# Must compute and set merkle_hash, parent_hash, chain_index.
+
+@abstractmethod
+def get_entry(self, entry_id: str) -> AuditEntry | None
+
+@abstractmethod
+def list_entries(self, ...) -> list[AuditEntry]
+
+@abstractmethod
+def get_chain_tail(self) -> AuditEntry | None
+
+@abstractmethod
+def verify_chain(self, start_index: int = 0, end_index: int | None = None) -> bool
+
+@abstractmethod
+def verify_entry(self, entry: AuditEntry) -> bool
+
+@abstractmethod
+def export(self, format: str = "jsonl") -> str
+
+# Concrete helper — provided for all subclasses:
+def _compute_merkle_hash(self, entry: AuditEntry, parent_hash: str | None = None) -> str
+# SHA-256 over {entry_id, timestamp, policy_name, tool_name, decision,
+#               violation_type, parent_hash}. Genesis parent_hash = "0" * 64.
+```
+
+---
+
+### `JSONLBackend`
+
+```python
+from enforcecore.auditstore.backends import JSONLBackend
+
+backend = JSONLBackend("audit_logs/trail.jsonl")
+```
+
+Append-only JSONL file. Thread-safe via per-call file open. Suitable for
+development and low-volume production.
+
+```python
+def __init__(self, path: str = "audit_logs/trail.jsonl")
+# Parent directories created automatically (mkdir -p).
+```
+
+---
+
+### `SQLiteBackend`
+
+```python
+from enforcecore.auditstore.backends import SQLiteBackend
+
+backend = SQLiteBackend("audit.db")
+```
+
+Local SQLite database with a `merkle_chain` verification table and indices
+on `timestamp`, `policy_name`, `tool_name`, `decision`. Best for single-node
+production.
+
+```python
+def __init__(self, db_path: str = "audit.db", verify_merkle: bool = True)
+```
+
+---
+
+### `PostgreSQLBackend`
+
+```python
+from enforcecore.auditstore.backends import PostgreSQLBackend
+# Requires: pip install enforcecore[postgres]
+
+backend = PostgreSQLBackend(
+    host="localhost",
+    database="enforcecore",
+    user="postgres",
+    password="secret",
+    port=5432,
+    verify_merkle=True,
+    pool_size=5,
+    ssl_mode="prefer",  # "disable" | "allow" | "prefer" | "require"
+)
+```
+
+Production-grade backend. Connection pooling, JSONB context column, TIMESTAMPTZ
+timestamps, concurrent-write safe. Raises `ImportError` if `psycopg2` is not
+installed.
+
+---
+
+### `AuditStoreBackendAdapter`
+
+```python
+from enforcecore import AuditStoreBackendAdapter
+
+adapter = AuditStoreBackendAdapter(backend)
+auditor = Auditor(backend=adapter)
+```
+
+Bridges any `AuditBackend` to the existing `Auditor` write API. Translates
+the `Auditor`'s dict format to `AuditEntry` automatically.
+
+```python
+def __init__(self, auditstore_backend: AuditBackend) -> None
+
+def write(self, entry_dict: dict[str, Any]) -> None
+# Raises AuditError on failure.
+
+def close(self) -> None
+```
+
+**Field mapping**: `overhead_ms` → `enforcement_overhead_ms`, `entry_hash` →
+`merkle_hash`, `previous_hash` → `parent_hash`.
+
+---
+
+### `EUAIActQueries`
+
+```python
+from enforcecore.auditstore.queries.eu_ai_act import EUAIActQueries
+
+queries = EUAIActQueries(store)
+```
+
+All methods accept `start_date`, `end_date` (`datetime`) and optional
+`policy_name` filter. All return `dict[str, Any]`.
+
+| Method | Article | Returns |
+|---|---|---|
+| `article_9_high_risk_decisions()` | 9 | Total decisions + detail list |
+| `article_13_human_oversight()` | 13 | Blocked calls count + evidence |
+| `article_14_information_requirements()` | 14 | Statistics: total/allowed/blocked/redacted |
+| `article_52_transparency_log()` | 52 | All entries + Merkle chain verification |
+| `pii_exposure_summary()` | — | Total redactions, by-category breakdown |
+| `policy_violations_summary()` | — | Violations by tool, detail list |
+| `cost_analysis()` | — | Cost by tool, average cost per call |
+
+---
+
+### `ReportGenerator` and `Report`
+
+```python
+from enforcecore.auditstore.reports import ReportGenerator
+
+generator = ReportGenerator(store)
+report = generator.generate_eu_ai_act_report(
+    organization="Acme Corp",
+    period="Q1 2026",    # or "Jan 2026", "January 2026"
+    format="html",       # or "json"
+)
+report.save("compliance_report.html")
+```
+
+`Report` attributes: `title`, `content`, `format`, `generated_at` (UTC datetime).
+
+```python
+def render(self) -> str
+def save(self, filename: str) -> None
+```
+
+**Supported `period` formats:** `"Q1 2026"`, `"Jan 2026"`, `"January 2026"`.
+Defaults to last 30 days if format is unrecognised.
+
+---
+
+## API Added in v1.3.0 — Subprocess Sandbox
+
+### `SandboxStrategy` (enum)
+
+```python
+from enforcecore import SandboxStrategy
+
+SandboxStrategy.NONE        # In-process execution (no isolation)
+SandboxStrategy.SUBPROCESS  # Isolated subprocess with resource limits
+```
+
+### `SandboxConfig` (dataclass)
+
+```python
+from enforcecore import SandboxConfig
+
+config = SandboxConfig(
+    strategy=SandboxStrategy.SUBPROCESS,
+    timeout_seconds=30.0,
+    max_memory_mb=256,
+    allowed_env_vars=["PATH", "HOME"],
+    capture_output=True,
+)
+```
+
+| Field | Type | Default |
+|---|---|---|
+| `strategy` | `SandboxStrategy` | `SandboxStrategy.NONE` |
+| `timeout_seconds` | `float` | `30.0` |
+| `max_memory_mb` | `int \| None` | `None` (unlimited) |
+| `allowed_env_vars` | `list[str]` | `[]` (inherit all) |
+| `capture_output` | `bool` | `True` |
+
+### `SubprocessSandbox`
+
+```python
+from enforcecore import SubprocessSandbox
+
+sandbox = SubprocessSandbox(config)
+
+# Synchronous execution
+result = sandbox.run(my_tool, *args, tool_name="my_tool", **kwargs)
+
+# Asynchronous execution
+result = await sandbox.run_async(my_tool, *args, tool_name="my_tool", **kwargs)
+```
+
+```python
+def __init__(self, config: SandboxConfig) -> None
+
+def run(
+    self,
+    func: Callable[..., Any],
+    *args: Any,
+    tool_name: str = "",
+    policy_name: str = "",
+    **kwargs: Any,
+) -> Any
+
+async def run_async(
+    self,
+    func: Callable[..., Any],
+    *args: Any,
+    tool_name: str = "",
+    policy_name: str = "",
+    **kwargs: Any,
+) -> Any
+```
+
+**Notes:** Function and all args/kwargs must be picklable for `SUBPROCESS`
+strategy. POSIX resource limits (`RLIMIT_AS` for memory, `RLIMIT_CPU` for CPU)
+are applied on Linux/macOS. Windows: process isolation only.
+
+### Sandbox Exceptions
+
+```python
+from enforcecore import SandboxTimeoutError, SandboxMemoryError, SandboxViolationError
+
+# SandboxTimeoutError   — subprocess exceeded timeout_seconds
+# SandboxMemoryError    — subprocess exceeded max_memory_mb
+# SandboxViolationError — other sandbox failures (non-picklable result, etc.)
+```
+
+### `platform_info()`
+
+```python
+from enforcecore.sandbox.runner import platform_info
+
+info = platform_info()
+# Returns dict: {platform, subprocess_isolation, resource_limits,
+#                memory_limits, cpu_time_limits, env_restriction,
+#                wasm_sandbox, python_version}
+```
+
+---
+
+## API Added in v1.4.0 — NER PII Detection + Sensitivity Labels
+
+### `NERBackend`
+
+```python
+from enforcecore import NERBackend
+# Requires: pip install enforcecore[ner]
+# Requires: python -m spacy download en_core_web_lg
+
+ner = NERBackend(threshold=0.8, language="en")
+spans = ner.analyze("Call John at john@acme.com")
+# -> [(9, 13, "person_name", 0.95), (17, 29, "email", 0.99)]
+```
+
+```python
+def __init__(self, threshold: float = 0.8, language: str = "en") -> None
+# Raises ImportError if presidio-analyzer not installed or spaCy model unavailable.
+
+def analyze(
+    self,
+    text: str,
+    categories: set[str] | None = None,
+    *,
+    threshold: float | None = None,
+) -> list[tuple[int, int, str, float]]
+# Returns [(start, end, category, score), ...] sorted by start position.
+# categories=None -> all 17 supported entity types.
+
+@property
+def threshold(self) -> float
+
+@property
+def language(self) -> str
+```
+
+**Supported entity categories:** `email`, `phone`, `ssn`, `credit_card`,
+`ip_address`, `person_name`, `passport`, `location`, `date_time`,
+`national_id`, `medical_id`, `driver_license`, `iban`, `crypto_address`,
+`bank_account`, `itin`, `us_tin`.
+
+### `is_ner_available()`
+
+```python
+from enforcecore import is_ner_available
+
+if is_ner_available():
+    ner = NERBackend()
+```
+
+Returns `True` if `presidio-analyzer` is importable. Does not check the spaCy
+model.
+
+---
+
+### `SensitivityLabel` (enum)
+
+```python
+from enforcecore import SensitivityLabel
+
+SensitivityLabel.PUBLIC        # 0 — openly shareable
+SensitivityLabel.INTERNAL      # 1 — company-internal only
+SensitivityLabel.CONFIDENTIAL  # 2 — restricted to authorised roles
+SensitivityLabel.RESTRICTED    # 3 — highest sensitivity, minimum distribution
+```
+
+Flow rule: data with a higher sensitivity level cannot flow to a tool with a
+lower clearance level.
+
+### `SensitivityEnforcer`
+
+```python
+from enforcecore import SensitivityEnforcer, SensitivityLabel
+
+enforcer = SensitivityEnforcer(
+    tool_clearance=SensitivityLabel.INTERNAL,
+    field_labels={
+        "body": SensitivityLabel.CONFIDENTIAL,
+        "subject": SensitivityLabel.INTERNAL,
+        "to": SensitivityLabel.PUBLIC,
+    },
+    default_field_sensitivity=SensitivityLabel.PUBLIC,
+)
+
+violations = enforcer.check_kwargs({"body": "...", "to": "..."})
+enforcer.raise_if_violated(violations, tool_name="send_email")
+```
+
+```python
+def __init__(
+    self,
+    tool_clearance: SensitivityLabel | str,
+    field_labels: dict[str, SensitivityLabel | str] | None = None,
+    *,
+    default_field_sensitivity: SensitivityLabel | str = SensitivityLabel.PUBLIC,
+) -> None
+
+def check(self) -> list[SensitivityViolation]
+
+def check_kwargs(
+    self,
+    kwargs: dict[str, Any],
+    *,
+    override_labels: dict[str, SensitivityLabel | str] | None = None,
+) -> list[SensitivityViolation]
+
+def raise_if_violated(
+    self,
+    violations: list[SensitivityViolation],
+    *,
+    tool_name: str = "",
+    policy_name: str = "",
+) -> None
+
+@property
+def tool_clearance(self) -> SensitivityLabel
+
+@property
+def field_labels(self) -> dict[str, SensitivityLabel]
+```
+
+String label aliases: `"low"` → `PUBLIC`, `"medium"` → `INTERNAL`,
+`"high"` → `CONFIDENTIAL`, `"critical"` → `RESTRICTED`.
+
+### `check_tool_schema_sensitivity()`
+
+```python
+from enforcecore import check_tool_schema_sensitivity, SensitivityLabel
+
+tool_schema = {
+    "name": "send_email",
+    "clearance": "internal",
+    "parameters": {
+        "to":   {"type": "string", "sensitivity": "low"},
+        "body": {"type": "string", "sensitivity": "high"},
+    },
+}
+violations = check_tool_schema_sensitivity(tool_schema, SensitivityLabel.INTERNAL)
+```
+
+```python
+def check_tool_schema_sensitivity(
+    tool_schema: dict[str, Any],
+    policy_clearance: SensitivityLabel | str,
+) -> list[SensitivityViolation]
+# Effective clearance = min(schema["clearance"], policy_clearance).
+```
+
+### `SensitivityViolation` (frozen dataclass)
+
+```python
+@dataclass(frozen=True)
+class SensitivityViolation:
+    field_name: str
+    field_sensitivity: SensitivityLabel
+    tool_clearance: SensitivityLabel
+```
+
+### `sensitivity_level()`
+
+```python
+from enforcecore import sensitivity_level, SensitivityLabel
+
+level = sensitivity_level("confidential")
+# -> SensitivityLabel.CONFIDENTIAL
+```
+
+Coerces a string (including aliases) to `SensitivityLabel`. Raises `ValueError`
+on invalid input.
+
+### `SensitivityLabelConfig`
+
+YAML-based sensitivity configuration object. Loaded from policy YAML:
+
+```yaml
+sensitivity_labels:
+  enabled: true
+  default_clearance: internal
+  enforce: true
+  fallback: redact
+```
+
+---
+
+## API Added in v1.5.0 — OpenTelemetry + Observability
+
+### `EnforceCoreInstrumentor`
+
+```python
+from enforcecore import EnforceCoreInstrumentor
+# Requires: pip install enforcecore[otel]
+
+instrumentor = EnforceCoreInstrumentor()
+instrumentor.instrument(
+    tracer_provider=my_provider,  # optional; falls back to global OTel provider
+    meter_provider=my_meter,      # optional
+)
+```
+
+```python
+def instrument(
+    self,
+    *,
+    tracer_provider: Any = None,
+    meter_provider: Any = None,
+) -> None
+
+def uninstrument(self) -> None
+
+@property
+def metrics(self) -> EnforceCoreMetrics
+
+@property
+def is_instrumented(self) -> bool
+```
+
+Every `@enforce()` call becomes an OTel span named `"enforcecore.<tool_name>"`
+with attributes: `enforcecore.tool`, `enforcecore.policy`, `enforcecore.call_id`,
+`enforcecore.decision`, `enforcecore.duration_ms`, `enforcecore.overhead_ms`,
+`enforcecore.input_redactions`, `enforcecore.output_redactions`,
+`enforcecore.violation_type`, `enforcecore.violation_reason`.
+
+### `EnforceCorePrometheusExporter`
+
+```python
+from enforcecore import EnforceCorePrometheusExporter
+# Requires: pip install enforcecore[prometheus]
+
+exporter = EnforceCorePrometheusExporter()
+exporter.instrument()
+exporter.start_http_server(port=9090)
+```
+
+```python
+def __init__(self, *, registry: Any = None) -> None
+# registry: prometheus_client.CollectorRegistry or None (uses global registry).
+# Operates in no-op mode if prometheus_client not installed — never raises on init.
+
+def instrument(self) -> None
+def uninstrument(self) -> None
+def start_http_server(self, port: int = 9090, addr: str = "0.0.0.0") -> None
+
+@property
+def is_instrumented(self) -> bool
+
+@property
+def is_available(self) -> bool
+```
+
+**Metrics exposed:**
+
+| Metric | Type | Labels |
+|---|---|---|
+| `enforcecore_calls_total` | Counter | `tool`, `decision` |
+| `enforcecore_violations_total` | Counter | `tool`, `violation_type` |
+| `enforcecore_redactions_total` | Counter | `tool`, `direction` |
+| `enforcecore_overhead_seconds` | Histogram | `tool` |
+| `enforcecore_latency_seconds` | Histogram | `tool` |
+
+### `AuditLogExporter`
+
+```python
+from enforcecore.telemetry import AuditLogExporter
+
+exporter = AuditLogExporter(
+    sink=make_splunk_hec_sink("https://splunk.acme.com:8088", token="xxx"),
+)
+```
+
+Exports every audit entry as structured JSON to configurable sinks: stdout,
+file, Splunk HEC, Elastic Bulk API, or OTLP HTTP.
+
+### Sink factory functions
+
+```python
+from enforcecore.telemetry import make_splunk_hec_sink, make_elastic_sink
+
+splunk_sink = make_splunk_hec_sink(url, token, *, index=None, source=None)
+elastic_sink = make_elastic_sink(url, index, *, api_key=None, username=None, password=None)
+```
+
+---
+
+## API Added in v1.6.0 — Multi-Tenant + Policy Inheritance
+
+### `MultiTenantEnforcer`
+
+```python
+from enforcecore import MultiTenantEnforcer
+
+mt = MultiTenantEnforcer(default_policy="base_policy.yaml")
+mt.register("team_a", "team_a_policy.yaml")
+mt.register("team_b", "team_b_policy.yaml")
+```
+
+```python
+def __init__(self, default_policy: Policy | str | Path | None = None) -> None
+
+def register(self, tenant_id: str, policy: Policy | str | Path) -> None
+# Raises ValueError if tenant_id is empty.
+
+def unregister(self, tenant_id: str) -> None
+# Raises KeyError if tenant not registered.
+
+@property
+def tenants(self) -> list[str]   # sorted
+
+def get_enforcer(self, tenant_id: str) -> Enforcer
+# Raises KeyError if not registered and no default policy.
+
+def enforce_sync(
+    self,
+    tenant_id: str,
+    func: Callable[..., T],
+    /,
+    *args: Any,
+    tool_name: str | None = None,
+    **kwargs: Any,
+) -> T
+
+async def enforce_async(
+    self,
+    tenant_id: str,
+    func: Callable[..., Any],
+    /,
+    *args: Any,
+    tool_name: str | None = None,
+    **kwargs: Any,
+) -> Any
+
+def __len__(self) -> int
+def __contains__(self, tenant_id: object) -> bool
+```
+
+**Policy inheritance** — use `extends:` in YAML:
+
+```yaml
+# agent_deployer.yaml
+extends: team_dev.yaml
+tools:
+  allowed: [search, calculate, deploy_service]
+  context:
+    environment: [staging]
+```
+
+Child policies override parent fields. Circular `extends:` raises
+`PolicyLoadError` at load time.
+
+---
+
+## API Added in v1.7.0 — Remote Policy Server
+
+### `PolicyServerClient`
+
+```python
+from enforcecore import PolicyServerClient
+
+client = PolicyServerClient(
+    url="https://policy.acme.com/agents/chatbot-v2",
+    token=os.environ["POLICY_SERVER_TOKEN"],
+    cache_ttl=300,          # seconds; 0 disables caching
+    verify_signature=True,  # HMAC-SHA256 verification
+)
+enforcer = Enforcer.from_server(client)
+
+# Or directly:
+enforcer = Enforcer.from_server(
+    "https://policy.acme.com/agents/chatbot-v2",
+    token=os.environ["POLICY_SERVER_TOKEN"],
+    cache_ttl=300,
+)
+```
+
+```python
+def __init__(
+    self,
+    url: str,
+    token: str,
+    *,
+    cache_ttl: int = 300,
+    verify_signature: bool = True,
+) -> None
+# Raises ValueError if url/token empty or cache_ttl < 0.
+
+def get_policy(self) -> Policy
+# Returns cached policy if fresh (cache_ttl > 0 and not expired).
+# On cache miss: fetches from server, verifies HMAC signature (if header present).
+# Stale-on-error: returns cached policy if server unreachable and cache exists.
+# Raises PolicyServerError if server unreachable and no cache.
+
+def invalidate(self) -> None
+# Forces re-fetch on next get_policy().
+
+@property
+def url(self) -> str
+
+@property
+def cache_ttl(self) -> int
+
+@property
+def policy_version(self) -> str | None  # from X-Policy-Version response header
+```
+
+**Security model:** pull-only (server never pushes); HMAC-SHA256 signature
+verification via `X-Policy-Signature` header; policy version recorded in audit
+trail for every enforcement decision.
+
+### `PolicyServerError`
+
+Raised when the policy server is unreachable and no cached policy is available.
+
+---
+
+## API Added in v1.8.0 — Compliance Reporting
+
+### `ComplianceReporter`
+
+```python
+from enforcecore import ComplianceReporter, ComplianceFormat, CompliancePeriod
+
+reporter = ComplianceReporter()
+report = reporter.export(
+    ComplianceFormat.EU_AI_ACT,
+    CompliancePeriod.from_label("2026-Q4"),
+)
+```
+
+```python
+def export(
+    self,
+    format: ComplianceFormat,
+    period: CompliancePeriod,
+    *,
+    organization: str = "",
+) -> ComplianceReport
+
+def export_json(self, ...) -> str
+def export_html(self, ...) -> str
+def send_webhook(self, url: str, ...) -> None
+# Vanta / Drata webhook integration.
+```
+
+### `ComplianceFormat` (enum)
+
+```python
+ComplianceFormat.EU_AI_ACT  # EU AI Act Articles 9, 13, 14, 52
+ComplianceFormat.SOC2       # SOC2 CC6, CC7, CC8, CC9
+ComplianceFormat.GDPR       # GDPR Article 30 (records of processing)
+```
+
+### `CompliancePeriod`
+
+```python
+period = CompliancePeriod.from_label("2026-Q4")  # quarterly
+period = CompliancePeriod.from_label("2026-H1")  # half-year
+period = CompliancePeriod.from_label("2026")     # annual
+```
+
+### `ComplianceReport` (dataclass)
+
+```python
+@dataclass
+class ComplianceReport:
+    title: str
+    format: ComplianceFormat
+    period: CompliancePeriod
+    content: str           # rendered report body
+    score: float           # 0.0 – 1.0 compliance score
+    narratives: list[str]  # human-readable compliance statements
+    statistics: dict[str, Any]
+    generated_at: datetime
+```
+
+### `ComplianceError`
+
+Raised when compliance report generation fails (insufficient audit data,
+invalid period, or unsupported format).
+
+### CLI
+
+```bash
+enforcecore audit export --format eu-ai-act --period 2026-Q4 --output report.json
+enforcecore audit export --format soc2 --period 2026-H1 --output soc2.html
+```
+
+---
+
+## API Added in v1.9.0 — Plugin Ecosystem
+
+### `GuardPlugin` (abstract base class)
+
+```python
+from enforcecore import GuardPlugin, GuardResult
+
+class MyGuard(GuardPlugin):
+
+    @property
+    def name(self) -> str:
+        return "my-guard"
+
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+
+    def check(
+        self,
+        tool_name: str,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> GuardResult:
+        if tool_name == "dangerous_tool":
+            return GuardResult(allowed=False, reason="blocked by policy")
+        return GuardResult(allowed=True)
+```
+
+Register in `pyproject.toml`:
+
+```toml
+[project.entry-points."enforcecore.guards"]
+my-guard = "my_package.guards:MyGuard"
+```
+
+### `RedactorPlugin` (abstract base class)
+
+```python
+from enforcecore import RedactorPlugin, RedactResult
+
+class MyRedactor(RedactorPlugin):
+
+    @property
+    def name(self) -> str:
+        return "my-redactor"
+
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+
+    @property
+    def categories(self) -> list[str]:
+        return ["internal_id"]
+
+    def redact(self, text: str) -> RedactResult:
+        cleaned, count = _scrub_internal_ids(text)
+        return RedactResult(text=cleaned, count=count)
+```
+
+Register under entry-point group `"enforcecore.redactors"`.
+
+### `AuditBackendPlugin` (abstract base class)
+
+```python
+from enforcecore import AuditBackendPlugin
+
+class MyBackend(AuditBackendPlugin):
+
+    @property
+    def name(self) -> str:
+        return "my-backend"
+
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+
+    def record(self, entry: dict[str, Any]) -> None:
+        # entry matches AuditEntry.to_dict() schema
+        my_db.insert(entry)
+
+    def flush(self) -> None:
+        my_db.flush()
+```
+
+Register under entry-point group `"enforcecore.audit_backends"`.
+
+### Result types
+
+```python
+@dataclass(frozen=True)
+class GuardResult:
+    allowed: bool
+    reason: str = ""
+
+@dataclass(frozen=True)
+class RedactResult:
+    text: str
+    count: int = 0
+
+@dataclass(frozen=True)
+class PluginInfo:
+    name: str
+    version: str
+    kind: str         # "guard" | "redactor" | "audit_backend"
+    package: str = ""
+    description: str = ""
+```
+
+### `PluginManager`
+
+```python
+from enforcecore import PluginManager
+
+manager = PluginManager()
+
+# Discover without loading (metadata only):
+infos = manager.discover()
+
+# Load all installed plugins:
+count = manager.load_all(ignore_errors=False)
+# Raises PluginLoadError if any plugin fails and ignore_errors=False.
+
+# Load a single plugin by name:
+manager.load("my-guard")
+
+# Access loaded plugins:
+manager.guards          # list[GuardPlugin]
+manager.redactors       # list[RedactorPlugin]
+manager.audit_backends  # list[AuditBackendPlugin]
+```
+
+```python
+def discover(self) -> list[PluginInfo]
+def load_all(self, *, ignore_errors: bool = False) -> int
+def load(self, name: str) -> None
+# Raises PluginLoadError if name not found or instantiation fails.
+
+@property
+def guards(self) -> list[GuardPlugin]
+
+@property
+def redactors(self) -> list[RedactorPlugin]
+
+@property
+def audit_backends(self) -> list[AuditBackendPlugin]
+```
+
+### `PluginLoadError`
+
+```python
+from enforcecore import PluginLoadError
+```
+
+Raised when a plugin fails to import, fails the subclass check, or raises
+during instantiation.
+
+### CLI
+
+```bash
+enforcecore plugin list           # Discover all installed plugins
+enforcecore plugin info <name>    # Load and inspect a specific plugin
+```
+
