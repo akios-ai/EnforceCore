@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-02-27
+
+### Added
+
+- **Multi-Tenant Enforcement** — First-class multi-tenancy for SaaS and
+  platform deployments where different users, teams, or customers require
+  separate policies within a single process.
+
+  - **`MultiTenantEnforcer`** — new class at `enforcecore.core.multitenant`.
+    Acts as a thread-safe registry mapping tenant IDs (`str`) to independent
+    `Enforcer` instances, each backed by its own policy.
+
+    ```python
+    from enforcecore import MultiTenantEnforcer
+
+    mte = MultiTenantEnforcer()
+    mte.register("team_alpha", "policies/team_alpha.yaml")
+    mte.register("team_beta",  "policies/team_beta.yaml")
+
+    result = await mte.enforce_async("team_alpha", my_tool, query="hello")
+    result = mte.enforce_sync("team_beta", my_tool, query="world")
+    ```
+
+  - Enforcer instances are **created lazily** on first use per tenant and then
+    cached for the lifetime of the registry.
+  - Optional `default_policy` fallback for unregistered tenants.
+  - `register(tenant_id, policy_or_path)`, `unregister(tenant_id)`,
+    `get_enforcer(tenant_id)`, `tenants` property.
+  - Supports `__contains__`, `__len__`, `__repr__`.
+
+- **`tenant_id` in the audit trail** — every `AuditEntry` now carries a
+  `tenant_id: str | None` field so per-tenant filtering of audit logs is
+  possible without secondary indexing.
+
+  - `AuditEntry.tenant_id` dataclass field (defaults to `None` — fully
+    backward-compatible with existing audit trails).
+  - `Auditor.record(…, tenant_id=None)` — accepts an optional `tenant_id`
+    keyword argument.
+
+- **`Enforcer.tenant_id`** — new property exposing the tenant identifier
+  assigned at construction time.
+
+  - `Enforcer(policy, *, tenant_id="team_alpha")` — constructor now accepts
+    optional `tenant_id` keyword argument stored as `Enforcer.tenant_id`.
+  - `Enforcer.from_file(path, *, tenant_id=…)` — factory also propagates
+    `tenant_id`.
+  - The `tenant_id` is automatically threaded through `_record_audit` so every
+    audit entry written by the enforcer carries the tenant identifier.
+
+- **Policy Inheritance** — circular `extends` detection in `Policy.from_file`.
+
+  - Loading a YAML file that transitively `extends` itself now raises
+    `PolicyLoadError: Circular extends detected: …` with the full chain in the
+    message, rather than recursing infinitely.
+  - `Policy.from_file` now resolves paths to their absolute form before
+    de-duplication, so symlinks are correctly detected.
+
+- `MultiTenantEnforcer` exported from the top-level `enforcecore` package
+  (Tier 1 — stable).
+
+### Changed
+
+- `enforcecore.__version__` bumped to `1.6.0`.
+- `enforcecore.core.__all__` includes `"MultiTenantEnforcer"`.
+
 ## [1.5.0] — 2026-02-26
 
 ### Added

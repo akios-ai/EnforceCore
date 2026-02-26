@@ -97,13 +97,17 @@ class Enforcer:
         "_redactor",
         "_rule_engine",
         "_sandbox",
+        "_tenant_id",
     )
 
-    def __init__(self, policy: Policy) -> None:
+    def __init__(self, policy: Policy, *, tenant_id: str | None = None) -> None:
         """Initialize the enforcer with a policy.
 
         Args:
             policy: The :class:`Policy` to enforce on every call.
+            tenant_id: Optional tenant identifier. When set, every audit
+                entry written by this enforcer will include this value,
+                enabling per-tenant filtering of audit trails.
         """
         self._engine = PolicyEngine(policy)
         self._redactor = self._build_redactor(policy)
@@ -113,18 +117,20 @@ class Enforcer:
         self._rate_limiter = self._build_rate_limiter(policy)
         self._domain_checker = self._build_domain_checker(policy)
         self._sandbox = self._build_sandbox(policy)
+        self._tenant_id = tenant_id
 
     @classmethod
-    def from_file(cls, path: str | Path) -> Enforcer:
+    def from_file(cls, path: str | Path, *, tenant_id: str | None = None) -> Enforcer:
         """Create an enforcer from a YAML policy file.
 
         Args:
             path: Path to the policy YAML file.
+            tenant_id: Optional tenant identifier propagated to audit entries.
 
         Returns:
             A new :class:`Enforcer` configured with the loaded policy.
         """
-        return cls(Policy.from_file(path))
+        return cls(Policy.from_file(path), tenant_id=tenant_id)
 
     @property
     def policy(self) -> Policy:
@@ -133,6 +139,11 @@ class Enforcer:
     @property
     def policy_name(self) -> str:
         return self._engine.policy.name
+
+    @property
+    def tenant_id(self) -> str | None:
+        """The tenant identifier for this enforcer, or ``None`` if not set."""
+        return self._tenant_id
 
     @property
     def guard(self) -> ResourceGuard:
@@ -518,6 +529,7 @@ class Enforcer:
                 call_duration_ms=call_duration_ms,
                 input_redactions=input_redactions,
                 output_redactions=output_redactions,
+                tenant_id=self._tenant_id,
             )
         except Exception:
             logger.error("audit_record_failed", tool=tool_name, exc_info=True)
