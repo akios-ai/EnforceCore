@@ -85,13 +85,7 @@ HTML report generation and structured JSON output for CI integration.
 
 Polish pass on evaluation suite and community feedback preparation.
 
-### v1.1.2 — Beta Feedback Fixes ✅ Latest
-
-Available on [PyPI](https://pypi.org/project/enforcecore/):
-
-```bash
-pip install enforcecore
-```
+### v1.1.2 — Beta Feedback Fixes ✅
 
 Fixes from external beta testing:
 - Added `--version` CLI flag (standard Unix convention)
@@ -100,15 +94,71 @@ Fixes from external beta testing:
 - Empty-rules policy warning for safer defaults
 - Improved error messages for misplaced `on_violation`
 
-**Quality metrics:** 1525 tests passing, 30 public API symbols, mypy strict
-mode, ruff-formatted, CI-verified on Linux and macOS.
+### v1.2.0 — Audit Storage System + Compliance ✅
+
+Pluggable audit persistence (JSONL, SQLite, PostgreSQL) with EU AI Act compliance
+queries (Articles 9, 13, 14, 52), HTML/JSON report generation, and
+`AuditStoreBackendAdapter` for Auditor integration.
+
+### v1.3.0 — Subprocess Sandbox ✅
+
+Post-execution isolation layer: tool calls run in restricted subprocesses with
+configurable resource limits, file-descriptor restrictions, and env-var
+filtering. WASM sandboxing design included for high-isolation use cases.
+
+### v1.4.0 — NER PII + Sensitivity Labels ✅
+
+Optional NER-based PII detection tier via Presidio/spaCy alongside the existing
+regex engine. Lightweight sensitivity labels (`public` / `restricted` /
+`confidential` / `secret`) on tool schemas and data fields — the first step
+toward label-based IFC. `pip install enforcecore[ner]`.
+
+### v1.5.0 — OpenTelemetry + Observability ✅ Latest
+
+Available on [PyPI](https://pypi.org/project/enforcecore/):
+
+```bash
+pip install enforcecore
+pip install enforcecore[otel]         # OpenTelemetry traces + logs
+pip install enforcecore[prometheus]   # Prometheus metrics
+```
+
+First-class observability for every enforcement decision:
+- `EnforceCoreInstrumentor` — OTLP trace export; every `@enforce()` call
+  becomes a span with policy decision, redaction events, and guard outcomes
+- `EnforceCorePrometheusExporter` — 5 Prometheus metrics
+  (`enforcecore_calls_total`, `enforcecore_violations_total`,
+  `enforcecore_redactions_total`, `enforcecore_overhead_seconds`,
+  `enforcecore_latency_seconds`), HTTP scrape endpoint
+- `AuditLogExporter` — structured JSON audit logs to stdout / file /
+  Splunk HEC / Elastic Bulk API / OTLP
+- Pre-built Grafana dashboard (`docs/grafana-dashboard.json`)
+
+**Quality metrics:** 1717 tests passing, mypy strict, ruff-formatted,
+CI-verified on Linux and macOS.
 
 ---
 
 ## Upcoming
 
-Next release TBD — see [CONTRIBUTING.md](https://github.com/akios-ai/EnforceCore/blob/main/CONTRIBUTING.md) for how to get
-involved.
+### v1.6.0 — Multi-Tenant + Policy Inheritance
+
+Hierarchical policy support: `extends:` keyword in policy YAML lets teams compose
+policies at org / team / agent granularity.
+
+```yaml
+# agent_deployer.yaml
+extends: team_dev.yaml
+tools:
+  allowed: [search, calculate, deploy_service]
+  context:
+    environment: [staging]
+```
+
+Child policies override only what they declare; everything else inherits from
+parent. Circular-extends detection prevents misconfigurations. Each enforcer
+accepts a `tenant_id` that is propagated to the audit trail for per-tenant
+filtering.
 
 ---
 
@@ -117,12 +167,10 @@ involved.
 These are **not committed** — they represent potential future work based on
 adoption and community input:
 
-- **Multi-tenant enforcement** — per-agent/per-tenant policy isolation with
-  namespace-scoped audit trails
-- **Policy Hub** — community repository of reusable, audited policies (think
-  "Docker Hub for agent policies")
-- **Distributed enforcement** — multi-agent systems across processes/machines
-  with consistent policy evaluation
+- **Policy server (v1.7.0)** — centralized signed policies, pull-only, TTL caching
+- **Compliance reporting (v1.8.0)** — EU AI Act / SOC2 / GDPR export templates
+- **Distributed enforcement (v2.0.0)** — multi-node, multi-agent with global Merkle root
+- **Policy Hub** — community repository of reusable, audited policies
 - **Multi-language SDKs** — TypeScript, Go, Rust bindings via FFI
 - **Formal verification backend** — integration with TLA+/Alloy/Z3 for
   machine-checked policy correctness proofs

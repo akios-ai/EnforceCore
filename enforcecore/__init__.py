@@ -104,6 +104,7 @@ from enforcecore.core.hardening import (
 from enforcecore.core.hardening import (
     validate_tool_name as validate_tool_name,
 )
+from enforcecore.core.multitenant import MultiTenantEnforcer
 from enforcecore.core.policy import (
     ContentRulesPolicyConfig as ContentRulesPolicyConfig,
 )
@@ -337,7 +338,7 @@ from enforcecore.telemetry import (
     EnforceCorePrometheusExporter as EnforceCorePrometheusExporter,
 )
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -363,6 +364,7 @@ __all__ = [
     "EnforcementViolation",
     "Enforcer",
     "KillSwitch",
+    "MultiTenantEnforcer",
     "NERBackend",
     "Policy",
     "PolicyError",

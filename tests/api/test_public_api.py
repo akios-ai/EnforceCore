@@ -60,9 +60,10 @@ class TestAllExportsExist:
         SensitivityLabel, SensitivityLabelConfig, SensitivityViolation,
         SensitivityViolationError, check_tool_schema_sensitivity,
         is_ner_available, sensitivity_level.
+        v1.6.0 added 1 multi-tenant symbol: MultiTenantEnforcer.
         """
-        assert len(enforcecore.__all__) == 45, (
-            f"Expected 45 symbols in __all__, got {len(enforcecore.__all__)}"
+        assert len(enforcecore.__all__) == 46, (
+            f"Expected 46 symbols in __all__, got {len(enforcecore.__all__)}"
         )
 
 
@@ -80,6 +81,7 @@ TIER1_CLASSES: set[str] = {
     "EnforcementResult",
     "Enforcer",
     "KillSwitch",
+    "MultiTenantEnforcer",
     "NERBackend",
     "RateLimiter",
     "RedactionResult",
