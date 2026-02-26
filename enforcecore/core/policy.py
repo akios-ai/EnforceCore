@@ -327,7 +327,7 @@ class Policy(BaseModel):
     # -- Factory helpers -----------------------------------------------------
 
     @classmethod
-    def from_file(cls, path: str | Path) -> Policy:
+    def from_file(cls, path: str | Path, *, _seen: frozenset[Path] | None = None) -> Policy:
         """Load and validate a policy from a YAML file.
 
         If the YAML contains an ``extends`` key pointing to another file,
@@ -335,15 +335,24 @@ class Policy(BaseModel):
         top of it.  Relative paths in ``extends`` are resolved against
         the directory of the current file.
 
+        Circular inheritance chains (``a.yaml → b.yaml → a.yaml``) are
+        detected and raise :class:`PolicyLoadError`.
+
         Raises:
-            PolicyLoadError: If the file cannot be found or parsed.
+            PolicyLoadError: If the file cannot be found, parsed, or if a
+                circular ``extends`` chain is detected.
             PolicyValidationError: If the YAML content is not a valid policy.
         """
-        filepath = Path(path)
+        filepath = Path(path).resolve()
         if not filepath.exists():
             raise PolicyLoadError(f"Policy file not found: {filepath}")
         if not filepath.is_file():
             raise PolicyLoadError(f"Policy path is not a file: {filepath}")
+
+        seen = _seen or frozenset()
+        if filepath in seen:
+            chain = " → ".join(str(p) for p in sorted(seen)) + f" → {filepath}"
+            raise PolicyLoadError(f"Circular extends detected: {chain}")
 
         try:
             raw = filepath.read_text(encoding="utf-8")
@@ -360,7 +369,7 @@ class Policy(BaseModel):
         extends_path = data.pop("extends", None)
         if extends_path is not None:
             base_path = (filepath.parent / extends_path).resolve()
-            base = cls.from_file(base_path)
+            base = cls.from_file(base_path, _seen=seen | {filepath})
             override = cls.from_dict(data, source=str(filepath))
             return cls.merge(base, override)
 

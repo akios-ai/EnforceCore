@@ -272,7 +272,11 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.1.0** | Evaluation Expansion (26 scenarios, 11 threat categories, HTML reports) | ✅ Shipped |
 | **v1.1.1** | Eval Polish + Community Prep | ✅ Shipped |
 | **v1.1.2** | Beta Feedback Fixes (CLI `--version`, doc links, extras detection) | ✅ Shipped |
-| **v1.1.3** | Test Robustness + Platform Fixes (chattr mocks, eval timeout, docs) | ✅ **Latest** |
+| **v1.2.0** | Audit Storage System + Compliance (JSONL / SQLite / PostgreSQL, EU AI Act) | ✅ Shipped |
+| **v1.3.0** | Subprocess Sandbox (post-execution isolation, resource limits) | ✅ Shipped |
+| **v1.4.0** | NER PII + Sensitivity Labels (`enforcecore[ner]`) | ✅ Shipped |
+| **v1.5.0** | OpenTelemetry + Observability (Prometheus, OTLP traces, Grafana dashboard) | ✅ **Latest** |
+| **v1.6.0** | Multi-Tenant + Policy Inheritance (`extends:` keyword, tenant audit trails) | 🔄 In Progress |
 
 See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.
 
