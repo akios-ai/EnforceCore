@@ -54,6 +54,7 @@ class TestViolationType:
             "resource_limit",
             "output_size",
             "policy_error",
+            "sensitivity_violation",
         }
         actual = {v.value for v in ViolationType}
         assert actual == expected

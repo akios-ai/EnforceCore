@@ -126,6 +126,9 @@ from enforcecore.core.policy import (
 from enforcecore.core.policy import (
     ResourceLimits as ResourceLimits,
 )
+from enforcecore.core.policy import (
+    SensitivityLabelConfig as SensitivityLabelConfig,
+)
 from enforcecore.core.rules import (
     ContentRule as ContentRule,
 )
@@ -140,6 +143,15 @@ from enforcecore.core.rules import (
 )
 from enforcecore.core.rules import (
     get_builtin_rules as get_builtin_rules,
+)
+from enforcecore.core.sensitivity import (
+    SensitivityEnforcer as SensitivityEnforcer,
+)
+from enforcecore.core.sensitivity import (
+    SensitivityViolation as SensitivityViolation,
+)
+from enforcecore.core.sensitivity import (
+    check_tool_schema_sensitivity as check_tool_schema_sensitivity,
 )
 from enforcecore.core.types import (
     AuditError as AuditError,
@@ -158,6 +170,8 @@ from enforcecore.core.types import (
     PolicyLoadError,
     RedactionStrategy,
     ResourceLimitError,
+    SensitivityLabel,
+    SensitivityViolationError,
     ToolDeniedError,
 )
 from enforcecore.core.types import (
@@ -180,6 +194,9 @@ from enforcecore.core.types import (
 )
 from enforcecore.core.types import (
     ViolationType as ViolationType,
+)
+from enforcecore.core.types import (
+    sensitivity_level as sensitivity_level,
 )
 from enforcecore.eval import (
     BenchmarkRunner as BenchmarkRunner,
@@ -273,6 +290,12 @@ from enforcecore.plugins.webhooks import (
 )
 from enforcecore.redactor.engine import DetectedEntity as DetectedEntity
 from enforcecore.redactor.engine import RedactionResult, Redactor
+from enforcecore.redactor.ner import (
+    NERBackend as NERBackend,
+)
+from enforcecore.redactor.ner import (
+    is_ner_available as is_ner_available,
+)
 from enforcecore.redactor.patterns import (
     CustomPattern as CustomPattern,
 )
@@ -308,7 +331,7 @@ from enforcecore.telemetry import (
     EnforceCoreMetrics as EnforceCoreMetrics,
 )
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -334,6 +357,7 @@ __all__ = [
     "EnforcementViolation",
     "Enforcer",
     "KillSwitch",
+    "NERBackend",
     "Policy",
     "PolicyError",
     "PolicyLoadError",
@@ -349,14 +373,22 @@ __all__ = [
     "SandboxTimeoutError",
     "SandboxViolationError",
     "SecretScanner",
+    "SensitivityEnforcer",
+    "SensitivityLabel",
+    "SensitivityLabelConfig",
+    "SensitivityViolation",
+    "SensitivityViolationError",
     "Settings",
     "SubprocessSandbox",
     "ToolDeniedError",
     "VerificationResult",
     "__version__",
+    "check_tool_schema_sensitivity",
     "enforce",
+    "is_ner_available",
     "load_policy",
     "load_trail",
+    "sensitivity_level",
     "settings",
     "verify_trail",
 ]
@@ -406,6 +438,7 @@ _TIER2_IMPORTS: dict[str, tuple[str, str]] = {
     "PolicyRules": ("enforcecore.core.policy", "PolicyRules"),
     "RateLimitPolicyConfig": ("enforcecore.core.policy", "RateLimitPolicyConfig"),
     "ResourceLimits": ("enforcecore.core.policy", "ResourceLimits"),
+    "SensitivityLabelConfig": ("enforcecore.core.policy", "SensitivityLabelConfig"),
     # ── core.rules ──
     "ContentRule": ("enforcecore.core.rules", "ContentRule"),
     "ContentRuleConfig": ("enforcecore.core.rules", "ContentRuleConfig"),

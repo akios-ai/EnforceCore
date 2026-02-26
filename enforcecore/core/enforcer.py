@@ -164,13 +164,24 @@ class Enforcer:
     @staticmethod
     def _build_redactor(policy: Policy) -> Redactor | None:
         """Create a Redactor from the policy's PII config, if enabled."""
+        from enforcecore.core.types import RedactionStrategy
+
         pii_cfg = policy.rules.pii_redaction
         if not pii_cfg.enabled or not settings.redaction_enabled:
             return None
-        return Redactor(
-            categories=pii_cfg.categories,
-            strategy=pii_cfg.strategy,
-        )
+
+        kwargs: dict[str, object] = {
+            "categories": pii_cfg.categories,
+            "strategy": pii_cfg.strategy,
+        }
+
+        # Pass NER-specific config when the NER strategy is selected
+        if pii_cfg.strategy == RedactionStrategy.NER:
+            kwargs["threshold"] = pii_cfg.ner_threshold
+            if pii_cfg.ner_fallback_to_regex:
+                kwargs["fallback"] = RedactionStrategy.REGEX
+
+        return Redactor(**kwargs)  # type: ignore[arg-type]
 
     @staticmethod
     def _build_rule_engine(policy: Policy) -> RuleEngine | None:

@@ -34,6 +34,7 @@ from enforcecore.core.types import (
     PolicyLoadError,
     PolicyValidationError,
     RedactionStrategy,
+    SensitivityLabel,
     ToolDeniedError,
     ViolationAction,
     ViolationType,
@@ -49,11 +50,33 @@ logger = structlog.get_logger("enforcecore.policy")
 
 
 class PIIRedactionConfig(BaseModel):
-    """Configuration for PII redaction within a policy."""
+    """Configuration for PII redaction within a policy.
+
+    When ``strategy`` is ``RedactionStrategy.NER`` the Presidio NER
+    pipeline is used for detection (requires ``pip install enforcecore[ner]``).
+    Set ``ner_fallback_to_regex=true`` to silently fall back to regex if
+    Presidio is not installed.
+
+    Example YAML (NER tier)::
+
+        pii_redaction:
+          enabled: true
+          strategy: ner
+          ner_threshold: 0.85
+          ner_fallback_to_regex: true
+          categories: [email, phone, person_name]
+
+    .. versionchanged:: 1.4.0
+       Added ``ner_threshold`` and ``ner_fallback_to_regex`` fields.
+    """
 
     enabled: bool = False
     categories: list[str] = ["email", "phone", "ssn", "credit_card", "ip_address"]
     strategy: RedactionStrategy = RedactionStrategy.PLACEHOLDER
+    ner_threshold: float = 0.8
+    """Minimum Presidio confidence score (0-1) for NER entity detection."""
+    ner_fallback_to_regex: bool = True
+    """Fall back to regex if Presidio is not installed (NER strategy only)."""
 
 
 class ResourceLimits(BaseModel):
@@ -170,6 +193,35 @@ class SandboxPolicyConfig(BaseModel):
         )
 
 
+class SensitivityLabelConfig(BaseModel):
+    """Sensitivity label policy configuration.
+
+    Controls lightweight IFC-style flow enforcement on tool schemas and
+    data fields.  When ``enforce=true`` any field whose sensitivity label
+    exceeds the effective tool clearance is **blocked**.  When
+    ``enforce=false`` the field is redacted instead (if a Redactor is
+    active) or the call is allowed with a warning.
+
+    Example YAML::
+
+        sensitivity_labels:
+          enabled: true
+          default_clearance: internal
+          enforce: true
+          fallback: redact
+
+    .. versionadded:: 1.4.0
+    """
+
+    enabled: bool = False
+    default_clearance: SensitivityLabel = SensitivityLabel.INTERNAL
+    """Clearance applied to tools that do not declare their own clearance."""
+    enforce: bool = True
+    """If True, block calls that violate the flow rule. If False, redact."""
+    fallback: str = "redact"
+    """Action when ``enforce=False``: ``"redact"`` or ``"warn"``."""
+
+
 # Mapping of common aliases to their canonical field names.
 _RULES_ALIASES: dict[str, str] = {
     "pii": "pii_redaction",
@@ -195,6 +247,7 @@ class PolicyRules(BaseModel):
     content_rules: ContentRulesPolicyConfig = ContentRulesPolicyConfig()
     rate_limits: RateLimitPolicyConfig = RateLimitPolicyConfig()
     sandbox: SandboxPolicyConfig = SandboxPolicyConfig()
+    sensitivity_labels: SensitivityLabelConfig = SensitivityLabelConfig()
     max_output_size_bytes: int | None = None
     redact_output: bool = True
 
