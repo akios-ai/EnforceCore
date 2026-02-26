@@ -7,7 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.3.0] — 2026-02-26
+## [1.4.0] — 2026-02-26
+
+### Added
+
+- **NER-Based PII Detection** — New optional `enforcecore[ner]` tier that layers
+  Presidio's Named Entity Recognition pipeline on top of the existing regex engine.
+
+  - `NERBackend` — Presidio `AnalyzerEngine` wrapper with confidence-threshold
+    filtering and EnforceCore category mapping. Install via
+    `pip install enforcecore[ner]`.
+  - `is_ner_available()` — runtime probe that returns `True` when Presidio is
+    importable; used to gate NER-path execution and surface helpful errors.
+  - `RedactionStrategy.NER` — new enum value; set `strategy: ner` in policy
+    `pii_redaction` to activate the NER tier.
+  - `RedactionStrategy.REGEX` — new explicit alias for the classic regex tier
+    (backward-compatible; existing configs with `strategy: placeholder` or no
+    `strategy` field continue to work unchanged).
+  - `_build_analyzer_engine()` (internal) — factory function isolated from
+    `NERBackend.__init__` for clean mock-patching in tests.
+
+- **NER policy configuration** — `PIIRedactionConfig` gains two new fields:
+
+  ```yaml
+  pii_redaction:
+    strategy: ner
+    ner_threshold: 0.85      # confidence floor (default 0.80)
+    ner_fallback_to_regex: true  # fall back to regex when NER unavailable
+  ```
+
+  Both fields are backward-compatible. Existing policies that don't set them
+  get sensible defaults (`0.80` threshold, fallback enabled).
+
+- **Lightweight Sensitivity Labels** — IFC-inspired label system for annotating
+  tool schema fields and enforcing information-flow policy.
+
+  - `SensitivityLabel` enum — four levels: `PUBLIC`, `INTERNAL`,
+    `CONFIDENTIAL`, `RESTRICTED` (orderable by `sensitivity_level()`).
+  - `sensitivity_level(label)` — returns an integer rank (0–3) for ordered
+    comparison.
+  - `SensitivityEnforcer` — policy-driven checker; compares field labels
+    against tool clearance level and collects `SensitivityViolation` records.
+    Methods: `check()`, `check_kwargs()`, `raise_if_violated()`.
+  - `SensitivityViolation` — frozen dataclass capturing `field_name`,
+    `field_sensitivity`, `tool_clearance`, and `policy_action`.
+  - `SensitivityViolationError` — raised by `raise_if_violated()` when at
+    least one violation is found; carries `violations: list[SensitivityViolation]`.
+  - `check_tool_schema_sensitivity()` — convenience function that wraps
+    `SensitivityEnforcer.check_kwargs()` for one-shot use.
+  - `_coerce_label()` / `_coerce_label_with_aliases()` (internal) — accept
+    both canonical enum values and string aliases (`low`, `medium`, `high`,
+    `critical`).
+
+- **`SensitivityLabelConfig`** — Pydantic model for the `sensitivity_labels`
+  block in policy YAML:
+
+  ```yaml
+  sensitivity_labels:
+    enabled: true
+    default_clearance: internal
+    enforce: true
+    fallback: log
+  ```
+
+- **77 new tests** across two files:
+  - `tests/redactor/test_ner.py` — NER availability, entity mapping, backend
+    behavior (threshold, category filtering, sort order, unknown entity fallback),
+    Redactor NER strategy (ImportError without fallback, fallback to regex,
+    person_name via NER, threshold forwarding, repr), REGEX strategy.
+  - `tests/core/test_sensitivity.py` — enum ordering, `sensitivity_level`,
+    label coercion (including aliases), `SensitivityViolation` dataclass,
+    `SensitivityEnforcer` check/check_kwargs/raise_if_violated, properties,
+    `check_tool_schema_sensitivity`, `SensitivityLabelConfig`, NER policy
+    fields, `PolicyRules.sensitivity_labels`.
+
+### Changed
+
+- **Public API grows from 35 → 44 symbols**: `NERBackend`, `SensitivityEnforcer`,
+  `SensitivityLabel`, `SensitivityLabelConfig`, `SensitivityViolation`,
+  `SensitivityViolationError`, `is_ner_available`, `sensitivity_level`, and
+  `check_tool_schema_sensitivity` added to `__all__`.
+
+- **`PolicyRules`** gains a `sensitivity_labels` field (`SensitivityLabelConfig`,
+  default disabled). Backward-compatible — all existing policies work unchanged.
+
+- **`Enforcer._build_redactor()`** now passes `threshold` and `fallback` kwargs
+  from `PIIRedactionConfig` when constructing a `Redactor` with
+  `strategy=NER`.
+
+- **`Redactor`** (internal) gains `_ner_backend` and `_fallback` slots; new
+  constructor kwargs `ner_backend`, `fallback`, and `threshold`. The `detect()`
+  method gains a NER branch that runs before the regex tier when a backend is
+  present. `__repr__` now includes `ner=True/False`.
+
+- **`ViolationType`** gains `SENSITIVITY_VIOLATION` variant.
+
+### New extras
+
+| Extra | Packages |
+|-------|----------|
+| `enforcecore[ner]` | `presidio-analyzer>=2.2`, `presidio-anonymizer>=2.2`, `spacy>=3.7` |
+| `enforcecore[all]` | now includes `ner` alongside `redactor`, `cli`, `telemetry` |
+
+### Compatibility
+
+All changes are backward-compatible. Existing policies, tests, and integrations
+are unaffected. The NER tier and sensitivity labels are strictly opt-in.
+
+---
 
 ## [1.3.0] — 2026-02-26
 

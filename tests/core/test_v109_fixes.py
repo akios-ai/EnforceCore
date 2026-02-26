@@ -177,13 +177,29 @@ class TestL1SharedExtractStrings:
 
 class TestL2UnreachableStrategy:
     def test_all_strategies_work(self) -> None:
-        """All 4 strategies should produce valid replacements."""
+        """All strategies should produce valid replacements."""
+        from unittest.mock import MagicMock, patch
+
         from enforcecore.core.types import RedactionStrategy
 
         for strategy in RedactionStrategy:
-            r = Redactor(categories=["email"], strategy=strategy)
-            result = r.redact("test@example.com")
-            assert result.text != "test@example.com" or strategy == RedactionStrategy.REMOVE
+            if strategy == RedactionStrategy.NER:
+                # NER requires presidio + spaCy; mock the engine to verify wiring
+                mock_engine = MagicMock()
+                mock_engine.analyze.return_value = []
+                with (
+                    patch("enforcecore.redactor.ner.is_ner_available", return_value=True),
+                    patch(
+                        "enforcecore.redactor.ner._build_analyzer_engine",
+                        return_value=mock_engine,
+                    ),
+                ):
+                    r = Redactor(categories=["email"], strategy=strategy)
+                    r.redact("test@example.com")  # must not crash
+            else:
+                r = Redactor(categories=["email"], strategy=strategy)
+                result = r.redact("test@example.com")
+                assert result.text != "test@example.com" or strategy == RedactionStrategy.REMOVE
 
 
 # ---------------------------------------------------------------------------
@@ -247,8 +263,8 @@ class TestMissingExports:
     def test_total_exports_count(self) -> None:
         import enforcecore
 
-        # v1.0.25a1: pruned to 30 Tier 1 symbols (was 105+ in v1.0.9)
-        assert len(enforcecore.__all__) == 36
+        # v1.4.0: 45 Tier 1 symbols (was 36 in v1.3.0; +9 NER + sensitivity)
+        assert len(enforcecore.__all__) == 45
 
 
 # ---------------------------------------------------------------------------
