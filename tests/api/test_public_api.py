@@ -52,9 +52,17 @@ class TestAllExportsExist:
         assert len(enforcecore.__all__) == len(set(enforcecore.__all__))
 
     def test_all_count(self) -> None:
-        """__all__ should have exactly 30 symbols (Tier 1 public API)."""
-        assert len(enforcecore.__all__) == 30, (
-            f"Expected 30 symbols in __all__, got {len(enforcecore.__all__)}"
+        """__all__ should have exactly 45 symbols (Tier 1 public API).
+
+        v1.3.0 added 6 sandbox symbols: SandboxConfig, SandboxMemoryError,
+        SandboxStrategy, SandboxTimeoutError, SandboxViolationError, SubprocessSandbox.
+        v1.4.0 added 9 NER + sensitivity symbols: NERBackend, SensitivityEnforcer,
+        SensitivityLabel, SensitivityLabelConfig, SensitivityViolation,
+        SensitivityViolationError, check_tool_schema_sensitivity,
+        is_ner_available, sensitivity_level.
+        """
+        assert len(enforcecore.__all__) == 45, (
+            f"Expected 45 symbols in __all__, got {len(enforcecore.__all__)}"
         )
 
 
@@ -72,13 +80,19 @@ TIER1_CLASSES: set[str] = {
     "EnforcementResult",
     "Enforcer",
     "KillSwitch",
+    "NERBackend",
     "RateLimiter",
     "RedactionResult",
     "Redactor",
     "Policy",
     "ResourceGuard",
+    "SandboxConfig",
     "SecretScanner",
+    "SensitivityEnforcer",
+    "SensitivityLabelConfig",
+    "SensitivityViolation",
     "Settings",
+    "SubprocessSandbox",
     "VerificationResult",
 }
 
@@ -91,6 +105,10 @@ TIER1_EXCEPTIONS: set[str] = {
     "PolicyError",
     "PolicyLoadError",
     "ResourceLimitError",
+    "SandboxMemoryError",
+    "SandboxTimeoutError",
+    "SandboxViolationError",
+    "SensitivityViolationError",
     "ToolDeniedError",
 }
 
@@ -98,13 +116,18 @@ TIER1_EXCEPTIONS: set[str] = {
 TIER1_ENUMS: set[str] = {
     "Decision",
     "RedactionStrategy",
+    "SandboxStrategy",
+    "SensitivityLabel",
 }
 
 # ── Tier 1: Functions in __all__ ──
 TIER1_FUNCTIONS: set[str] = {
+    "check_tool_schema_sensitivity",
     "enforce",
+    "is_ner_available",
     "load_policy",
     "load_trail",
+    "sensitivity_level",
     "verify_trail",
 }
 

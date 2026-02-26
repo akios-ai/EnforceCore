@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "enforcecore"
-version = "1.1.3"
+version = "1.4.0"
 description = "The runtime enforcement layer for agentic AI systems."
 readme = "README.md"
 license = "Apache-2.0"
@@ -51,6 +51,11 @@ redactor = [
     "presidio-analyzer>=2.2",
     "presidio-anonymizer>=2.2",
 ]
+ner = [
+    "presidio-analyzer>=2.2",
+    "presidio-anonymizer>=2.2",
+    "spacy>=3.7",
+]
 linux = [
     "python-seccomp>=0.1; sys_platform == 'linux'",
 ]
@@ -79,7 +84,7 @@ docs = [
     "mkdocstrings[python]>=0.24",
 ]
 all = [
-    "enforcecore[redactor,cli,telemetry]",
+    "enforcecore[ner,redactor,cli,telemetry]",
 ]
 
 [project.urls]
@@ -147,6 +152,8 @@ module = [
     "crewai.*",
     "autogen_core.*",
     "opentelemetry.*",
+    "psycopg2.*",
+    "dateutil.*",
 ]
 ignore_missing_imports = true
 
