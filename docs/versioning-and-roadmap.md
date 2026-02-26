@@ -44,8 +44,8 @@ Think of it like building a house:
 
 ## Where EnforceCore Is Today
 
-**Current version: `1.0.0` (Stable)**
-**Published:** February 24, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
+**Current version: `1.8.0` (Stable)**
+**Published:** February 28, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
 
 ### What Stable Means for You
 
@@ -132,8 +132,9 @@ Once stable, version numbers follow [Semantic Versioning](https://semver.org/):
 | **v1.4.0** | NER PII + sensitivity labels (`enforcecore[ner]`) | ✅ Shipped |
 | **v1.5.0** | OpenTelemetry + Observability (Prometheus, OTLP, Grafana) | ✅ Shipped |
 | **v1.6.0** | Multi-tenant + policy inheritance (`extends:` keyword) | ✅ Shipped |
-| **v1.7.0** | Remote policy server (signed policies, pull-only) | 🔄 In Progress |
-| **v1.8.0** | Compliance reporting (EU AI Act / SOC2 / GDPR exports) | 📋 Planned |
+| **v1.7.0** | Remote policy server (signed policies, pull-only) | ✅ Shipped |
+| **v1.8.0** | Compliance reporting (EU AI Act / SOC2 / GDPR exports) | ✅ Shipped — **Latest** |
+| **v1.9.0** | Plugin ecosystem (custom guards/redactors from PyPI) | 🔄 In Progress |
 | **v2.0.0** | Distributed enforcement for multi-agent architectures | 📋 Planned |
 
 ---
@@ -195,4 +196,4 @@ for details.
 
 ---
 
-*This document is updated with each release. Last updated: February 24, 2026 (v1.0.0 stable).*
+*This document is updated with each release. Last updated: February 28, 2026 (v1.8.0 stable — Compliance Reporting).*

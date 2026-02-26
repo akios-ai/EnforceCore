@@ -137,7 +137,7 @@ First-class observability for every enforcement decision:
 **Quality metrics:** 1717 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
-### v1.6.0 — Multi-Tenant + Policy Inheritance ✅ Latest
+### v1.6.0 — Multi-Tenant + Policy Inheritance ✅
 
 Available on [PyPI](https://pypi.org/project/enforcecore/1.6.0/):
 
@@ -165,21 +165,22 @@ tools:
 **Quality metrics:** 1756 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
----
+### v1.7.0 — Remote Policy Server ✅
 
-## Upcoming
+Available on [PyPI](https://pypi.org/project/enforcecore/1.7.0/):
 
-### v1.7.0 — Remote Policy Server
+```bash
+pip install enforcecore
+```
 
 Centralized policy management: policies stored and versioned server-side, agents
 pull at startup or on cache miss.
 
 ```python
-# v1.7.0 API
 Enforcer.from_server(
     "https://policy.acme.com/agents/chatbot-v2",
     token=os.environ["POLICY_SERVER_TOKEN"],
-    cache_ttl=300,  # refresh every 5 minutes
+    cache_ttl=300,
 )
 ```
 
@@ -190,6 +191,62 @@ Key properties:
 - `PolicyServerError` raised on unrecoverable fetch failures
 - Policy version recorded in audit trail for every enforcement decision
 
+**Quality metrics:** 1817 tests passing, mypy strict, ruff-formatted,
+CI-verified on Linux and macOS.
+
+### v1.8.0 — Compliance Reporting ✅ **Latest**
+
+Available on [PyPI](https://pypi.org/project/enforcecore/1.8.0/):
+
+```bash
+pip install enforcecore
+```
+
+Turn the audit trail into structured compliance exports for EU AI Act, SOC2,
+and GDPR — with a single CLI command or Python API:
+
+```bash
+# CLI
+enforcecore audit export --format eu-ai-act --period 2026-Q4 --output report.json
+
+# Python
+reporter = ComplianceReporter()
+report = reporter.export(ComplianceFormat.EU_AI_ACT, CompliancePeriod.from_label("2026-Q4"))
+```
+
+Key additions:
+- `ComplianceReporter` — export/export_json/export_html/send_webhook
+- Pre-built templates: EU AI Act Article 13, SOC2 CC6/7/8/9, GDPR Article 30
+- `CompliancePeriod` — parses quarterly, half-year, or annual labels
+- `ComplianceReport` — scored report with narratives and audit statistics
+- `enforcecore audit export` CLI sub-command
+- Vanta / Drata webhook integration via `send_webhook()`
+
+**Quality metrics:** 1898 tests passing, mypy strict, ruff-formatted,
+CI-verified on Linux and macOS.
+
+---
+
+## Upcoming
+
+### v1.9.0 — Plugin Ecosystem
+
+First-class plugin SDK: publish and consume custom guards, redactors, and audit
+backends from PyPI without forking the core.
+
+```python
+# pip install enforcecore-guard-pii-enterprise
+from enforcecore_guard_pii_enterprise import EnterprisePIIGuard
+
+policy = PolicyRules(extra_guards=[EnterprisePIIGuard()])
+```
+
+Key properties:
+- Plugin entry-point discovery (`enforcecore.guards`, `enforcecore.redactors`)
+- Versioned plugin API with stability guarantees
+- Official plugin template repository
+- Plugin registry CLI: `enforcecore plugin list`
+
 ---
 
 ## Future Directions
@@ -197,7 +254,6 @@ Key properties:
 These are **not committed** — they represent potential future work based on
 adoption and community input:
 
-- **Compliance reporting (v1.8.0)** — EU AI Act / SOC2 / GDPR export templates
 - **Distributed enforcement (v2.0.0)** — multi-node, multi-agent with global Merkle root
 - **Policy Hub** — community repository of reusable, audited policies
 - **Multi-language SDKs** — TypeScript, Go, Rust bindings via FFI
