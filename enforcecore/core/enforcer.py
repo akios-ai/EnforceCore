@@ -644,6 +644,9 @@ class Enforcer:
             # Fire post-call hooks (sync)
             hook_ctx.result = result
             hook_ctx.duration_ms = round(call_duration, 2)
+            hook_ctx.input_redactions = input_redactions
+            hook_ctx.output_redactions = output_redactions
+            hook_ctx.overhead_ms = round((time.perf_counter() - t0) * 1000 - call_duration, 2)
             hooks.fire_post_call(hook_ctx)
 
             # Log + audit
@@ -788,6 +791,9 @@ class Enforcer:
             # Fire post-call hooks (async)
             hook_ctx.result = result
             hook_ctx.duration_ms = round(call_duration, 2)
+            hook_ctx.input_redactions = input_redactions
+            hook_ctx.output_redactions = output_redactions
+            hook_ctx.overhead_ms = round((time.perf_counter() - t0) * 1000 - call_duration, 2)
             await hooks.fire_post_call_async(hook_ctx)
 
             # Log + audit

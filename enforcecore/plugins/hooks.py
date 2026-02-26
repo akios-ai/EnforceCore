@@ -68,6 +68,9 @@ class HookContext:
     # Post-call only
     result: Any = None
     duration_ms: float = 0.0
+    input_redactions: int = 0
+    output_redactions: int = 0
+    overhead_ms: float = 0.0
 
     # Pre-call abort
     abort: bool = False

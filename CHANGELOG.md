@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-02-26
+
+### Added
+
+- **OpenTelemetry + Observability** — First-class observability for every enforcement
+  decision, designed for enterprise ops teams.
+
+  - **`EnforceCoreInstrumentor`** (enhanced) — spans now include
+    `enforcecore.input_redactions`, `enforcecore.output_redactions`,
+    `enforcecore.overhead_ms` attributes, and a `enforcecore.redaction` span
+    event per PII redaction.  Requires `pip install enforcecore[otel]`.
+
+  - **`EnforceCorePrometheusExporter`** — exports enforcement metrics with
+    standard Prometheus naming (`enforcecore_calls_total`,
+    `enforcecore_violations_total`, `enforcecore_redactions_total`,
+    `enforcecore_overhead_seconds`, `enforcecore_latency_seconds`).
+    Requires `pip install enforcecore[prometheus]`.  Zero-overhead when
+    `prometheus_client` is not installed (no-op mode).
+
+  - **`AuditLogExporter`** — streams every enforcement decision as a
+    structured JSON record to any combination of: stdout, file
+    (newline-delimited JSON), HTTP endpoint, Splunk HEC, or Elastic Bulk API.
+    Optional OTLP log export via `enable_otlp()`.  Zero external dependencies.
+
+  - **`make_splunk_hec_sink()`** and **`make_elastic_sink()`** — convenience
+    factory functions for Splunk HTTP Event Collector and Elastic ECS-compatible
+    export.
+
+  - **Grafana dashboard** — `docs/grafana-dashboard.json` — pre-built Grafana
+    dashboard with panels for: calls/min, blocks/min, redactions/min,
+    overhead P50/P99, tool call latency P50/P99, violations by type, and
+    block rate gauge.  Import directly into Grafana ≥ 10.0.
+
+- **New extras**:
+
+  - `pip install enforcecore[otel]` — OpenTelemetry SDK + OTLP gRPC exporter.
+  - `pip install enforcecore[prometheus]` — `prometheus_client` for Prometheus
+    scraping.
+
+- **`HookContext` extended** — `input_redactions: int`, `output_redactions: int`,
+  and `overhead_ms: float` fields added (all default `0`/`0.0`).  Populated by
+  the enforcer before firing post-call hooks.  Backward-compatible — existing
+  hook callbacks that don't read these fields are unaffected.
+
+### Changed
+
+- `enforcecore.__version__` bumped to `1.5.0`.
+- `EnforceCoreInstrumentor` scope version updated to `1.5.0`.
+
 ## [1.4.0] — 2026-02-26
 
 ### Added
