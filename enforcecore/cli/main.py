@@ -513,3 +513,136 @@ def inspect(
         )
 
     console.print(table)
+
+
+# ---------------------------------------------------------------------------
+# enforcecore plugin (sub-app)
+# ---------------------------------------------------------------------------
+
+plugin_app = typer.Typer(
+    name="plugin",
+    help="Discover and inspect installed EnforceCore plugins.",
+    no_args_is_help=True,
+)
+app.add_typer(plugin_app)
+
+
+@plugin_app.command(name="list")
+def plugin_list(
+    kind: Annotated[
+        str | None,
+        typer.Option(
+            "--kind",
+            "-k",
+            help="Filter by plugin kind: guard | redactor | audit_backend",
+        ),
+    ] = None,
+) -> None:
+    """List all installed EnforceCore plugins.
+
+    Plugins are discovered from installed packages via their
+    ``enforcecore.guards``, ``enforcecore.redactors``, and
+    ``enforcecore.audit_backends`` entry points.
+
+    Examples::
+
+        # List all plugins
+        enforcecore plugin list
+
+        # List only guard plugins
+        enforcecore plugin list --kind guard
+    """
+    from enforcecore.plugins.manager import PluginManager
+
+    manager = PluginManager()
+    plugins = manager.discover()
+
+    if kind:
+        plugins = [p for p in plugins if p.kind == kind]
+
+    if not plugins:
+        console.print("[dim]No EnforceCore plugins found.[/dim]")
+        console.print(
+            "[dim]Install plugins with pip, e.g.: pip install enforcecore-guard-toxicity[/dim]"
+        )
+        return
+
+    table = Table(title=f"Installed EnforceCore Plugins ({len(plugins)})")
+    table.add_column("Name", style="bold")
+    table.add_column("Kind", style="cyan")
+    table.add_column("Version")
+    table.add_column("Entry Point", style="dim")
+
+    kind_colors = {
+        "guard": "green",
+        "redactor": "yellow",
+        "audit_backend": "blue",
+    }
+    for p in sorted(plugins, key=lambda x: (x.kind, x.name)):
+        color = kind_colors.get(p.kind, "white")
+        table.add_row(
+            p.name,
+            f"[{color}]{p.kind}[/{color}]",
+            p.version or "[dim]unknown[/dim]",
+            p.package,
+        )
+
+    console.print(table)
+
+
+@plugin_app.command(name="info")
+def plugin_info(
+    name: Annotated[str, typer.Argument(help="Plugin entry-point name")],
+) -> None:
+    """Show details about an installed EnforceCore plugin.
+
+    Loads the plugin class to inspect its metadata.
+
+    Examples::
+
+        enforcecore plugin info toxicity-guard
+        enforcecore plugin info employee-id-redactor
+    """
+    from enforcecore.plugins.manager import PluginLoadError, PluginManager
+
+    manager = PluginManager()
+    discovered = {p.name: p for p in manager.discover()}
+
+    if name not in discovered:
+        err_console.print(f"[red]✗[/red] Plugin {name!r} not found.")
+        err_console.print(
+            "[dim]Run [bold]enforcecore plugin list[/bold] to see available plugins.[/dim]"
+        )
+        raise typer.Exit(code=1)
+
+    info = discovered[name]
+
+    # Try to load it to get the instance repr
+    instance_repr = "[dim]not loaded[/dim]"
+    categories_str = ""
+    try:
+        manager.load(name)
+        if manager.guards:
+            g_inst = manager.guards[0]
+            instance_repr = repr(g_inst)
+        elif manager.redactors:
+            r_inst = manager.redactors[0]
+            instance_repr = repr(r_inst)
+            categories_str = ", ".join(r_inst.categories)
+        elif manager.audit_backends:
+            b_inst = manager.audit_backends[0]
+            instance_repr = repr(b_inst)
+    except PluginLoadError as exc:
+        instance_repr = f"[red]Load error: {exc}[/red]"
+
+    panel_content = (
+        f"[bold]Name:[/bold]        {info.name}\n"
+        f"[bold]Kind:[/bold]        {info.kind}\n"
+        f"[bold]Version:[/bold]     {info.version or 'unknown'}\n"
+        f"[bold]Entry point:[/bold] {info.package}\n"
+    )
+    if categories_str:
+        panel_content += f"[bold]Categories:[/bold]  {categories_str}\n"
+    panel_content += f"[bold]Instance:[/bold]    {instance_repr}"
+
+    console.print(Panel(panel_content, title=f"Plugin: {info.name}", expand=False))

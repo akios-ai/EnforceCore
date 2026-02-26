@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-02-28
+
+### Added
+
+- **Plugin Ecosystem** — First-class support for publishing and consuming
+  custom guards, redactors, and audit backends from PyPI, without forking
+  or monkey-patching EnforceCore.
+
+  - **`GuardPlugin` (ABC)** — Subclass and register under the
+    `enforcecore.guards` entry-point group.  `check(tool_name, args, kwargs)`
+    returns a `GuardResult`; returning `allowed=False` blocks the call.
+
+  - **`RedactorPlugin` (ABC)** — Subclass and register under
+    `enforcecore.redactors`.  `redact(text)` returns a `RedactResult`
+    containing the scrubbed text and a redaction count.  Declare PII
+    categories via the `categories` property.
+
+  - **`AuditBackendPlugin` (ABC)** — Subclass and register under
+    `enforcecore.audit_backends`.  `record(entry)` is called for every
+    enforcement decision; `flush()` is called on shutdown.
+
+  - **`PluginManager`** — Discovers entry points from all installed packages
+    via `importlib.metadata` (no imports until `load_all()` is called).
+    Properties `guards`, `redactors`, and `audit_backends` return defensive
+    copies of the loaded plugin lists.
+
+    ```python
+    from enforcecore import PluginManager
+
+    manager = PluginManager()
+    n = manager.load_all(ignore_errors=True)  # skip broken plugins
+    print(f"Loaded {n} plugins")
+
+    for guard in manager.guards:
+        result = guard.check("my_tool", args, kwargs)
+    ```
+
+  - **`PluginLoadError`** — Raised when a plugin fails to import,
+    fails the `issubclass` check, or raises during `__init__`.
+
+  - **`GuardResult`**, **`RedactResult`**, **`PluginInfo`** — Frozen
+    dataclasses shared between plugins and the manager.
+
+- **CLI: `enforcecore plugin list`** — Lists all installed plugins
+  discovered from entry points.  Supports `--kind guard|redactor|audit_backend`
+  filter.
+
+  ```
+  $ enforcecore plugin list
+  ┌─────────────────────────────────────────────────────────┐
+  │            Installed EnforceCore Plugins (2)            │
+  ├──────────────────────┬─────────────────┬───────┬────────┤
+  │ Name                 │ Kind            │ Ver   │ EP     │
+  ├──────────────────────┼─────────────────┼───────┼────────┤
+  │ toxicity-guard       │ guard           │ 1.0.0 │ ...    │
+  │ employee-id-redactor │ redactor        │ 2.1.0 │ ...    │
+  └──────────────────────┴─────────────────┴───────┴────────┘
+  ```
+
+- **CLI: `enforcecore plugin info <name>`** — Loads and inspects a named
+  plugin, showing kind, version, entry-point path, categories (redactors),
+  and instance repr.
+
+- **5 new Tier 1 public API symbols** (`__all__` grows from 53 → 58):
+  - `AuditBackendPlugin`
+  - `GuardPlugin`
+  - `PluginLoadError`
+  - `PluginManager`
+  - `RedactorPlugin`
+
+  All importable directly from `enforcecore`:
+
+  ```python
+  from enforcecore import GuardPlugin, RedactorPlugin, AuditBackendPlugin
+  from enforcecore import PluginManager, PluginLoadError
+  ```
+
+### Changed
+
+- `enforcecore/plugins/__init__.py` now re-exports all base classes and the
+  manager alongside the existing hook and webhook symbols.
+
 ## [1.8.0] — 2026-02-28
 
 ### Added

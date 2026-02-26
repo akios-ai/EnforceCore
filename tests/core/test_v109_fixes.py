@@ -264,7 +264,7 @@ class TestMissingExports:
         import enforcecore
 
         # v1.8.0: 53 Tier 1 symbols (was 48 in v1.7.0; +5 compliance)
-        assert len(enforcecore.__all__) == 53
+        assert len(enforcecore.__all__) == 58
 
 
 # ---------------------------------------------------------------------------
