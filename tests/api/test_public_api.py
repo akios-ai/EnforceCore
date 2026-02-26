@@ -52,7 +52,7 @@ class TestAllExportsExist:
         assert len(enforcecore.__all__) == len(set(enforcecore.__all__))
 
     def test_all_count(self) -> None:
-        """__all__ should have exactly 45 symbols (Tier 1 public API).
+        """__all__ should have exactly 48 symbols (Tier 1 public API).
 
         v1.3.0 added 6 sandbox symbols: SandboxConfig, SandboxMemoryError,
         SandboxStrategy, SandboxTimeoutError, SandboxViolationError, SubprocessSandbox.
@@ -61,9 +61,10 @@ class TestAllExportsExist:
         SensitivityViolationError, check_tool_schema_sensitivity,
         is_ner_available, sensitivity_level.
         v1.6.0 added 1 multi-tenant symbol: MultiTenantEnforcer.
+        v1.7.0 added 2 policy server symbols: PolicyServerClient, PolicyServerError.
         """
-        assert len(enforcecore.__all__) == 46, (
-            f"Expected 46 symbols in __all__, got {len(enforcecore.__all__)}"
+        assert len(enforcecore.__all__) == 48, (
+            f"Expected 48 symbols in __all__, got {len(enforcecore.__all__)}"
         )
 
 
@@ -83,6 +84,7 @@ TIER1_CLASSES: set[str] = {
     "KillSwitch",
     "MultiTenantEnforcer",
     "NERBackend",
+    "PolicyServerClient",
     "RateLimiter",
     "RedactionResult",
     "Redactor",
@@ -106,6 +108,7 @@ TIER1_EXCEPTIONS: set[str] = {
     "EnforcementViolation",
     "PolicyError",
     "PolicyLoadError",
+    "PolicyServerError",
     "ResourceLimitError",
     "SandboxMemoryError",
     "SandboxTimeoutError",

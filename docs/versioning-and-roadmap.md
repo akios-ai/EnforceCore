@@ -131,8 +131,8 @@ Once stable, version numbers follow [Semantic Versioning](https://semver.org/):
 | **v1.3.0** | Subprocess sandbox (post-execution isolation, resource limits) | ✅ Shipped |
 | **v1.4.0** | NER PII + sensitivity labels (`enforcecore[ner]`) | ✅ Shipped |
 | **v1.5.0** | OpenTelemetry + Observability (Prometheus, OTLP, Grafana) | ✅ Shipped |
-| **v1.6.0** | Multi-tenant + policy inheritance (`extends:` keyword) | 🔄 In Progress |
-| **v1.7.0** | Remote policy server (signed policies, pull-only) | 📋 Planned |
+| **v1.6.0** | Multi-tenant + policy inheritance (`extends:` keyword) | ✅ Shipped |
+| **v1.7.0** | Remote policy server (signed policies, pull-only) | 🔄 In Progress |
 | **v1.8.0** | Compliance reporting (EU AI Act / SOC2 / GDPR exports) | 📋 Planned |
 | **v2.0.0** | Distributed enforcement for multi-agent architectures | 📋 Planned |
 

@@ -7,7 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.6.0] — 2026-02-27
+## [1.7.0] — 2026-02-27
+
+### Added
+
+- **Remote Policy Server** — First-class centralized policy management for
+  teams operating 50+ agents across multiple environments.
+
+  - **`PolicyServerClient`** — new class at `enforcecore.core.policy_server`.
+    Fetches YAML policies over HTTPS from a central policy server with
+    HMAC-SHA256 signature verification, TTL caching, and stale-on-error
+    graceful degradation.
+
+    ```python
+    from enforcecore import PolicyServerClient
+
+    client = PolicyServerClient(
+        "https://policy.acme.com/agents/chatbot-v2",
+        token=os.environ["POLICY_SERVER_TOKEN"],
+        cache_ttl=300,
+    )
+    policy = client.get_policy()
+    client.invalidate()  # force re-fetch on next get_policy()
+    ```
+
+  - **`Enforcer.from_server(url, token, *, cache_ttl=300)`** — factory
+    classmethod that fetches the policy from a remote server at construction
+    time and stores the client for later inspection.
+
+    ```python
+    import os
+    from enforcecore import Enforcer
+
+    enforcer = Enforcer.from_server(
+        "https://policy.acme.com/agents/chatbot-v2",
+        token=os.environ["POLICY_SERVER_TOKEN"],
+        cache_ttl=300,
+    )
+    # enforcer.policy_server_client gives access to the PolicyServerClient
+    ```
+
+  - **`PolicyServerError`** — new exception class (subclass of `PolicyError`)
+    raised when the policy server is unreachable with no cached fallback,
+    returns an HTTP error, fails HMAC signature verification, or returns
+    invalid YAML.
+
+  - **Signature verification** — servers that include an
+    `X-Policy-Signature` HTTP response header (HMAC-SHA256 of the response
+    body, keyed with the bearer token) are automatically verified before the
+    policy is loaded. Disable with `verify_signature=False`.
+
+  - **Pull-only architecture** — the enforcer always pulls from the server;
+    the server never pushes. The trust model is explicit and auditable.
+
+  - **Stale-on-error fallback** — if the server is unreachable and a cached
+    policy exists (even if expired), the cached policy is returned instead of
+    raising an exception. This prevents live-traffic disruption during
+    transient server outages.
+
+  - **`Enforcer.policy_server_client`** — property that returns the
+    `PolicyServerClient` used by an enforcer created via `from_server()`, or
+    `None` for enforcers created via `from_file()` or the constructor.
+
+- **`PolicyServerClient` and `PolicyServerError`** added to
+  `enforcecore.__all__` (Tier 1 public API — 48 symbols total).
+
+### Changed
+
+- `enforcecore.__version__` bumped to `"1.7.0"`.
+- Telemetry scope version bumped to `"1.7.0"`.
+- `Enforcer.__slots__` extended with `"_policy_server"` (no user-visible
+  change).
+
 
 ### Added
 
