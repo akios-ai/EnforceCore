@@ -8,8 +8,8 @@ authors:
 repository-code: "https://github.com/akios-ai/EnforceCore"
 url: "https://akios.ai/enforcecore"
 license: Apache-2.0
-version: "1.9.0"
-date-released: "2026-02-27"
+version: "1.10.0"
+date-released: "2026-02-26"
 keywords:
   - ai-safety
   - agent-enforcement
