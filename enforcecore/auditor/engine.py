@@ -73,6 +73,7 @@ class AuditEntry:
     tool_name: str = ""
     policy_name: str = ""
     policy_version: str = ""
+    tenant_id: str | None = None  # populated when using MultiTenantEnforcer
 
     # Decision
     decision: str = "allowed"  # allowed | blocked
@@ -396,6 +397,7 @@ class Auditor:
         call_duration_ms: float = 0.0,
         input_redactions: int = 0,
         output_redactions: int = 0,
+        tenant_id: str | None = None,
     ) -> AuditEntry:
         """Record an audit entry and append it to the trail.
 
@@ -431,6 +433,7 @@ class Auditor:
                 call_duration_ms=call_duration_ms,
                 input_redactions=input_redactions,
                 output_redactions=output_redactions,
+                tenant_id=tenant_id,
                 previous_hash=self._last_hash,
             )
             entry.seal()

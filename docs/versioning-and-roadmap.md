@@ -120,16 +120,21 @@ Once stable, version numbers follow [Semantic Versioning](https://semver.org/):
 | **New feature** | Minor (`x.Y.0`) | 1.0.1 → 1.1.0 | Added new capability, old code still works |
 | **Breaking change** | Major (`X.0.0`) | 1.1.0 → 2.0.0 | Changed existing API, migration may be needed |
 
-### Planned Post-Stable Work
+### Post-Stable Releases
 
-| Version | Focus |
-|---------|-------|
-| **v1.0.1** | Bug fixes from post-release audit (witness verification, policy validation) |
-| **v1.1.0** | AgentSecBench — public security benchmark suite |
-| **v1.2.0** | Subprocess / WASM sandbox for tool execution |
-| **v1.3.0** | NER-based PII detection (optional Presidio/spaCy tier) |
-| **v1.4.0** | OpenTelemetry traces and metrics |
-| **v2.0.0** | Distributed enforcement for multi-agent architectures |
+| Version | Focus | Status |
+|---------|-------|--------|
+| **v1.0.1** | Bug fixes from post-release audit (witness verification, policy validation) | ✅ Shipped |
+| **v1.1.0** | Eval expansion (26 scenarios, 11 threat categories, HTML reports) | ✅ Shipped |
+| **v1.1.2** | Beta feedback fixes (CLI `--version`, doc links, extras) | ✅ Shipped |
+| **v1.2.0** | Audit Storage System + Compliance (JSONL/SQLite/PostgreSQL backends, EU AI Act) | ✅ Shipped |
+| **v1.3.0** | Subprocess sandbox (post-execution isolation, resource limits) | ✅ Shipped |
+| **v1.4.0** | NER PII + sensitivity labels (`enforcecore[ner]`) | ✅ Shipped |
+| **v1.5.0** | OpenTelemetry + Observability (Prometheus, OTLP, Grafana) | ✅ Shipped |
+| **v1.6.0** | Multi-tenant + policy inheritance (`extends:` keyword) | 🔄 In Progress |
+| **v1.7.0** | Remote policy server (signed policies, pull-only) | 📋 Planned |
+| **v1.8.0** | Compliance reporting (EU AI Act / SOC2 / GDPR exports) | 📋 Planned |
+| **v2.0.0** | Distributed enforcement for multi-agent architectures | 📋 Planned |
 
 ---
 

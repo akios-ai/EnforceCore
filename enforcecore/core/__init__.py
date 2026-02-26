@@ -4,6 +4,7 @@
 
 from enforcecore.core.config import Settings, settings
 from enforcecore.core.enforcer import Enforcer, clear_policy_cache, enforce
+from enforcecore.core.multitenant import MultiTenantEnforcer
 from enforcecore.core.policy import (
     ContentRulesPolicyConfig,
     NetworkPolicy,
@@ -52,6 +53,8 @@ __all__ = [
     # Enforcer
     "Enforcer",
     "GuardError",
+    # Multi-tenant
+    "MultiTenantEnforcer",
     # Policy
     "NetworkPolicy",
     "PIIRedactionConfig",
