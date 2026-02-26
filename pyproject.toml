@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "enforcecore"
-version = "1.4.0"
+version = "1.5.0"
 description = "The runtime enforcement layer for agentic AI systems."
 readme = "README.md"
 license = "Apache-2.0"
@@ -67,6 +67,14 @@ telemetry = [
     "opentelemetry-api>=1.20",
     "opentelemetry-sdk>=1.20",
 ]
+otel = [
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.20",
+]
+prometheus = [
+    "prometheus_client>=0.19",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -84,7 +92,7 @@ docs = [
     "mkdocstrings[python]>=0.24",
 ]
 all = [
-    "enforcecore[ner,redactor,cli,telemetry]",
+    "enforcecore[ner,redactor,cli,telemetry,prometheus]",
 ]
 
 [project.urls]
@@ -152,6 +160,7 @@ module = [
     "crewai.*",
     "autogen_core.*",
     "opentelemetry.*",
+    "prometheus_client.*",
     "psycopg2.*",
     "dateutil.*",
 ]
