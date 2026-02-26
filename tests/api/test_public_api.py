@@ -52,7 +52,7 @@ class TestAllExportsExist:
         assert len(enforcecore.__all__) == len(set(enforcecore.__all__))
 
     def test_all_count(self) -> None:
-        """__all__ should have exactly 53 symbols (Tier 1 public API).
+        """__all__ should have exactly 58 symbols (Tier 1 public API).
 
         v1.3.0 added 6 sandbox symbols: SandboxConfig, SandboxMemoryError,
         SandboxStrategy, SandboxTimeoutError, SandboxViolationError, SubprocessSandbox.
@@ -64,9 +64,11 @@ class TestAllExportsExist:
         v1.7.0 added 2 policy server symbols: PolicyServerClient, PolicyServerError.
         v1.8.0 added 5 compliance symbols: ComplianceError, ComplianceFormat,
         CompliancePeriod, ComplianceReport, ComplianceReporter.
+        v1.9.0 added 5 plugin ecosystem symbols: AuditBackendPlugin, GuardPlugin,
+        PluginLoadError, PluginManager, RedactorPlugin.
         """
-        assert len(enforcecore.__all__) == 53, (
-            f"Expected 53 symbols in __all__, got {len(enforcecore.__all__)}"
+        assert len(enforcecore.__all__) == 58, (
+            f"Expected 58 symbols in __all__, got {len(enforcecore.__all__)}"
         )
 
 
@@ -78,6 +80,7 @@ class TestAllExportsExist:
 
 # ── Tier 1: Classes in __all__ ──
 TIER1_CLASSES: set[str] = {
+    "AuditBackendPlugin",
     "AuditEntry",
     "Auditor",
     "CompliancePeriod",
@@ -86,13 +89,16 @@ TIER1_CLASSES: set[str] = {
     "CostTracker",
     "EnforcementResult",
     "Enforcer",
+    "GuardPlugin",
     "KillSwitch",
     "MultiTenantEnforcer",
     "NERBackend",
+    "PluginManager",
     "PolicyServerClient",
     "RateLimiter",
     "RedactionResult",
     "Redactor",
+    "RedactorPlugin",
     "Policy",
     "ResourceGuard",
     "SandboxConfig",
@@ -112,6 +118,7 @@ TIER1_EXCEPTIONS: set[str] = {
     "CostLimitError",
     "EnforceCoreError",
     "EnforcementViolation",
+    "PluginLoadError",
     "PolicyError",
     "PolicyLoadError",
     "PolicyServerError",
