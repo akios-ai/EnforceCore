@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **SQLite backend INSERT column mismatch** — `SQLiteBackend.record()` used a
+  bare `INSERT INTO audit_entries VALUES (?, …)` with 19 positional
+  placeholders; the `audit_entries` table has 20 columns (`created_at` has a
+  `DEFAULT CURRENT_TIMESTAMP`).  Changed to an explicit column-named INSERT
+  that names the 19 application-level columns and omits `created_at`, letting
+  the database default apply.  This unblocked 5 integration tests that were
+  marked with unconditional `pytest.skip()` since v1.2.0.
+
+- **`dateutil` phantom dependency in `ReportGenerator`** — `_parse_period()`
+  did a lazy `from dateutil.relativedelta import relativedelta` that would
+  raise `ImportError` at runtime because `python-dateutil` is not in the
+  declared dependencies.  Replaced with a pure-stdlib implementation using
+  `calendar.monthrange()` and `datetime.timedelta`.
+
+- **HTML compliance report template key mismatch** — The EU AI Act HTML
+  template referenced `data["article_14"]["statistics"]["pii_redactions"]`
+  but `EUAIActQueries.article_14_information_requirements()` returns
+  `total_redactions`.  Fixed the template key.
+
+### Added
+
+- **`api-design.md` now covers v1.0–v1.9** — Complete API reference for all
+  eight modules added since v1.0: AuditStore (v1.2), Subprocess Sandbox
+  (v1.3), NER PII + Sensitivity Labels (v1.4), OpenTelemetry + Prometheus
+  (v1.5), Multi-Tenant + Policy Inheritance (v1.6), Remote Policy Server
+  (v1.7), Compliance Reporting (v1.8), Plugin Ecosystem (v1.9).  Every public
+  class and function now has a signature, parameter table, and usage example.
+
+- **`architecture.md` updated with v1.2–v1.9 component diagrams** — New
+  "Architecture Evolution" section with: composite Mermaid flowchart of all
+  v1.9 components; updated module dependency graph including all new
+  subpackages; prose descriptions of each new subsystem's design invariants;
+  updated exception hierarchy classDiagram.
+
 ## [1.9.0] — 2026-02-28
 
 ### Added
