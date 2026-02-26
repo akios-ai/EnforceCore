@@ -52,9 +52,13 @@ class TestAllExportsExist:
         assert len(enforcecore.__all__) == len(set(enforcecore.__all__))
 
     def test_all_count(self) -> None:
-        """__all__ should have exactly 30 symbols (Tier 1 public API)."""
-        assert len(enforcecore.__all__) == 30, (
-            f"Expected 30 symbols in __all__, got {len(enforcecore.__all__)}"
+        """__all__ should have exactly 36 symbols (Tier 1 public API).
+
+        v1.3.0 added 6 sandbox symbols: SandboxConfig, SandboxMemoryError,
+        SandboxStrategy, SandboxTimeoutError, SandboxViolationError, SubprocessSandbox.
+        """
+        assert len(enforcecore.__all__) == 36, (
+            f"Expected 36 symbols in __all__, got {len(enforcecore.__all__)}"
         )
 
 
@@ -77,8 +81,10 @@ TIER1_CLASSES: set[str] = {
     "Redactor",
     "Policy",
     "ResourceGuard",
+    "SandboxConfig",
     "SecretScanner",
     "Settings",
+    "SubprocessSandbox",
     "VerificationResult",
 }
 
@@ -91,6 +97,9 @@ TIER1_EXCEPTIONS: set[str] = {
     "PolicyError",
     "PolicyLoadError",
     "ResourceLimitError",
+    "SandboxMemoryError",
+    "SandboxTimeoutError",
+    "SandboxViolationError",
     "ToolDeniedError",
 }
 
@@ -98,6 +107,7 @@ TIER1_EXCEPTIONS: set[str] = {
 TIER1_ENUMS: set[str] = {
     "Decision",
     "RedactionStrategy",
+    "SandboxStrategy",
 }
 
 # ── Tier 1: Functions in __all__ ──

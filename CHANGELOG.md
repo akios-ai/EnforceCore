@@ -7,9 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] — 2026-02-25
+## [1.3.0] — 2026-02-26
 
-## [1.2.0] — 2026-05-15 (target)
+## [1.3.0] — 2026-02-26
+
+### Added
+
+- **Subprocess Sandbox** — New `enforcecore.sandbox` module provides post-execution isolation
+  for tool calls approved by the policy engine. Closes the gap between
+  pre-decision enforcement (what EnforceCore has always done) and
+  post-execution enforcement.
+
+  - `SubprocessSandbox` — runs tool calls in an isolated subprocess via
+    `multiprocessing.Process` + `Pipe`. Supports both sync and async callables.
+  - `SandboxConfig` — dataclass with `strategy`, `max_memory_mb`,
+    `max_cpu_seconds`, `allowed_env_vars`, and `working_directory` fields.
+  - `SandboxStrategy` — enum with `NONE` (in-process, backward-compat) and
+    `SUBPROCESS` values.
+  - `SandboxTimeoutError` — raised when a subprocess exceeds the configured
+    CPU time limit.
+  - `SandboxMemoryError` — raised when a subprocess exceeds the memory limit
+    (POSIX only; Linux enforces `RLIMIT_AS`, macOS enforces `RLIMIT_RSS`).
+  - `SandboxViolationError` — base class for all sandbox errors; subclasses
+    `EnforceCoreError` for consistent error handling.
+
+- **Policy sandbox section** — Policies can now declare a `sandbox` block:
+
+  ```yaml
+  sandbox:
+    enabled: true
+    strategy: subprocess
+    max_memory_mb: 256
+    max_cpu_seconds: 30.0
+    allowed_env_vars: [PATH, HOME]
+    working_directory: /tmp/sandbox
+  ```
+
+  When `enabled: true`, the `Enforcer` automatically routes execution through
+  `SubprocessSandbox`. Existing policies without a `sandbox` block are
+  unaffected (default: `enabled: false`).
+
+- **`SandboxPolicyConfig`** — Pydantic model for the `sandbox` policy section,
+  with `to_sandbox_config()` helper to convert to `SandboxConfig`.
+
+- **57 new tests** across four files:
+  - `tests/sandbox/test_sandbox_config.py` — config and strategy tests
+  - `tests/sandbox/test_sandbox_errors.py` — error type hierarchy tests
+  - `tests/sandbox/test_subprocess_sandbox.py` — sandbox execution tests
+    (NONE strategy, SUBPROCESS strategy, timeout, pickling validation)
+  - `tests/sandbox/test_enforcer_sandbox_integration.py` — Enforcer + sandbox
+    integration, policy parsing, policy merge semantics
+
+### Changed
+
+- **Public API grows from 30 → 35 symbols**: `SubprocessSandbox`, `SandboxConfig`,
+  `SandboxStrategy`, `SandboxTimeoutError`, `SandboxMemoryError`,
+  `SandboxViolationError` added to `__all__`.
+
+- **`PolicyRules`** gains a `sandbox` field (`SandboxPolicyConfig`, default disabled).
+  Backward-compatible — all existing policies work unchanged.
+
+- **`Enforcer`** gains `_sandbox` slot. When `policy.rules.sandbox.enabled` is
+  `True`, execution is routed through `SubprocessSandbox` instead of
+  `ResourceGuard`. When disabled (default), behavior is identical to v1.2.0.
+
+### Platform support
+
+| Feature | Linux | macOS | Windows |
+|---------|-------|-------|---------|
+| Subprocess isolation | ✅ | ✅ | ✅ |
+| Memory limits (RLIMIT_AS/RSS) | ✅ | ✅ (advisory) | ❌ |
+| CPU time limits (RLIMIT_CPU) | ✅ | ✅ | ❌ |
+| Environment restriction | ✅ | ✅ | ✅ |
+
+### Notes
+
+- **Pickling requirement**: Functions and arguments passed through
+  `SubprocessSandbox` must be picklable. Locally-defined lambdas and
+  inner-class methods cannot be pickled — a `TypeError` is raised
+  immediately (before forking) with a clear message.
+- WASM sandbox support is reserved for a future release.
+
+---
+
+## [1.2.0] — 2026-02-25
 
 ### Added
 
