@@ -270,6 +270,7 @@ from enforcecore.integrations._base import (
 from enforcecore.integrations._base import (
     wrap_with_policy as wrap_with_policy,
 )
+from enforcecore.plugins.base import AuditBackendPlugin, GuardPlugin, RedactorPlugin
 from enforcecore.plugins.hooks import (
     HookContext as HookContext,
 )
@@ -294,6 +295,7 @@ from enforcecore.plugins.hooks import (
 from enforcecore.plugins.hooks import (
     on_violation as on_violation,
 )
+from enforcecore.plugins.manager import PluginLoadError, PluginManager
 from enforcecore.plugins.webhooks import (
     WebhookDispatcher as WebhookDispatcher,
 )
@@ -349,7 +351,7 @@ from enforcecore.telemetry import (
     EnforceCorePrometheusExporter as EnforceCorePrometheusExporter,
 )
 
-__version__ = "1.8.0"
+__version__ = "1.9.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -364,6 +366,7 @@ _logging.getLogger("enforcecore").setLevel(
 # Only these symbols are guaranteed stable across minor versions.
 # Everything else is importable but may move in future releases.
 __all__ = [
+    "AuditBackendPlugin",
     "AuditEntry",
     "Auditor",
     "ComplianceError",
@@ -379,9 +382,12 @@ __all__ = [
     "EnforcementResult",
     "EnforcementViolation",
     "Enforcer",
+    "GuardPlugin",
     "KillSwitch",
     "MultiTenantEnforcer",
     "NERBackend",
+    "PluginLoadError",
+    "PluginManager",
     "Policy",
     "PolicyError",
     "PolicyLoadError",
@@ -391,6 +397,7 @@ __all__ = [
     "RedactionResult",
     "RedactionStrategy",
     "Redactor",
+    "RedactorPlugin",
     "ResourceGuard",
     "ResourceLimitError",
     "SandboxConfig",
