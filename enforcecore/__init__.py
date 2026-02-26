@@ -325,13 +325,19 @@ from enforcecore.sandbox import (
     SubprocessSandbox,
 )
 from enforcecore.telemetry import (
+    AuditLogExporter as AuditLogExporter,
+)
+from enforcecore.telemetry import (
     EnforceCoreInstrumentor as EnforceCoreInstrumentor,
 )
 from enforcecore.telemetry import (
     EnforceCoreMetrics as EnforceCoreMetrics,
 )
+from enforcecore.telemetry import (
+    EnforceCorePrometheusExporter as EnforceCorePrometheusExporter,
+)
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -506,8 +512,12 @@ _TIER2_IMPORTS: dict[str, tuple[str, str]] = {
     "normalize_unicode": ("enforcecore.redactor.unicode", "normalize_unicode"),
     "prepare_for_detection": ("enforcecore.redactor.unicode", "prepare_for_detection"),
     # ── telemetry ──
+    "AuditLogExporter": ("enforcecore.telemetry", "AuditLogExporter"),
     "EnforceCoreInstrumentor": ("enforcecore.telemetry", "EnforceCoreInstrumentor"),
     "EnforceCoreMetrics": ("enforcecore.telemetry", "EnforceCoreMetrics"),
+    "EnforceCorePrometheusExporter": ("enforcecore.telemetry", "EnforceCorePrometheusExporter"),
+    "make_elastic_sink": ("enforcecore.telemetry", "make_elastic_sink"),
+    "make_splunk_hec_sink": ("enforcecore.telemetry", "make_splunk_hec_sink"),
 }
 
 # Remove Tier 2 symbols from the module namespace so __getattr__ fires.
