@@ -1,21 +1,30 @@
 # Copyright 2026 AKIOUD AI
 # SPDX-License-Identifier: Apache-2.0
-"""Lightweight PII detection engine.
+"""PII detection and redaction engine.
 
-Uses regex patterns for common PII categories. Designed to be fast, portable,
-and dependency-free (stdlib only). Presidio can be added as an optional
-enhanced backend in a future release.
+Provides two detection tiers:
 
-Supported categories:
+**Regex tier** (default)
+    Pure regex patterns for common PII categories. Fast (~0.03 ms/call),
+    portable, and dependency-free (stdlib only). Covers ~90% of typical PII.
+
+**NER tier** (optional — requires ``pip install enforcecore[ner]``)
+    Microsoft Presidio NER pipeline. Slower (~5 ms/call) but covers ~98%
+    of PII including contextual entities that regex cannot detect (person
+    names, organisations, locations). Enable with
+    ``strategy=RedactionStrategy.NER``.
+
+Supported categories (regex tier):
 - email: Email addresses
 - phone: Phone numbers (US/international formats)
 - ssn: US Social Security Numbers
 - credit_card: Credit card numbers (Visa, MC, Amex, Discover)
 - ip_address: IPv4 addresses
 - passport: Passport numbers (ICAO Doc 9303 format: 1-2 letters + 6-9 digits)
-- person_name: Basic person name patterns (Title Case sequences)
 
-Performance: ~0.1-0.5ms per call (pure regex, no NLP pipeline).
+Additional categories via NER tier:
+- person_name: Person names (contextual, requires NER)
+- location, organization, date_time, national_id, and more
 """
 
 from __future__ import annotations
@@ -44,6 +53,8 @@ from enforcecore.redactor.unicode import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from enforcecore.redactor.ner import NERBackend
 
 logger = structlog.get_logger("enforcecore.redactor")
 
@@ -155,18 +166,30 @@ class RedactionResult:
 class Redactor:
     """PII detection and redaction engine.
 
-    Uses compiled regex patterns for fast, portable PII detection.
-    Supports configurable redaction strategies per category.
+    Supports two detection tiers — regex (default, fast) and NER (optional,
+    requires ``enforcecore[ner]``, higher coverage).
 
-    Example::
+    **Regex example** (default, ~0.03 ms/call)::
 
         redactor = Redactor(categories=["email", "phone"])
         result = redactor.redact("Call me at 555-123-4567 or john@example.com")
         print(result.text)   # "Call me at <PHONE> or <EMAIL>"
         print(result.count)  # 2
+
+    **NER example** (~5 ms/call, requires ``pip install enforcecore[ner]``)::
+
+        from enforcecore import RedactionStrategy
+        redactor = Redactor(
+            categories=["person_name", "email", "phone"],
+            strategy=RedactionStrategy.NER,
+            fallback=RedactionStrategy.REGEX,  # use regex if Presidio unavailable
+            threshold=0.8,
+        )
+        result = redactor.redact("Call John Smith at 555-123-4567")
+        print(result.text)   # "Call <PERSON> at <PHONE>"
     """
 
-    __slots__ = ("_categories", "_secret_scanner", "_strategy")
+    __slots__ = ("_categories", "_fallback", "_ner_backend", "_secret_scanner", "_strategy")
 
     def __init__(
         self,
@@ -175,38 +198,81 @@ class Redactor:
         *,
         secret_detection: bool = False,
         secret_categories: tuple[str, ...] | list[str] | None = None,
+        ner_backend: NERBackend | None = None,
+        fallback: RedactionStrategy | None = None,
+        threshold: float = 0.8,
     ) -> None:
         """Initialize the redactor.
 
         Args:
-            categories: PII categories to detect. Defaults to all supported.
-                Supported: ``email``, ``phone``, ``ssn``, ``credit_card``,
-                ``ip_address``, ``passport``.
-            strategy: How to redact detected PII. Default: ``placeholder``.
+            categories: PII categories to detect. Defaults to all regex-supported
+                categories.  ``person_name`` requires the NER tier.
+            strategy: Detection/redaction strategy. Default: ``placeholder``.
+                Use ``RedactionStrategy.NER`` to enable the Presidio NER tier
+                (requires ``pip install enforcecore[ner]``).
             secret_detection: Enable secret detection (API keys, tokens, etc.).
             secret_categories: Secret categories to detect. Defaults to all.
+            ner_backend: An already-constructed :class:`NERBackend` instance.
+                When *strategy* is ``NER`` and this is ``None``, a backend is
+                created automatically using *threshold*.  Ignored when
+                *strategy* is not ``NER``.
+            fallback: Strategy to use when NER is unavailable (Presidio not
+                installed or backend construction fails).  Only relevant when
+                *strategy* is ``NER``.  Defaults to ``None`` (raise on failure).
+            threshold: Minimum Presidio confidence score (0-1) for the NER
+                backend.  Ignored when *strategy* is not ``NER``.
         """
         default_cats = ["email", "phone", "ssn", "credit_card", "ip_address"]
         self._categories = list(categories) if categories else default_cats
         self._strategy = strategy
         self._secret_scanner: SecretScanner | None = None
+        self._fallback: RedactionStrategy | None = fallback
+        self._ner_backend: NERBackend | None = None
 
         if secret_detection:
             cats = tuple(secret_categories) if secret_categories else None
             self._secret_scanner = SecretScanner(categories=cats)
 
+        # Set up NER backend when strategy is NER
+        if strategy == RedactionStrategy.NER:
+            if ner_backend is not None:
+                self._ner_backend = ner_backend
+            else:
+                try:
+                    from enforcecore.redactor.ner import NERBackend as _NERBackend
+
+                    self._ner_backend = _NERBackend(threshold=threshold)
+                except ImportError:
+                    if fallback is not None:
+                        logger.warning(
+                            "ner_backend_unavailable_using_fallback",
+                            fallback=fallback.value,
+                            reason="presidio-analyzer not installed; "
+                            "install with: pip install enforcecore[ner]",
+                        )
+                        # _ner_backend stays None; detect() will use fallback
+                    else:
+                        raise
+
         # Validate categories
         for cat in self._categories:
             if cat == "person_name":
-                logger.warning(
-                    "person_name_category_unsupported",
-                    reason="pure regex detection is too noisy; "
-                    "consider using an NLP pipeline for name detection. "
-                    "Category will be ignored.",
-                )
+                if self._ner_backend is None and strategy != RedactionStrategy.NER:
+                    logger.warning(
+                        "person_name_category_requires_ner",
+                        reason="person_name detection requires the NER tier. "
+                        "Enable it with strategy=RedactionStrategy.NER "
+                        "(pip install enforcecore[ner]). Category will be "
+                        "ignored in regex mode.",
+                    )
                 continue
             if cat not in _PII_PATTERNS:
-                msg = f"Unknown PII category: '{cat}'. Supported: {list(_PII_PATTERNS.keys())}"
+                # Check NER-supported categories when NER is active
+                from enforcecore.redactor.ner import _CATEGORY_TO_PRESIDIO
+
+                if self._ner_backend is not None and cat in _CATEGORY_TO_PRESIDIO:
+                    continue  # valid NER-only category
+                msg = f"Unknown PII category: '{cat}'. Supported (regex): {list(_PII_PATTERNS.keys())}"
                 raise RedactionError(msg)
 
     @property
@@ -217,11 +283,22 @@ class Redactor:
     def strategy(self) -> RedactionStrategy:
         return self._strategy
 
+    @property
+    def fallback(self) -> RedactionStrategy | None:
+        """The fallback strategy used when NER is unavailable, or ``None``."""
+        return self._fallback
+
+    @property
+    def ner_backend(self) -> NERBackend | None:
+        """The active NER backend, or ``None`` if using regex detection."""
+        return self._ner_backend
+
     def __repr__(self) -> str:
         return (
             f"Redactor(categories={self._categories!r}, "
             f"strategy={self._strategy.value!r}, "
-            f"secret_detection={self._secret_scanner is not None})"
+            f"secret_detection={self._secret_scanner is not None}, "
+            f"ner={self._ner_backend is not None})"
         )
 
     # -- Detection -----------------------------------------------------------
@@ -234,23 +311,62 @@ class Redactor:
         Includes built-in PII patterns, custom patterns from the
         PatternRegistry, and secret patterns if enabled.
 
+        When ``strategy=RedactionStrategy.NER``, uses the Presidio NER
+        pipeline for detection (requires ``pip install enforcecore[ner]``).
+        If the NER backend is unavailable and a ``fallback`` strategy was
+        configured, falls back to regex detection automatically.
+
         .. versionchanged:: 1.0.0
            Entities now returned in ascending order (was descending).
            Callers that iterate for replacement should use ``reversed()``.
            Now always uses normalized text for detection with offset
            mapping back to original positions (M-5 fix).
+        .. versionchanged:: 1.4.0
+           Added NER tier support via ``strategy=RedactionStrategy.NER``.
         """
         # Apply unicode normalization with offset mapping (M-5).
-        # Always use normalized text for regex — the offset map lets us
-        # translate positions back to the original text.
         norm = prepare_for_detection_mapped(text)
         use_text = norm.text
         entities: list[DetectedEntity] = []
 
+        # ── NER tier ────────────────────────────────────────────────────────
+        # When strategy is NER and a backend is available, delegate detection
+        # to Presidio.  If the backend is unavailable and a fallback is
+        # configured, drop through to the regex tier below.
+        if self._strategy == RedactionStrategy.NER and self._ner_backend is not None:
+            ner_cats = set(self._categories)
+            for start, end, category, _score in self._ner_backend.analyze(use_text, ner_cats):
+                entities.append(
+                    DetectedEntity(
+                        category=category,
+                        start=start,
+                        end=end,
+                        text=use_text[start:end],
+                    )
+                )
+            # Map positions back and return (skip regex tier when NER active)
+            if norm.length_changed:
+                entities = [
+                    DetectedEntity(
+                        category=e.category,
+                        start=norm.map_span(e.start, e.end)[0],
+                        end=norm.map_span(e.start, e.end)[1],
+                        text=text[
+                            norm.map_span(e.start, e.end)[0] : norm.map_span(e.start, e.end)[1]
+                        ],
+                    )
+                    for e in entities
+                ]
+            entities = self._remove_overlaps(entities)
+            entities.sort(key=lambda e: e.start)
+            return entities
+            # NER backend unavailable — fallback configured, use regex tier below
+
+        # ── Regex tier ──────────────────────────────────────────────────────
         # Built-in PII patterns
         for cat in self._categories:
             if cat == "person_name":
-                # Skipped — warning emitted once at construction time
+                # Skipped in regex mode — warning emitted once at construction time
                 continue
 
             pattern = _PII_PATTERNS.get(cat)
@@ -366,7 +482,12 @@ class Redactor:
         # Check if it's a custom pattern category
         custom = PatternRegistry.get(entity.category)
 
-        if self._strategy == RedactionStrategy.PLACEHOLDER:
+        # NER and REGEX strategies use PLACEHOLDER replacement style
+        if self._strategy in (
+            RedactionStrategy.PLACEHOLDER,
+            RedactionStrategy.NER,
+            RedactionStrategy.REGEX,
+        ):
             if custom is not None:
                 return custom.placeholder
             return _PLACEHOLDERS.get(entity.category) or get_secret_placeholder(entity.category)

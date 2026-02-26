@@ -7,7 +7,250 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.3] — 2026-02-25
+## [1.4.0] — 2026-02-26
+
+### Added
+
+- **NER-Based PII Detection** — New optional `enforcecore[ner]` tier that layers
+  Presidio's Named Entity Recognition pipeline on top of the existing regex engine.
+
+  - `NERBackend` — Presidio `AnalyzerEngine` wrapper with confidence-threshold
+    filtering and EnforceCore category mapping. Install via
+    `pip install enforcecore[ner]`.
+  - `is_ner_available()` — runtime probe that returns `True` when Presidio is
+    importable; used to gate NER-path execution and surface helpful errors.
+  - `RedactionStrategy.NER` — new enum value; set `strategy: ner` in policy
+    `pii_redaction` to activate the NER tier.
+  - `RedactionStrategy.REGEX` — new explicit alias for the classic regex tier
+    (backward-compatible; existing configs with `strategy: placeholder` or no
+    `strategy` field continue to work unchanged).
+  - `_build_analyzer_engine()` (internal) — factory function isolated from
+    `NERBackend.__init__` for clean mock-patching in tests.
+
+- **NER policy configuration** — `PIIRedactionConfig` gains two new fields:
+
+  ```yaml
+  pii_redaction:
+    strategy: ner
+    ner_threshold: 0.85      # confidence floor (default 0.80)
+    ner_fallback_to_regex: true  # fall back to regex when NER unavailable
+  ```
+
+  Both fields are backward-compatible. Existing policies that don't set them
+  get sensible defaults (`0.80` threshold, fallback enabled).
+
+- **Lightweight Sensitivity Labels** — IFC-inspired label system for annotating
+  tool schema fields and enforcing information-flow policy.
+
+  - `SensitivityLabel` enum — four levels: `PUBLIC`, `INTERNAL`,
+    `CONFIDENTIAL`, `RESTRICTED` (orderable by `sensitivity_level()`).
+  - `sensitivity_level(label)` — returns an integer rank (0–3) for ordered
+    comparison.
+  - `SensitivityEnforcer` — policy-driven checker; compares field labels
+    against tool clearance level and collects `SensitivityViolation` records.
+    Methods: `check()`, `check_kwargs()`, `raise_if_violated()`.
+  - `SensitivityViolation` — frozen dataclass capturing `field_name`,
+    `field_sensitivity`, `tool_clearance`, and `policy_action`.
+  - `SensitivityViolationError` — raised by `raise_if_violated()` when at
+    least one violation is found; carries `violations: list[SensitivityViolation]`.
+  - `check_tool_schema_sensitivity()` — convenience function that wraps
+    `SensitivityEnforcer.check_kwargs()` for one-shot use.
+  - `_coerce_label()` / `_coerce_label_with_aliases()` (internal) — accept
+    both canonical enum values and string aliases (`low`, `medium`, `high`,
+    `critical`).
+
+- **`SensitivityLabelConfig`** — Pydantic model for the `sensitivity_labels`
+  block in policy YAML:
+
+  ```yaml
+  sensitivity_labels:
+    enabled: true
+    default_clearance: internal
+    enforce: true
+    fallback: log
+  ```
+
+- **77 new tests** across two files:
+  - `tests/redactor/test_ner.py` — NER availability, entity mapping, backend
+    behavior (threshold, category filtering, sort order, unknown entity fallback),
+    Redactor NER strategy (ImportError without fallback, fallback to regex,
+    person_name via NER, threshold forwarding, repr), REGEX strategy.
+  - `tests/core/test_sensitivity.py` — enum ordering, `sensitivity_level`,
+    label coercion (including aliases), `SensitivityViolation` dataclass,
+    `SensitivityEnforcer` check/check_kwargs/raise_if_violated, properties,
+    `check_tool_schema_sensitivity`, `SensitivityLabelConfig`, NER policy
+    fields, `PolicyRules.sensitivity_labels`.
+
+### Changed
+
+- **Public API grows from 35 → 44 symbols**: `NERBackend`, `SensitivityEnforcer`,
+  `SensitivityLabel`, `SensitivityLabelConfig`, `SensitivityViolation`,
+  `SensitivityViolationError`, `is_ner_available`, `sensitivity_level`, and
+  `check_tool_schema_sensitivity` added to `__all__`.
+
+- **`PolicyRules`** gains a `sensitivity_labels` field (`SensitivityLabelConfig`,
+  default disabled). Backward-compatible — all existing policies work unchanged.
+
+- **`Enforcer._build_redactor()`** now passes `threshold` and `fallback` kwargs
+  from `PIIRedactionConfig` when constructing a `Redactor` with
+  `strategy=NER`.
+
+- **`Redactor`** (internal) gains `_ner_backend` and `_fallback` slots; new
+  constructor kwargs `ner_backend`, `fallback`, and `threshold`. The `detect()`
+  method gains a NER branch that runs before the regex tier when a backend is
+  present. `__repr__` now includes `ner=True/False`.
+
+- **`ViolationType`** gains `SENSITIVITY_VIOLATION` variant.
+
+### New extras
+
+| Extra | Packages |
+|-------|----------|
+| `enforcecore[ner]` | `presidio-analyzer>=2.2`, `presidio-anonymizer>=2.2`, `spacy>=3.7` |
+| `enforcecore[all]` | now includes `ner` alongside `redactor`, `cli`, `telemetry` |
+
+### Compatibility
+
+All changes are backward-compatible. Existing policies, tests, and integrations
+are unaffected. The NER tier and sensitivity labels are strictly opt-in.
+
+---
+
+## [1.3.0] — 2026-02-26
+
+### Added
+
+- **Subprocess Sandbox** — New `enforcecore.sandbox` module provides post-execution isolation
+  for tool calls approved by the policy engine. Closes the gap between
+  pre-decision enforcement (what EnforceCore has always done) and
+  post-execution enforcement.
+
+  - `SubprocessSandbox` — runs tool calls in an isolated subprocess via
+    `multiprocessing.Process` + `Pipe`. Supports both sync and async callables.
+  - `SandboxConfig` — dataclass with `strategy`, `max_memory_mb`,
+    `max_cpu_seconds`, `allowed_env_vars`, and `working_directory` fields.
+  - `SandboxStrategy` — enum with `NONE` (in-process, backward-compat) and
+    `SUBPROCESS` values.
+  - `SandboxTimeoutError` — raised when a subprocess exceeds the configured
+    CPU time limit.
+  - `SandboxMemoryError` — raised when a subprocess exceeds the memory limit
+    (POSIX only; Linux enforces `RLIMIT_AS`, macOS enforces `RLIMIT_RSS`).
+  - `SandboxViolationError` — base class for all sandbox errors; subclasses
+    `EnforceCoreError` for consistent error handling.
+
+- **Policy sandbox section** — Policies can now declare a `sandbox` block:
+
+  ```yaml
+  sandbox:
+    enabled: true
+    strategy: subprocess
+    max_memory_mb: 256
+    max_cpu_seconds: 30.0
+    allowed_env_vars: [PATH, HOME]
+    working_directory: /tmp/sandbox
+  ```
+
+  When `enabled: true`, the `Enforcer` automatically routes execution through
+  `SubprocessSandbox`. Existing policies without a `sandbox` block are
+  unaffected (default: `enabled: false`).
+
+- **`SandboxPolicyConfig`** — Pydantic model for the `sandbox` policy section,
+  with `to_sandbox_config()` helper to convert to `SandboxConfig`.
+
+- **57 new tests** across four files:
+  - `tests/sandbox/test_sandbox_config.py` — config and strategy tests
+  - `tests/sandbox/test_sandbox_errors.py` — error type hierarchy tests
+  - `tests/sandbox/test_subprocess_sandbox.py` — sandbox execution tests
+    (NONE strategy, SUBPROCESS strategy, timeout, pickling validation)
+  - `tests/sandbox/test_enforcer_sandbox_integration.py` — Enforcer + sandbox
+    integration, policy parsing, policy merge semantics
+
+### Changed
+
+- **Public API grows from 30 → 35 symbols**: `SubprocessSandbox`, `SandboxConfig`,
+  `SandboxStrategy`, `SandboxTimeoutError`, `SandboxMemoryError`,
+  `SandboxViolationError` added to `__all__`.
+
+- **`PolicyRules`** gains a `sandbox` field (`SandboxPolicyConfig`, default disabled).
+  Backward-compatible — all existing policies work unchanged.
+
+- **`Enforcer`** gains `_sandbox` slot. When `policy.rules.sandbox.enabled` is
+  `True`, execution is routed through `SubprocessSandbox` instead of
+  `ResourceGuard`. When disabled (default), behavior is identical to v1.2.0.
+
+### Platform support
+
+| Feature | Linux | macOS | Windows |
+|---------|-------|-------|---------|
+| Subprocess isolation | ✅ | ✅ | ✅ |
+| Memory limits (RLIMIT_AS/RSS) | ✅ | ✅ (advisory) | ❌ |
+| CPU time limits (RLIMIT_CPU) | ✅ | ✅ | ❌ |
+| Environment restriction | ✅ | ✅ | ✅ |
+
+### Notes
+
+- **Pickling requirement**: Functions and arguments passed through
+  `SubprocessSandbox` must be picklable. Locally-defined lambdas and
+  inner-class methods cannot be pickled — a `TypeError` is raised
+  immediately (before forking) with a clear message.
+- WASM sandbox support is reserved for a future release.
+
+---
+
+## [1.2.0] — 2026-02-25
+
+### Added
+
+- **Pluggable Audit Storage System** — New `enforcecore.auditstore` module enables flexible audit trail storage with multiple backends:
+  - JSONL backend (default, backward-compatible with existing Auditor)
+  - SQLite backend for local development
+  - PostgreSQL backend for production deployments with connection pooling, SSL/TLS, and partitioning support
+  - Production-grade Merkle chain verification for tamper-evidence detection
+
+- **Audit Store Backends** — Three fully-featured backends with identical query interface:
+  - `JSONLBackend`: Append-only JSONL files, compatible with v1.1.3 Auditor
+  - `SQLiteBackend`: Local SQLite database for development
+  - `PostgreSQLBackend`: Production database with connection pooling (default: 5), concurrent writes, SSL/TLS support
+
+- **Regulatory Compliance Reporting** — New `ReportGenerator` class with EU AI Act compliance templates:
+  - Article 9: High-risk AI system decisions logging
+  - Article 13: Human oversight evidence tracking
+  - Article 14: Transparency information for end users
+  - Article 52: Complete transparency log with Merkle chain verification
+  - HTML and JSON report formats with cost analysis and PII summary
+
+- **Auditor API Integration** — New `AuditStoreBackendAdapter` bridges existing Auditor with new auditstore backends:
+  - Seamless backward compatibility — existing Auditor code works unchanged
+  - Zero breaking changes to public API
+  - Dict-to-AuditEntry translation with automatic Merkle chain management
+  - Thread-safe integration with full test coverage
+
+- **EU AI Act Compliance Queries** — New `EUAIActQueries` class providing predefined queries:
+  - Article 9: List all decisions made by high-risk AI systems
+  - Article 13: Evidence of human oversight (blocked calls)
+  - Article 14: Transparency statistics (total/allowed/blocked calls)
+  - Article 52: Complete transparency log with Merkle verification
+  - PII exposure summary and cost analysis
+
+### Documentation
+
+- Complete user guide: `docs/auditstore.md` with 1800+ lines covering:
+  - Quick start guide for all three backends
+  - Backend comparison and selection guide
+  - API reference with code examples
+  - Configuration examples (YAML and Python)
+  - Performance benchmarks
+  - Troubleshooting guide
+  - Frequently asked questions
+
+### Testing
+
+- 4 new end-to-end integration tests validating Auditor ↔ auditstore flow
+- 1530+ total tests passing, 11 skipped
+- Code quality: ruff formatting clean, import validation passed
+- Backward compatibility: 100% compatible with v1.1.3 Auditor
+
+---
 
 ## [1.1.3] — 2026-02-25
 

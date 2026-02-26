@@ -34,10 +34,12 @@ from enforcecore.core.types import (
     PolicyLoadError,
     PolicyValidationError,
     RedactionStrategy,
+    SensitivityLabel,
     ToolDeniedError,
     ViolationAction,
     ViolationType,
 )
+from enforcecore.sandbox.config import SandboxConfig, SandboxStrategy
 
 logger = structlog.get_logger("enforcecore.policy")
 
@@ -48,11 +50,33 @@ logger = structlog.get_logger("enforcecore.policy")
 
 
 class PIIRedactionConfig(BaseModel):
-    """Configuration for PII redaction within a policy."""
+    """Configuration for PII redaction within a policy.
+
+    When ``strategy`` is ``RedactionStrategy.NER`` the Presidio NER
+    pipeline is used for detection (requires ``pip install enforcecore[ner]``).
+    Set ``ner_fallback_to_regex=true`` to silently fall back to regex if
+    Presidio is not installed.
+
+    Example YAML (NER tier)::
+
+        pii_redaction:
+          enabled: true
+          strategy: ner
+          ner_threshold: 0.85
+          ner_fallback_to_regex: true
+          categories: [email, phone, person_name]
+
+    .. versionchanged:: 1.4.0
+       Added ``ner_threshold`` and ``ner_fallback_to_regex`` fields.
+    """
 
     enabled: bool = False
     categories: list[str] = ["email", "phone", "ssn", "credit_card", "ip_address"]
     strategy: RedactionStrategy = RedactionStrategy.PLACEHOLDER
+    ner_threshold: float = 0.8
+    """Minimum Presidio confidence score (0-1) for NER entity detection."""
+    ner_fallback_to_regex: bool = True
+    """Fall back to regex if Presidio is not installed (NER strategy only)."""
 
 
 class ResourceLimits(BaseModel):
@@ -116,6 +140,88 @@ class RateLimitPolicyConfig(BaseModel):
     global_limit: dict[str, float] | None = None
 
 
+class SandboxPolicyConfig(BaseModel):
+    """Subprocess sandbox configuration in a policy.
+
+    Controls whether tool calls are executed in an isolated subprocess
+    after the policy has approved them.
+
+    Example YAML::
+
+        sandbox:
+          enabled: true
+          strategy: subprocess
+          max_memory_mb: 256
+          max_cpu_seconds: 30.0
+          allowed_env_vars:
+            - PATH
+            - HOME
+          working_directory: /tmp/sandbox
+
+    """
+
+    enabled: bool = False
+    strategy: str = "subprocess"
+    max_memory_mb: int | None = None
+    max_cpu_seconds: float | None = None
+    allowed_env_vars: list[str] | None = None
+    working_directory: str | None = None
+
+    def to_sandbox_config(self) -> SandboxConfig:
+        """Convert this policy config to a :class:`SandboxConfig`.
+
+        Returns ``SandboxConfig.disabled()`` when ``enabled`` is False.
+        """
+        if not self.enabled:
+            return SandboxConfig.disabled()
+
+        try:
+            strategy = SandboxStrategy(self.strategy)
+        except ValueError:
+            strategy = SandboxStrategy.SUBPROCESS
+
+        from enforcecore.sandbox.config import _DEFAULT_ALLOWED_ENV_VARS
+
+        return SandboxConfig(
+            strategy=strategy,
+            max_memory_mb=self.max_memory_mb,
+            max_cpu_seconds=self.max_cpu_seconds,
+            allowed_env_vars=self.allowed_env_vars
+            if self.allowed_env_vars is not None
+            else list(_DEFAULT_ALLOWED_ENV_VARS),
+            working_directory=self.working_directory,
+        )
+
+
+class SensitivityLabelConfig(BaseModel):
+    """Sensitivity label policy configuration.
+
+    Controls lightweight IFC-style flow enforcement on tool schemas and
+    data fields.  When ``enforce=true`` any field whose sensitivity label
+    exceeds the effective tool clearance is **blocked**.  When
+    ``enforce=false`` the field is redacted instead (if a Redactor is
+    active) or the call is allowed with a warning.
+
+    Example YAML::
+
+        sensitivity_labels:
+          enabled: true
+          default_clearance: internal
+          enforce: true
+          fallback: redact
+
+    .. versionadded:: 1.4.0
+    """
+
+    enabled: bool = False
+    default_clearance: SensitivityLabel = SensitivityLabel.INTERNAL
+    """Clearance applied to tools that do not declare their own clearance."""
+    enforce: bool = True
+    """If True, block calls that violate the flow rule. If False, redact."""
+    fallback: str = "redact"
+    """Action when ``enforce=False``: ``"redact"`` or ``"warn"``."""
+
+
 # Mapping of common aliases to their canonical field names.
 _RULES_ALIASES: dict[str, str] = {
     "pii": "pii_redaction",
@@ -140,6 +246,8 @@ class PolicyRules(BaseModel):
     network: NetworkPolicy = NetworkPolicy()
     content_rules: ContentRulesPolicyConfig = ContentRulesPolicyConfig()
     rate_limits: RateLimitPolicyConfig = RateLimitPolicyConfig()
+    sandbox: SandboxPolicyConfig = SandboxPolicyConfig()
+    sensitivity_labels: SensitivityLabelConfig = SensitivityLabelConfig()
     max_output_size_bytes: int | None = None
     redact_output: bool = True
 
@@ -380,6 +488,10 @@ class Policy(BaseModel):
         over_per_tool = override.rules.rate_limits.per_tool
         merged_per_tool = {**base_per_tool, **over_per_tool}
         merged["rules"].setdefault("rate_limits", {})["per_tool"] = merged_per_tool
+
+        # Sandbox: override wins entirely when enabled
+        if override.rules.sandbox.enabled:
+            merged["rules"]["sandbox"] = override.rules.sandbox.model_dump()
 
         return cls.from_dict(merged, source="<merge>")
 

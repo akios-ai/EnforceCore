@@ -156,7 +156,7 @@ class TestTopLevelExports:
     def test_total_export_count(self) -> None:
         import enforcecore
 
-        assert len(enforcecore.__all__) == 30
+        assert len(enforcecore.__all__) == 45
 
     def test_v1010_exports_still_importable(self) -> None:
         """v1.0.10 symbols moved to Tier 2 — importable but not in __all__."""

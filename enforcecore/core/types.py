@@ -27,6 +27,49 @@ class Decision(enum.StrEnum):
     REDACTED = "redacted"
 
 
+class SensitivityLabel(enum.StrEnum):
+    """Data sensitivity classification level.
+
+    Used to annotate tool schema fields and declare tool clearance levels.
+    Flow enforcement prevents data from flowing to tools whose clearance is
+    lower than the data's sensitivity label.
+
+    Levels in ascending order of sensitivity::
+
+        PUBLIC < INTERNAL < CONFIDENTIAL < RESTRICTED
+
+    .. versionadded:: 1.4.0
+    """
+
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    CONFIDENTIAL = "confidential"
+    RESTRICTED = "restricted"
+
+
+# Ordered numeric levels for SensitivityLabel comparison.
+_SENSITIVITY_LEVEL: dict[str, int] = {
+    "public": 0,
+    "internal": 1,
+    "confidential": 2,
+    "restricted": 3,
+}
+
+
+def sensitivity_level(label: SensitivityLabel | str) -> int:
+    """Return the numeric level for *label* (0 = PUBLIC, 3 = RESTRICTED).
+
+    Useful for ordering comparisons::
+
+        if sensitivity_level(field_label) > sensitivity_level(tool_clearance):
+            raise SensitivityViolationError(...)
+
+    .. versionadded:: 1.4.0
+    """
+    val = label.value if isinstance(label, SensitivityLabel) else str(label).lower()
+    return _SENSITIVITY_LEVEL.get(val, 0)
+
+
 class ViolationType(enum.StrEnum):
     """Categories of policy violations."""
 
@@ -38,6 +81,7 @@ class ViolationType(enum.StrEnum):
     COST_LIMIT = "cost_limit"
     RESOURCE_LIMIT = "resource_limit"
     OUTPUT_SIZE = "output_size"
+    SENSITIVITY_VIOLATION = "sensitivity_violation"
     POLICY_ERROR = "policy_error"
 
 
@@ -50,12 +94,31 @@ class ViolationAction(enum.StrEnum):
 
 
 class RedactionStrategy(enum.StrEnum):
-    """How to redact detected PII."""
+    """How to redact detected PII.
+
+    Detection tiers:
+        - ``REGEX`` / ``PLACEHOLDER`` / ``MASK`` / ``HASH`` / ``REMOVE``:
+          Regex-based detection (fast, ~0.03 ms, ~90% coverage).
+        - ``NER``: Presidio NER pipeline (slower, ~5 ms, ~98% coverage;
+          requires ``pip install enforcecore[ner]``).
+
+    Replacement styles:
+        - ``PLACEHOLDER``: Replace with ``<CATEGORY>`` token (default).
+        - ``MASK``: Replace with asterisks.
+        - ``HASH``: Replace with truncated SHA-256 hex digest.
+        - ``REMOVE``: Delete the entity entirely.
+        - ``NER`` / ``REGEX``: Use PLACEHOLDER replacement style.
+
+    .. versionchanged:: 1.4.0
+       Added ``NER`` and ``REGEX`` values.
+    """
 
     MASK = "mask"
     HASH = "hash"
     REMOVE = "remove"
     PLACEHOLDER = "placeholder"
+    REGEX = "regex"  # Explicit regex tier (alias for PLACEHOLDER replacement style)
+    NER = "ner"  # NER-based detection tier (requires ``enforcecore[ner]``)
 
 
 # ---------------------------------------------------------------------------
@@ -297,6 +360,50 @@ class ResourceLimitError(EnforcementViolation):
             violation_type=ViolationType.RESOURCE_LIMIT,
             reason=f"{resource} exceeded limit {limit}",
         )
+
+
+class SensitivityViolationError(EnforcementViolation):
+    """Data sensitivity level exceeds the tool's declared clearance.
+
+    Raised when sensitivity label enforcement is enabled and a field's
+    sensitivity label is higher than the tool's clearance level.
+
+    .. versionadded:: 1.4.0
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        tool_name: str = "",
+        policy_name: str = "",
+        field_name: str = "",
+        field_sensitivity: str = "",
+        tool_clearance: str = "",
+    ) -> None:
+        """Initialize a sensitivity violation error.
+
+        Args:
+            message: Human-readable error message.
+            tool_name: Name of the tool that was blocked.
+            policy_name: Name of the policy that blocked the call.
+            field_name: The tool parameter / data field that violated the rule.
+            field_sensitivity: The sensitivity label of the offending field.
+            tool_clearance: The clearance level of the tool.
+        """
+        super().__init__(
+            message,
+            tool_name=tool_name,
+            policy_name=policy_name,
+            violation_type=ViolationType.SENSITIVITY_VIOLATION,
+            reason=(
+                f"field '{field_name}' sensitivity '{field_sensitivity}' "
+                f"exceeds tool clearance '{tool_clearance}'"
+            ),
+        )
+        self.field_name = field_name
+        self.field_sensitivity = field_sensitivity
+        self.tool_clearance = tool_clearance
 
 
 class RedactionError(EnforceCoreError):

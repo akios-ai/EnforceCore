@@ -8,10 +8,13 @@ from enforcecore.redactor.engine import (
     RedactionResult,
     Redactor,
 )
+from enforcecore.redactor.ner import NERBackend, is_ner_available
 
 __all__ = [
     "DetectedEntity",
+    "NERBackend",
     "RedactionResult",
     "RedactionStrategy",
     "Redactor",
+    "is_ner_available",
 ]
