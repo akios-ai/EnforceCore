@@ -30,9 +30,19 @@ Usage::
 """
 
 from enforcecore.telemetry.instrumentor import EnforceCoreInstrumentor
+from enforcecore.telemetry.logexport import (
+    AuditLogExporter,
+    make_elastic_sink,
+    make_splunk_hec_sink,
+)
 from enforcecore.telemetry.metrics import EnforceCoreMetrics
+from enforcecore.telemetry.prometheus import EnforceCorePrometheusExporter
 
 __all__ = [
+    "AuditLogExporter",
     "EnforceCoreInstrumentor",
     "EnforceCoreMetrics",
+    "EnforceCorePrometheusExporter",
+    "make_elastic_sink",
+    "make_splunk_hec_sink",
 ]

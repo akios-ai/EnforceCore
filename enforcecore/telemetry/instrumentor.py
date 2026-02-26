@@ -18,6 +18,7 @@ Usage::
 
 from __future__ import annotations
 
+import contextlib
 import threading
 from typing import Any
 
@@ -26,6 +27,7 @@ import structlog
 from enforcecore.plugins.hooks import (
     HookContext,
     HookRegistry,
+    RedactionHookContext,
     ViolationHookContext,
 )
 from enforcecore.telemetry.metrics import EnforceCoreMetrics
@@ -33,7 +35,7 @@ from enforcecore.telemetry.metrics import EnforceCoreMetrics
 logger = structlog.get_logger("enforcecore.telemetry")
 
 _SCOPE_NAME = "enforcecore"
-_SCOPE_VERSION = "1.4.0"
+_SCOPE_VERSION = "1.5.0"
 
 
 class EnforceCoreInstrumentor:
@@ -63,6 +65,7 @@ class EnforceCoreInstrumentor:
         self._hook_pre = self._on_pre_call
         self._hook_post = self._on_post_call
         self._hook_violation = self._on_violation
+        self._hook_redaction = self._on_redaction
 
     @property
     def metrics(self) -> EnforceCoreMetrics:
@@ -117,6 +120,7 @@ class EnforceCoreInstrumentor:
             registry.add_pre_call(self._hook_pre)
             registry.add_post_call(self._hook_post)
             registry.add_violation(self._hook_violation)
+            registry.add_redaction(self._hook_redaction)
 
             self._instrumented = True
             logger.info("instrumentation_enabled")
@@ -131,6 +135,7 @@ class EnforceCoreInstrumentor:
             registry.remove_pre_call(self._hook_pre)
             registry.remove_post_call(self._hook_post)
             registry.remove_violation(self._hook_violation)
+            registry.remove_redaction(self._hook_redaction)
 
             # End any active spans
             with self._lock:
@@ -163,11 +168,14 @@ class EnforceCoreInstrumentor:
 
     def _on_post_call(self, ctx: HookContext) -> None:
         """End the trace span and record metrics."""
-        # Record metrics
+        # Record metrics (use new HookContext fields for precision)
         self._metrics.record_call(
             tool_name=ctx.tool_name,
             decision="allowed",
             duration_ms=ctx.duration_ms or 0.0,
+            overhead_ms=ctx.overhead_ms or 0.0,
+            input_redactions=ctx.input_redactions,
+            output_redactions=ctx.output_redactions,
         )
 
         # End span
@@ -178,6 +186,12 @@ class EnforceCoreInstrumentor:
                 span.set_attribute("enforcecore.decision", "allowed")
                 if ctx.duration_ms:
                     span.set_attribute("enforcecore.duration_ms", ctx.duration_ms)
+                if ctx.overhead_ms:
+                    span.set_attribute("enforcecore.overhead_ms", ctx.overhead_ms)
+                if ctx.input_redactions:
+                    span.set_attribute("enforcecore.input_redactions", ctx.input_redactions)
+                if ctx.output_redactions:
+                    span.set_attribute("enforcecore.output_redactions", ctx.output_redactions)
                 span.end()
 
     def _on_violation(self, ctx: ViolationHookContext) -> None:
@@ -206,3 +220,20 @@ class EnforceCoreInstrumentor:
                 except ImportError:
                     pass
                 span.end()
+
+    def _on_redaction(self, ctx: RedactionHookContext) -> None:
+        """Record a redaction event as a span event (if a span is active)."""
+        if self._tracer is None:
+            return
+        with self._lock:
+            span = self._active_spans.get(ctx.call_id)
+        if span is not None:
+            with contextlib.suppress(Exception):  # span events are best-effort
+                span.add_event(
+                    "enforcecore.redaction",
+                    attributes={
+                        "enforcecore.redaction.direction": ctx.direction,
+                        "enforcecore.redaction.count": ctx.redaction_count,
+                        "enforcecore.redaction.category": ctx.category or "",
+                    },
+                )
