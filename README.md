@@ -380,7 +380,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 1525 tests · 95% coverage · 0 lint errors
+**Current stats:** 2163 tests · 90% coverage · 0 lint errors
 
 ---
 

@@ -174,3 +174,19 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "linux_only: marks tests that require Linux",
 ]
+
+# --- Coverage ---
+[tool.coverage.run]
+source = ["enforcecore"]
+omit = [
+    # Requires a live PostgreSQL server — tested separately via docker-compose
+    "enforcecore/auditstore/backends/postgresql.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

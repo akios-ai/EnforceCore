@@ -55,7 +55,7 @@ def _is_macos() -> bool:
     return _SYSTEM == "Darwin"
 
 
-def _in_container() -> bool:
+def _in_container() -> bool:  # pragma: no cover
     """Detect if running inside a container (Docker/Podman).
 
     Checks for ``/.dockerenv``, ``/run/.containerenv``, or cgroup v2
@@ -75,7 +75,7 @@ def _in_container() -> bool:
     return False
 
 
-def _has_linux_immutable_cap() -> bool:
+def _has_linux_immutable_cap() -> bool:  # pragma: no cover
     """Check if the current process has CAP_LINUX_IMMUTABLE.
 
     In Docker, this capability is dropped by default.  The container
@@ -142,7 +142,7 @@ def protect_append_only(path: str | Path) -> bool:
     if not filepath.exists():
         raise FileNotFoundError(f"Cannot protect non-existent file: {filepath}")
 
-    if _is_linux():
+    if _is_linux():  # pragma: no cover
         return _protect_linux(filepath)
     elif _is_macos():
         return _protect_macos(filepath)
@@ -170,7 +170,7 @@ def is_append_only(path: str | Path) -> bool:
     if not filepath.exists():
         return False
 
-    if _is_linux():
+    if _is_linux():  # pragma: no cover
         return _check_linux(filepath)
     elif _is_macos():
         return _check_macos(filepath)
@@ -192,7 +192,7 @@ def platform_support_info() -> dict[str, object]:
         "notes": "",
     }
 
-    if _is_linux():
+    if _is_linux():  # pragma: no cover
         info["supported"] = True
         info["in_container"] = _in_container()
         if _in_container():
@@ -217,7 +217,7 @@ def platform_support_info() -> dict[str, object]:
 # ---------------------------------------------------------------------------
 
 
-def _protect_linux(filepath: Path) -> bool:
+def _protect_linux(filepath: Path) -> bool:  # pragma: no cover
     """Set append-only on Linux via chattr."""
     if _in_container() and not _has_linux_immutable_cap():
         raise AppendOnlyError(
@@ -254,7 +254,7 @@ def _protect_linux(filepath: Path) -> bool:
         ) from None
 
 
-def _check_linux(filepath: Path) -> bool:
+def _check_linux(filepath: Path) -> bool:  # pragma: no cover
     """Check append-only attribute on Linux via lsattr."""
     try:
         r = subprocess.run(
