@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.11.0] — 2026-02-27
 
-## [1.11.0] — 2026-02-28
-
 ### Added
 
 - **AsyncIO Streaming Enforcement** — Zero-buffering, token-by-token policy
