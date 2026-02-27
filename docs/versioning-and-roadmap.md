@@ -44,8 +44,8 @@ Think of it like building a house:
 
 ## Where EnforceCore Is Today
 
-**Current version: `1.9.0` (Stable)**
-**Published:** February 28, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
+**Current version: `1.11.0` (Stable)**
+**Published:** February 27, 2026 on [PyPI](https://pypi.org/project/enforcecore/)
 
 ### What Stable Means for You
 
@@ -134,7 +134,9 @@ Once stable, version numbers follow [Semantic Versioning](https://semver.org/):
 | **v1.6.0** | Multi-tenant + policy inheritance (`extends:` keyword) | ✅ Shipped |
 | **v1.7.0** | Remote policy server (signed policies, pull-only) | ✅ Shipped |
 | **v1.8.0** | Compliance reporting (EU AI Act / SOC2 / GDPR exports) | ✅ Shipped |
-| **v1.9.0** | Plugin ecosystem (custom guards/redactors from PyPI) | ✅ Shipped — **Latest** |
+| **v1.9.0** | Plugin ecosystem (custom guards/redactors from PyPI) | ✅ Shipped |
+| **v1.10.0** | Quality Hardening + Async Streaming Enforcement | ✅ Shipped |
+| **v1.11.0** | AsyncIO Streaming Enforcement GA, 2307 tests, 97% coverage | ✅ **Latest** |
 | **v2.0.0** | Distributed enforcement (multi-node, global Merkle root) | 📋 Planned |
 | **v2.0.0** | Distributed enforcement for multi-agent architectures | 📋 Planned |
 

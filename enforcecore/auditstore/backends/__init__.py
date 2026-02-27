@@ -8,7 +8,7 @@ try:
     from .postgresql import PostgreSQLBackend
 
     HAS_POSTGRESQL = True
-except ImportError:
+except ImportError:  # pragma: no cover
     HAS_POSTGRESQL = False
     PostgreSQLBackend = None  # type: ignore[assignment,misc]
 

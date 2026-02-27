@@ -253,10 +253,10 @@ Key additions:
 - `enforcecore plugin list` — discover all installed plugins
 - `enforcecore plugin info <name>` — inspect a specific plugin
 
-**Quality metrics:** 1972 tests passing, mypy strict, ruff-formatted,
+**Quality metrics:** 2307 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
-### v1.10.0 — Quality Hardening + Adoption Readiness ✅ **Latest**
+### v1.10.0 — Quality Hardening + Adoption Readiness ✅ Shipped
 
 Available on [PyPI](https://pypi.org/project/enforcecore/1.10.0/):
 ```bash
@@ -280,7 +280,7 @@ CI-verified on macOS (Python 3.11, 3.12, 3.13).
 
 ## Upcoming
 
-### v1.11.0 — AsyncIO Streaming Enforcement ← NEXT
+### v1.11.0 — AsyncIO Streaming Enforcement ✅ **Latest**
 
 Token-by-token enforcement for streaming LLM outputs — the dominant consumption
 pattern for production AI agents:

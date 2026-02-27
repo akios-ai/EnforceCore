@@ -174,6 +174,19 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "linux_only: marks tests that require Linux",
 ]
+filterwarnings = [
+    # Tests that intentionally exercise fail_open behaviour emit this security
+    # warning from enforcecore.core.enforcer._warn_fail_open().  It is correct
+    # production behaviour; suppressing it here keeps the test output clean.
+    "ignore:SECURITY WARNING:RuntimeWarning",
+    # Tests that build edge-case policies (no rules section, misplaced keys)
+    # intentionally trigger these UserWarnings from enforcecore.core.policy.
+    "ignore:Policy has no 'rules' section:UserWarning",
+    "ignore:Policy keys .* found inside 'rules':UserWarning",
+    # ResourceWarning about unclosed sockets comes from Python 3.14's stricter
+    # GC tracking of pytest-asyncio / telemetry test fixtures — not our code.
+    "ignore::ResourceWarning",
+]
 
 # --- Coverage ---
 [tool.coverage.run]
@@ -181,6 +194,9 @@ source = ["enforcecore"]
 omit = [
     # Requires a live PostgreSQL server — tested separately via docker-compose
     "enforcecore/auditstore/backends/postgresql.py",
+    # Standalone framework-comparison report generator — requires a full
+    # scenario-suite run; covered by integration tests, not unit tests.
+    "enforcecore/eval/framework_comparison.py",
 ]
 
 [tool.coverage.report]
