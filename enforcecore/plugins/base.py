@@ -139,7 +139,7 @@ class GuardPlugin(abc.ABC):
 
         Example: ``"toxicity-guard"``.
         """
-        ...
+        ...  # pragma: no cover
 
     @property
     @abc.abstractmethod
@@ -148,7 +148,7 @@ class GuardPlugin(abc.ABC):
 
         Example: ``"1.0.0"``.
         """
-        ...
+        ...  # pragma: no cover
 
     @abc.abstractmethod
     def check(
@@ -168,7 +168,7 @@ class GuardPlugin(abc.ABC):
             :class:`GuardResult` — ``allowed=True`` to permit the call,
             ``allowed=False`` to block it (include a ``reason``).
         """
-        ...
+        ...  # pragma: no cover
 
     def info(self) -> PluginInfo:
         """Return metadata about this plugin."""
@@ -216,13 +216,13 @@ class RedactorPlugin(abc.ABC):
     @abc.abstractmethod
     def name(self) -> str:
         """Unique plugin name (lowercase, hyphens allowed)."""
-        ...
+        ...  # pragma: no cover
 
     @property
     @abc.abstractmethod
     def version(self) -> str:
         """Semantic version string of this plugin."""
-        ...
+        ...  # pragma: no cover
 
     @property
     @abc.abstractmethod
@@ -231,7 +231,7 @@ class RedactorPlugin(abc.ABC):
 
         Example: ``["employee_id", "internal_project_code"]``.
         """
-        ...
+        ...  # pragma: no cover
 
     @abc.abstractmethod
     def redact(self, text: str) -> RedactResult:
@@ -245,7 +245,7 @@ class RedactorPlugin(abc.ABC):
             redactions applied.  Return ``RedactResult(text=text, count=0)``
             if no PII was found.
         """
-        ...
+        ...  # pragma: no cover
 
     def info(self) -> PluginInfo:
         """Return metadata about this plugin."""
@@ -300,13 +300,13 @@ class AuditBackendPlugin(abc.ABC):
     @abc.abstractmethod
     def name(self) -> str:
         """Unique plugin name (lowercase, hyphens allowed)."""
-        ...
+        ...  # pragma: no cover
 
     @property
     @abc.abstractmethod
     def version(self) -> str:
         """Semantic version string of this plugin."""
-        ...
+        ...  # pragma: no cover
 
     @abc.abstractmethod
     def record(self, entry: dict[str, Any]) -> None:
@@ -320,7 +320,7 @@ class AuditBackendPlugin(abc.ABC):
             entry: Audit entry dict matching the ``AuditEntry.to_dict()``
                 schema.
         """
-        ...
+        ...  # pragma: no cover
 
     @abc.abstractmethod
     def flush(self) -> None:
@@ -329,7 +329,7 @@ class AuditBackendPlugin(abc.ABC):
         Called on enforcer shutdown or when the operator requests a flush.
         Must not raise.
         """
-        ...
+        ...  # pragma: no cover
 
     def info(self) -> PluginInfo:
         """Return metadata about this plugin."""

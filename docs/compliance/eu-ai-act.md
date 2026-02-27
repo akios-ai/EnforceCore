@@ -141,7 +141,7 @@ pytest tests/redactor/test_unicode.py -v  # Evasion resistance
 | Requirement | EnforceCore Capability | Evidence |
 |---|---|---|
 | Design and development procedures | Documented architecture, roadmap, dev guide | [docs/architecture.md](../architecture.md), [docs/roadmap.md](../roadmap.md), [docs/dev-guide.md](../dev-guide.md) |
-| Testing and validation | 1525 tests, automated CI on macOS, type checking (mypy), linting (ruff) | `.github/workflows/ci.yml`, `pytest --cov` |
+| Testing and validation | 2307 tests, automated CI on macOS, type checking (mypy), linting (ruff) | `.github/workflows/ci.yml`, `pytest --cov` |
 | Data management | PII redaction categories and secret patterns documented and tested | `enforcecore/redactor/patterns.py`, `enforcecore/redactor/secrets.py` |
 | Record-keeping | Merkle-chained audit trails, CHANGELOG, git history | `enforcecore/auditor/`, `CHANGELOG.md` |
 | Corrective actions | Webhook alerts on violations, structured logging for incident response | `enforcecore/plugins/webhooks.py`, structlog events |

@@ -2,7 +2,7 @@
 
 Auto-generated documentation for all public EnforceCore APIs.
 
-EnforceCore exports **58 core symbols** (Tier 1) in `__all__`.
+EnforceCore exports **63 core symbols** (Tier 1) in `__all__`.
 An additional ~80 advanced symbols (Tier 2) remain importable from the
 top-level package for backwards compatibility, but emit a
 `DeprecationWarning` — use submodule imports instead.

@@ -279,7 +279,9 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.6.0** | Multi-Tenant + Policy Inheritance (`extends:` keyword, tenant audit trails) | ✅ Shipped |
 | **v1.7.0** | Remote Policy Server (signed policies, pull-only, `Enforcer.from_server`) | ✅ Shipped |
 | **v1.8.0** | Compliance Reporting (EU AI Act, SOC2, GDPR — `enforcecore audit export`) | ✅ Shipped |
-| **v1.9.0** | Plugin Ecosystem (custom guards/redactors from PyPI — `enforcecore plugin list`) | ✅ **Latest** |
+| **v1.9.0** | Plugin Ecosystem (custom guards/redactors from PyPI — `enforcecore plugin list`) | ✅ Shipped |
+| **v1.10.0** | Quality Hardening + Async Streaming Enforcement (`stream_enforce`) | ✅ Shipped |
+| **v1.11.0** | AsyncIO Streaming Enforcement (GA), 2307 tests, 97% coverage | ✅ **Latest** |
 | **v2.0.0** | Distributed Enforcement (multi-node, global Merkle root) | 📋 Planned |
 
 See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.
@@ -380,7 +382,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 2163 tests · 90% coverage · 0 lint errors
+**Current stats:** 2307 tests · 97% coverage · 0 lint errors
 
 ---
 

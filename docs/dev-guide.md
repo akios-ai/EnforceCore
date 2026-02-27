@@ -86,7 +86,7 @@ enforcecore/
 │   └── cli/                    # CLI commands
 │       ├── __init__.py
 │       └── main.py             # Typer app (validate, verify, inspect, audit, plugin)
-├── tests/                      # 1972 tests, 12 skipped
+├── tests/                      # 2307 tests, 7 skipped
 │   ├── conftest.py             # Shared fixtures
 │   ├── api/                    # Public API stability tests
 │   ├── auditor/                # Audit trail tests

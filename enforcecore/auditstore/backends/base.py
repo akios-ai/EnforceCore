@@ -12,12 +12,12 @@ class AuditBackend(ABC):
     @abstractmethod
     def record(self, entry: AuditEntry) -> AuditEntry:
         """Record an audit entry, return with merkle hash set."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_entry(self, entry_id: str) -> AuditEntry | None:
         """Retrieve single entry by ID."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list_entries(
@@ -31,12 +31,12 @@ class AuditBackend(ABC):
         offset: int = 0,
     ) -> list[AuditEntry]:
         """Query entries with filters."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_chain_tail(self) -> AuditEntry | None:
         """Get last entry in Merkle chain."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def verify_chain(
@@ -45,17 +45,17 @@ class AuditBackend(ABC):
         end_index: int | None = None,
     ) -> bool:
         """Verify Merkle chain integrity in range."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def verify_entry(self, entry: AuditEntry) -> bool:
         """Verify single entry's Merkle hash."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def export(self, format: str = "jsonl") -> str:
         """Export all entries (for backup/migration)."""
-        pass
+        pass  # pragma: no cover
 
     def _compute_merkle_hash(self, entry: AuditEntry, parent_hash: str | None = None) -> str:
         """Compute Merkle hash for entry.
