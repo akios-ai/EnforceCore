@@ -142,10 +142,16 @@ class PostgreSQLBackend(AuditBackend):
         cursor = conn.cursor()
 
         try:
-            # Compute Merkle hash
-            entry.merkle_hash = self._compute_merkle_hash(entry)
             last_entry = self.get_chain_tail()
-            entry.parent_hash = last_entry.merkle_hash if last_entry else None
+
+            # If entry already has a merkle_hash (set by caller via external_hash),
+            # store it as-is.  Otherwise, compute our own.
+            if entry.merkle_hash is None:
+                entry.merkle_hash = self._compute_merkle_hash(entry)
+                entry.parent_hash = last_entry.merkle_hash if last_entry else None
+            elif entry.parent_hash is None:
+                entry.parent_hash = last_entry.merkle_hash if last_entry else None
+
             entry.chain_index = (last_entry.chain_index or 0) + 1 if last_entry else 0
 
             # Insert entry
@@ -267,6 +273,8 @@ class PostgreSQLBackend(AuditBackend):
         self,
         start_index: int = 0,
         end_index: int | None = None,
+        *,
+        skip_entry_hash: bool = False,
     ) -> bool:
         """Verify Merkle chain integrity."""
         conn = self._get_connection()

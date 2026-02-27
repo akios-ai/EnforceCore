@@ -22,10 +22,16 @@ class JSONLBackend(AuditBackend):
         # Get previous entry for Merkle chaining
         last_entry = self.get_chain_tail()
 
-        # Compute Merkle hash
-        parent_hash = last_entry.merkle_hash if last_entry else None
-        entry.merkle_hash = self._compute_merkle_hash(entry, parent_hash)
-        entry.parent_hash = parent_hash
+        # If entry already has a merkle_hash (set by caller via external_hash),
+        # store it as-is.  Otherwise, compute our own.
+        if entry.merkle_hash is None:
+            parent_hash = last_entry.merkle_hash if last_entry else None
+            entry.merkle_hash = self._compute_merkle_hash(entry, parent_hash)
+            entry.parent_hash = parent_hash
+        elif entry.parent_hash is None:
+            # External hash provided but no parent — use chain tail
+            entry.parent_hash = last_entry.merkle_hash if last_entry else None
+
         entry.chain_index = (last_entry.chain_index or 0) + 1 if last_entry else 0
 
         # Append to file
@@ -108,6 +114,8 @@ class JSONLBackend(AuditBackend):
         self,
         start_index: int = 0,
         end_index: int | None = None,
+        *,
+        skip_entry_hash: bool = False,
     ) -> bool:
         """Verify Merkle chain integrity."""
         if not self.path.exists():
@@ -128,10 +136,19 @@ class JSONLBackend(AuditBackend):
         for i in range(max(0, start_index), min(end_index + 1, len(entries))):
             entry = entries[i]
             parent_hash = entries[i - 1].merkle_hash if i > 0 else None
-            expected_hash = self._compute_merkle_hash(entry, parent_hash)
 
-            if entry.merkle_hash != expected_hash:
-                return False
+            if skip_entry_hash:
+                # Linkage-only mode: verify parent_hash continuity
+                # without recomputing the entry hash (for external hashes).
+                prev_hash = parent_hash or ""
+                stored_parent = entry.parent_hash or ""
+                if stored_parent != prev_hash:
+                    return False
+            else:
+                # Default: recompute hash (includes parent_hash implicitly)
+                expected_hash = self._compute_merkle_hash(entry, parent_hash)
+                if entry.merkle_hash != expected_hash:
+                    return False
 
         return True
 

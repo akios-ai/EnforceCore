@@ -553,7 +553,11 @@ class Auditor:
 # ---------------------------------------------------------------------------
 
 
-def verify_trail(path: str | Path) -> VerificationResult:
+def verify_trail(
+    path: str | Path,
+    *,
+    skip_entry_hash: bool = False,
+) -> VerificationResult:
     """Verify the integrity of an audit trail file.
 
     Reads every entry, recomputes hashes, and checks the Merkle chain.
@@ -561,6 +565,11 @@ def verify_trail(path: str | Path) -> VerificationResult:
 
     Args:
         path: Path to the JSONL audit file.
+        skip_entry_hash: When ``True``, only verify chain linkage
+            (``previous_hash`` continuity) without recomputing individual
+            entry hashes from the payload.  This is useful when the trail
+            was written by an external system (e.g. AKIOS) that uses a
+            different hashing scheme.  Chain ordering is still verified.
 
     Returns:
         A ``VerificationResult`` with details about the verification.
@@ -573,6 +582,9 @@ def verify_trail(path: str | Path) -> VerificationResult:
         else:
             for error in result.errors:
                 print(f"  ERROR: {error}")
+
+    .. versionchanged:: 1.12.0
+       Added ``skip_entry_hash`` for cross-system Merkle bridge.
     """
     filepath = Path(path)
     result = VerificationResult()
@@ -609,15 +621,16 @@ def verify_trail(path: str | Path) -> VerificationResult:
                 entry = AuditEntry.from_dict(data)
                 stored_hash = entry.entry_hash
 
-                # Verify hash
-                computed = entry.compute_hash()
-                if computed != stored_hash:
-                    result.is_valid = False
-                    result.chain_intact = False
-                    result.errors.append(
-                        f"Line {line_num}: hash mismatch — entry '{entry.entry_id}' "
-                        f"stored={stored_hash[:16]}... computed={computed[:16]}..."
-                    )
+                # Verify hash (skip if caller opted out for external hashes)
+                if not skip_entry_hash:
+                    computed = entry.compute_hash()
+                    if computed != stored_hash:
+                        result.is_valid = False
+                        result.chain_intact = False
+                        result.errors.append(
+                            f"Line {line_num}: hash mismatch — entry '{entry.entry_id}' "
+                            f"stored={stored_hash[:16]}... computed={computed[:16]}..."
+                        )
 
                 # Verify chain linkage
                 if entry.previous_hash != previous_hash:

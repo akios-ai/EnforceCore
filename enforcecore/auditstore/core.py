@@ -113,9 +113,42 @@ class AuditStore:
         self.backend = backend
         self.verify_on_read = verify_on_read
 
-    def record(self, **kwargs: Any) -> AuditEntry:
-        """Record an enforced call."""
+    def record(
+        self,
+        *,
+        external_hash: str | None = None,
+        external_prev_hash: str | None = None,
+        **kwargs: Any,
+    ) -> AuditEntry:
+        """Record an enforced call.
+
+        Args:
+            external_hash: Pre-computed Merkle hash from an external system
+                (e.g. AKIOS). When provided, the backend stores this hash
+                AS-IS instead of computing its own.  This enables consumers
+                with a different hashing scheme to use EnforceCore backends
+                for storage while preserving their own chain integrity.
+            external_prev_hash: Pre-computed previous/parent hash from the
+                external system.  Must be provided together with
+                ``external_hash``.
+            **kwargs: Fields forwarded to :meth:`AuditEntry.create`.
+
+        Returns:
+            The recorded ``AuditEntry`` with Merkle fields populated.
+
+        .. versionchanged:: 1.12.0
+           Added ``external_hash`` and ``external_prev_hash`` for
+           cross-system Merkle bridge support.
+        """
         entry = AuditEntry.create(**kwargs)
+
+        # When an external hash is provided, set it on the entry BEFORE
+        # handing to the backend so backends can detect the pre-set hash
+        # and skip their own computation.
+        if external_hash is not None:
+            entry.merkle_hash = external_hash
+            entry.parent_hash = external_prev_hash
+
         return self.backend.record(entry)
 
     def get_entry(self, entry_id: str) -> AuditEntry | None:
@@ -146,9 +179,33 @@ class AuditStore:
             offset=offset,
         )
 
-    def verify_chain(self, start_index: int = 0, end_index: int | None = None) -> bool:
-        """Verify Merkle chain integrity."""
-        return self.backend.verify_chain(start_index, end_index)
+    def verify_chain(
+        self,
+        start_index: int = 0,
+        end_index: int | None = None,
+        *,
+        skip_entry_hash: bool = False,
+    ) -> bool:
+        """Verify Merkle chain integrity.
+
+        Args:
+            start_index: First chain index to verify.
+            end_index: Last chain index to verify (inclusive).
+            skip_entry_hash: When ``True``, only verify chain linkage
+                (``parent_hash`` → previous ``merkle_hash``) without
+                recomputing individual entry hashes.  Useful when entries
+                were recorded with ``external_hash`` from a system that
+                uses a different hashing scheme.
+
+        Returns:
+            ``True`` if the chain (or linkage) is valid.
+
+        .. versionchanged:: 1.12.0
+           Added ``skip_entry_hash`` for external-hash verification.
+        """
+        return self.backend.verify_chain(
+            start_index, end_index, skip_entry_hash=skip_entry_hash,
+        )
 
     def verify_entry(self, entry: AuditEntry) -> bool:
         """Verify single entry's Merkle hash."""
