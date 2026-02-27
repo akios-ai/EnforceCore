@@ -50,7 +50,15 @@ def demo_standalone_redactor() -> None:
     print(f"\nOriginal:\n  {text}\n")
 
     for strategy in RedactionStrategy:
-        r = Redactor(strategy=strategy)
+        if strategy == RedactionStrategy.NER:
+            # NER requires presidio-analyzer + spaCy model — skip if not installed
+            try:
+                r = Redactor(strategy=strategy, fallback=RedactionStrategy.PLACEHOLDER)
+            except ImportError:
+                print(f"  [{strategy.value:>11}]  (skipped — install enforcecore[ner])\n")
+                continue
+        else:
+            r = Redactor(strategy=strategy)
         result = r.redact(text)
         print(f"  [{strategy.value:>11}]  {result.text}")
         print(f"               → {result.count} entities redacted\n")

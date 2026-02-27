@@ -366,7 +366,7 @@ from enforcecore.telemetry import (
     EnforceCorePrometheusExporter as EnforceCorePrometheusExporter,
 )
 
-__version__ = "1.11.0"
+__version__ = "1.11.1"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
