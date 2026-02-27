@@ -43,8 +43,19 @@ class AuditBackend(ABC):
         self,
         start_index: int = 0,
         end_index: int | None = None,
+        *,
+        skip_entry_hash: bool = False,
     ) -> bool:
-        """Verify Merkle chain integrity in range."""
+        """Verify Merkle chain integrity in range.
+
+        Args:
+            start_index: First chain index to verify.
+            end_index: Last chain index to verify (inclusive).
+            skip_entry_hash: When ``True``, only verify chain linkage
+                (parent_hash continuity) without recomputing individual
+                entry hashes.  Useful for entries recorded with
+                ``external_hash``.
+        """
         pass  # pragma: no cover
 
     @abstractmethod

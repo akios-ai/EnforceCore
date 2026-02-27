@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] — 2026-02-27
+
+### Added
+
+- **`AuditStore.record(external_hash=..., external_prev_hash=...)`** — allows
+  external systems (e.g. AKIOS) to store pre-computed Merkle hashes as-is
+  instead of letting EnforceCore recompute them.  When `external_hash` is
+  provided, the backend stores it verbatim and chains it to the previous entry.
+  Backward-compatible: omitting the parameter preserves existing behavior.
+  Affects JSONL, SQLite, and PostgreSQL backends. *(Merkle Bridge — Option A)*
+
+- **`AuditStore.verify_chain(skip_entry_hash=True)`** — linkage-only
+  verification mode that checks chain continuity (parent_hash ordering) without
+  recomputing individual entry hashes from payload.  This is required when
+  entries were written with `external_hash` from a system that uses a different
+  hashing scheme (e.g. AKIOS binary Merkle tree). *(Merkle Bridge — Option C)*
+
+- **`verify_trail(path, skip_entry_hash=True)`** — same linkage-only mode for
+  the Auditor engine's standalone trail verification function.
+
+- **`MerkleTree.verify_chain(entries, skip_entry_hash=True)`**,
+  **`MerkleTree.verify_entry(..., skip_entry_hash=True)`**,
+  **`MerkleTree.generate_proof(..., skip_entry_hash=True)`**,
+  **`MerkleTree.detect_tampering(..., skip_entry_hash=True)`** — all static
+  Merkle tree methods now accept the linkage-only flag.
+
+- **23 new tests** in `tests/auditstore/test_merkle_bridge.py` covering
+  external hash storage, skip-entry-hash verification, backward compatibility,
+  and mixed-chain scenarios.
+
+### Changed
+
+- **`AuditStoreBackendAdapter.write()`** — adapter no longer copies the
+  Auditor's `entry_hash`/`previous_hash` into the auditstore's
+  `merkle_hash`/`parent_hash` fields.  The AuditStore backend now computes its
+  own independent Merkle chain.  To store an external hash, use
+  `AuditStore.record(external_hash=...)`.
+
+### Notes
+
+This release implements the **AKIOS Merkle Bridge** requested in
+`ENFORCECORE_MERKLE_BRIDGE_REQUEST.md`.  AKIOS v1.3.0 can now write audit
+entries to EnforceCore backends with its own binary Merkle tree hashes and
+verify chain integrity using `skip_entry_hash=True`.
+
+Test count: **2347 passed**, 7 skipped.
+
 ## [1.11.1] — 2026-02-27
 
 ### Fixed

@@ -117,9 +117,11 @@ class AuditStoreBackendAdapter(AuditorBackend):
                 output_redactions=entry_dict.get("output_redactions", 0),
                 violation_type=entry_dict.get("violation_type"),
                 violation_reason=entry_dict.get("violation_reason"),
-                # Merkle fields from Auditor
-                merkle_hash=entry_dict.get("entry_hash"),
-                parent_hash=entry_dict.get("previous_hash"),
+                # NOTE: merkle_hash / parent_hash intentionally left as None
+                # so the auditstore backend computes its own Merkle chain.
+                # The Auditor's hash chain (entry_hash / previous_hash) and
+                # the AuditStore's chain are independent.  To store an
+                # external hash use AuditStore.record(external_hash=...).
             )
 
             # Record to auditstore backend
