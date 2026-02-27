@@ -271,7 +271,7 @@ def prepare_for_detection(text: str) -> str:
     Returns:
         Fully normalized text ready for PII regex matching.
 
-    .. deprecated:: 1.0.24
+    .. deprecated:: 1.0.0
        Use :func:`prepare_for_detection_mapped` for offset-aware normalization.
     """
     text = normalize_unicode(text)

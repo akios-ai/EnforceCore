@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1] — 2026-02-27
+
+### Fixed
+
+- **`examples/pii_redaction.py`** — crash when iterating `RedactionStrategy` on
+  environments without `enforcecore[ner]` installed. `RedactionStrategy.NER` now
+  wraps backend initialization in a `try/except ImportError` and prints a graceful
+  skip message (`skipped — install enforcecore[ner]`) instead of raising.
+- **`enforcecore/redactor/unicode.py`** — stale `.. deprecated:: 1.0.24` Sphinx
+  annotation corrected to `.. deprecated:: 1.0.0` (the actual first public release;
+  `1.0.24` was an internal pre-release iteration that never shipped on PyPI).
+
+### Internal
+
+- Updated test count references in `README.md`, `docs/dev-guide.md`, and
+  `docs/compliance/eu-ai-act.md`: `2307` → `2324` (reflects 17 tests added
+  across v1.11.0 hardening commits).
+
 ## [1.11.0] — 2026-02-27
 
 ### Added
