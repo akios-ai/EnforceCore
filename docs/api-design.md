@@ -1,4 +1,4 @@
-# EnforceCore — API Design (v1.0 – v1.9)
+# EnforceCore — API Design (v1.0 – v1.11)
 
 ## Design Principles
 
@@ -2478,3 +2478,180 @@ enforcecore plugin list           # Discover all installed plugins
 enforcecore plugin info <name>    # Load and inspect a specific plugin
 ```
 
+
+---
+
+## API Added in v1.11.0 — AsyncIO Streaming Enforcement
+
+### `stream_enforce()` — async context manager
+
+```python
+from enforcecore import stream_enforce, Policy
+from collections.abc import AsyncGenerator
+
+policy = Policy.from_file("policies/production.yaml")
+
+async def run(llm_stream: AsyncGenerator[str, None]) -> None:
+    result_holder: list[StreamEnforcementResult] = []
+    async with stream_enforce(
+        llm_stream,
+        policy=policy,
+        tool_name="chatbot_reply",
+        redact=True,
+        redaction_strategy="placeholder",   # placeholder | mask | hash | remove
+        lookahead=64,                        # chars buffered for boundary detection
+        result_out=result_holder,
+    ) as safe:
+        async for token in safe:
+            print(token, end="", flush=True)
+
+    result = result_holder[0]
+    print(f"\nRedacted {result.total_redactions} PII entities in {result.stream_duration_ms:.1f}ms")
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` | `AsyncGenerator[str, None]` | required | Upstream LLM token stream |
+| `policy` | `Policy` | required | Policy to enforce |
+| `tool_name` | `str` | `"stream"` | Identifier written to audit records |
+| `redact` | `bool` | `True` | Enable PII redaction |
+| `redaction_strategy` | `str` | `"placeholder"` | `placeholder`, `mask`, `hash`, or `remove` |
+| `lookahead` | `int` | `64` | Lookahead window in chars for boundary-spanning PII |
+| `on_violation` | `str \| None` | `None` | Override policy `on_violation`; `None` uses policy setting |
+| `result_out` | `list[StreamEnforcementResult] \| None` | `None` | List to append the result to after the stream completes |
+
+**Raises** `StreamingViolation` when `on_violation="block"` and a hard policy violation is detected.
+
+---
+
+### `StreamingRedactor` — stateful lookahead-window redactor
+
+```python
+from enforcecore import StreamingRedactor
+
+sr = StreamingRedactor(strategy="placeholder", lookahead=64)
+
+async for raw_token in llm_stream:
+    safe_token, events = sr.push(raw_token)
+    yield safe_token
+
+remainder, events = sr.flush()  # flush buffered lookahead at stream end
+yield remainder
+```
+
+**Constructor parameters**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `strategy` | `str` | `"placeholder"` | Redaction strategy |
+| `lookahead` | `int` | `64` | Lookahead window in chars (must be > 0) |
+| `categories` | `set[str] \| None` | `None` | PII categories to scan; `None` = all |
+
+**Methods**
+
+| Method | Returns | Description |
+|---|---|---|
+| `push(token: str)` | `(str, list[StreamRedactionEvent])` | Emit the safe prefix; buffer the lookahead tail |
+| `flush()` | `(str, list[StreamRedactionEvent])` | Emit all buffered chars; finalize stream |
+| `reset()` | `None` | Clear buffer, counts, and events |
+
+**Properties**: `.redaction_count: int`, `.events: list[StreamRedactionEvent]`, `._buffer: str`
+
+---
+
+### `StreamEnforcementResult` — stream session summary
+
+```python
+@dataclass
+class StreamEnforcementResult:
+    stream_id: str           # UUID
+    policy_name: str
+    tool_name: str
+    decision: str            # "allowed" | "blocked"
+    violation_reason: str | None
+    tokens_total: int
+    tokens_redacted: int
+    total_redactions: int
+    overhead_ms: float
+    stream_duration_ms: float
+    audit_entry_id: str | None
+```
+
+---
+
+### `StreamAuditEntry` — per-stream audit record
+
+Produced automatically by `stream_enforce()`.  Written to the same
+Merkle-chained audit trail as standard `@enforce()` records.
+
+```python
+@dataclass
+class StreamAuditEntry:
+    entry_id: str            # UUID
+    stream_id: str
+    timestamp: str           # ISO-8601
+    policy_name: str
+    tool_name: str
+    decision: str
+    violation_reason: str | None
+    tokens_emitted: int
+    tokens_redacted: int
+    total_redactions: int
+    redaction_events: list[StreamRedactionEvent]
+    overhead_ms: float
+    stream_duration_ms: float
+```
+
+---
+
+### `StreamingViolation` — block-mode streaming exception
+
+```python
+class StreamingViolation(Exception):
+    reason: str
+    stream_id: str
+    result: StreamEnforcementResult
+```
+
+---
+
+### Framework adapters (`enforcecore.streaming.adapters`)
+
+#### LangChain
+
+```python
+from enforcecore.streaming.adapters import EnforceCoreStreamingCallback
+
+callback = EnforceCoreStreamingCallback(policy=policy, redact=True)
+
+# Wrap the LLM's token stream:
+async for token in callback.on_llm_new_token_stream(llm_token_generator):
+    print(token, end="")
+
+result = callback.last_result  # StreamEnforcementResult
+```
+
+#### AutoGen
+
+```python
+from enforcecore.streaming.adapters import autogen_stream_enforce
+
+async for token in autogen_stream_enforce(agent_stream, policy=policy):
+    print(token, end="")
+```
+
+#### LangGraph
+
+```python
+from enforcecore.streaming.adapters import langgraph_stream_enforce
+
+async with langgraph_stream_enforce(
+    graph.astream(inputs),
+    policy=policy,
+    token_extractor=lambda e: e.get("content") if isinstance(e, dict) else None,
+) as safe_events:
+    async for event in safe_events:
+        process(event)
+```

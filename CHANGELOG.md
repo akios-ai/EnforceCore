@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-02-27
+
+## [1.11.0] — 2026-02-28
+
+### Added
+
+- **AsyncIO Streaming Enforcement** — Zero-buffering, token-by-token policy
+  enforcement for LLM streaming APIs via the new `stream_enforce()` async
+  context manager.
+
+  - **`stream_enforce(source, *, policy, ...)`** — `@asynccontextmanager`
+    wrapping any `AsyncGenerator[str, None]`.  Enforces policy on each token
+    as it arrives from the LLM with O(lookahead) memory — no full-response
+    buffering.  PII is redacted in-place using a stateful lookahead window so
+    that entities spanning token boundaries are correctly handled.
+
+  - **`StreamingRedactor`** — Stateful window-based PII redactor for token
+    streams.  Buffers a configurable lookahead window (default 64 chars) to
+    catch boundary-spanning PII (e.g. `"alice"` in one token, `"@gmail.com"`
+    in the next).  Supports all four redaction strategies: `placeholder`,
+    `mask`, `hash`, `remove`.  Key methods: `push(token) → (safe_str, events)`,
+    `flush() → (safe_str, events)`, `reset()`.
+
+  - **`StreamAuditEntry`** — Audit record per streaming session.  One entry
+    per `stream_enforce()` call; accumulates token counts, redaction events,
+    final decision, and wall-clock timing.  Writes to the same Merkle-chained
+    audit trail as the standard `@enforce()` decorator.
+
+  - **`StreamEnforcementResult`** — Summary dataclass returned after the
+    `async with stream_enforce(...)` block exits.  Fields: `stream_id`,
+    `policy_name`, `tool_name`, `decision`, `tokens_total`, `tokens_redacted`,
+    `total_redactions`, `overhead_ms`, `stream_duration_ms`, `audit_entry_id`.
+
+  - **`StreamingViolation`** — Exception raised when `on_violation="block"`
+    and a hard policy violation is detected mid-stream.  Carries `.reason`,
+    `.stream_id`, and `.result` (partial `StreamEnforcementResult`).
+
+  - **Framework adapters** (`enforcecore.streaming.adapters`):
+    - `EnforceCoreStreamingCallback` — LangChain `BaseCallbackHandler`
+      subclass; lazy `langchain-core` import.
+    - `autogen_stream_enforce()` — Async generator wrapper for AutoGen agent
+      token streams.
+    - `langgraph_stream_enforce()` — `@asynccontextmanager` for
+      `graph.astream()` event iterators; optional `token_extractor` for
+      non-string events.
+
+  - **5 new Tier 1 symbols** (total: 63):
+    `StreamAuditEntry`, `StreamEnforcementResult`, `StreamingRedactor`,
+    `StreamingViolation`, `stream_enforce`.
+
+- **77 new tests** — `tests/streaming/test_streaming_redactor.py` (32),
+  `tests/streaming/test_stream_enforce.py` (21),
+  `tests/streaming/test_streaming_adapters.py` (24).
+  Total suite: **2054 tests** (CI-verified on macOS Python 3.11, 3.12, 3.13).
+
+- **`api-design.md` updated** — New `## API Added in v1.11.0` section
+  documenting all 5 streaming symbols with signatures, parameter tables,
+  and async usage examples.
+
+- **`architecture.md` updated** — New streaming subsystem section with
+  Mermaid flow diagram, design invariants, and lookahead algorithm notes.
+
 ## [1.10.0] — 2026-02-26
 
 ### Fixed

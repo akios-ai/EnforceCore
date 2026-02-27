@@ -921,3 +921,77 @@ classDiagram
     GuardError <|-- SandboxMemoryError
     GuardError <|-- SandboxViolationError
 ```
+
+---
+
+## v1.11.0 — Streaming Subsystem
+
+### Design Invariants
+
+1. **Zero full-response buffering** — Memory usage is O(lookahead), not O(stream).
+   Tokens are forwarded to the consumer as soon as they clear the lookahead window.
+2. **Additive API** — `stream_enforce()` is a new Tier 1 symbol.  No existing API is changed.
+3. **Policy-driven** — The same `Policy` objects used by `@enforce()` drive streaming enforcement.
+4. **Audit parity** — One `StreamAuditEntry` per stream is written to the Merkle-chained audit
+   trail, keeping the tamper-evident chain intact.
+
+### Component Diagram
+
+```mermaid
+flowchart TB
+    SRC["AsyncGenerator[str, None]\n(LLM token stream)"]
+
+    subgraph SE["stream_enforce() context manager"]
+        SR["StreamingRedactor\n(lookahead window)"]
+        AC["audit / result accumulation"]
+        EG["_enforced_gen()\nasync generator"]
+    end
+
+    CONSUMER["Consumer\nasync for token in safe: ..."]
+    AUDIT["AuditStore\n(Merkle chain)"]
+    RESULT["StreamEnforcementResult\n(result_out list)"]
+
+    SRC -->|"raw tokens"| EG
+    EG -->|"push(token)"| SR
+    SR -->|"(safe_chunk, events)"| AC
+    AC -->|"safe tokens"| CONSUMER
+    EG -->|"flush() on exit"| SR
+    AC -->|"StreamAuditEntry"| AUDIT
+    AC -->|"result.append()"| RESULT
+```
+
+### Lookahead Algorithm (`StreamingRedactor._scan`)
+
+```
+buffer  = already-received chars
+hold_back = lookahead  (during push)  OR  0  (during flush)
+
+safe_prefix = buffer[:len(buffer) - hold_back]
+              ↑ scan this for PII patterns
+
+for each match in safe_prefix:
+    replace match with redacted form
+    record StreamRedactionEvent
+
+emit safe_prefix (redacted)
+buffer = buffer[len(safe_prefix):]  ← keep only the held-back tail
+```
+
+**Why hold back?**  An email `alice@example.com` may arrive as two tokens:
+`"alice"` + `"@example.com"`.  Neither half alone matches the email regex.
+By holding back the last `lookahead` chars (default 64), the next `push()`
+will see `"alice@example.com"` as a contiguous string in `safe_prefix` and
+redact it correctly.
+
+### Adapter Layer
+
+```
+enforcecore.streaming.adapters
+├── EnforceCoreStreamingCallback   LangChain BaseCallbackHandler thin wrapper
+├── autogen_stream_enforce()       AutoGen: async generator → async generator
+└── langgraph_stream_enforce()     LangGraph: @asynccontextmanager for graph.astream()
+```
+
+All adapters import framework code lazily — `import enforcecore` never fails
+when LangChain/AutoGen/LangGraph is absent.
+

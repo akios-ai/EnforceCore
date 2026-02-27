@@ -225,7 +225,7 @@ Key additions:
 **Quality metrics:** 1898 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
-### v1.9.0 — Plugin Ecosystem ✅ **Latest**
+### v1.9.0 — Plugin Ecosystem ✅
 
 Available on [PyPI](https://pypi.org/project/enforcecore/1.9.0/):
 
@@ -256,33 +256,46 @@ Key additions:
 **Quality metrics:** 1972 tests passing, mypy strict, ruff-formatted,
 CI-verified on Linux and macOS.
 
+### v1.10.0 — Quality Hardening + Adoption Readiness ✅ **Latest**
+
+Available on [PyPI](https://pypi.org/project/enforcecore/1.10.0/):
+```bash
+pip install enforcecore
+```
+
+Polish release focused on production readiness and adoption:
+
+- Fixed SQLite INSERT column mismatch — unblocked 5 integration tests
+- Fixed `dateutil` phantom dependency in `ReportGenerator`
+- Fixed HTML compliance report template key mismatch (`pii_redactions` → `total_redactions`)
+- Fixed `PolicyServerClient.invalidate()` using `float('-inf')` for correct cache expiry on all platforms
+- Complete API design documentation for all v1.2–v1.9 additions (docs/api-design.md)
+- Architecture diagrams updated for all v1.2–v1.9 subsystems (docs/architecture.md)
+- All 58 public API symbols verified to have complete Google-style docstrings
+
+**Quality metrics:** 1977 tests passing, mypy strict, ruff-formatted,
+CI-verified on macOS (Python 3.11, 3.12, 3.13).
+
 ---
 
 ## Upcoming
 
-### v1.10.0 — Quality Hardening + Adoption Readiness
-
-Polish release focused on production readiness:
-- Fix SQLite backend integration edge cases
-- Complete API design documentation for v1.2–v1.9 additions
-- Comprehensive docstrings on all 58 public API symbols
-- Updated architecture diagrams
-- AgentSecBench standalone benchmark extraction
-
-### v1.11.0 — AsyncIO Streaming Enforcement
+### v1.11.0 — AsyncIO Streaming Enforcement ← NEXT
 
 Token-by-token enforcement for streaming LLM outputs — the dominant consumption
 pattern for production AI agents:
 
-- `stream_enforce()` context manager — wraps any async generator, enforcing
-  policy on each token as it arrives
-- Streaming PII redaction — detect and redact PII within partial token chunks
-  without buffering the full response
-- `StreamAuditEntry` — audit record per stream, with token counts and
-  redaction events
-- Framework adapters — LangChain `streaming_callback`, AutoGen `stream_reply`,
-  LangGraph `astream` integration
-- Zero-buffer mode — enforce without holding the full response in memory
+- `stream_enforce()` async context manager — wraps any `AsyncGenerator[str, None]`,
+  enforcing policy on each token as it arrives
+- `StreamingRedactor` — stateful window-based PII detection that handles PII
+  split across token boundaries (e.g. `"john"` + `"@gmail.com"` in separate chunks)
+- `StreamAuditEntry` — one audit record per stream, accumulating token count,
+  redaction events, and final enforcement decision
+- `StreamEnforcementResult` — dataclass returned after a stream completes,
+  with full token stats and redaction summary
+- Framework streaming adapters — LangChain `StreamingCallbackHandler`,
+  AutoGen `stream_reply`, LangGraph `astream` integration
+- Zero-buffer mode — configurable lookahead window; no full-response buffering
 
 ### v2.0.0 — Distributed Enforcement
 
