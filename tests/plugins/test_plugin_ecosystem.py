@@ -766,9 +766,9 @@ class TestPublicAPIPluginEcosystem:
     def test_version_is_1100(self) -> None:
         assert enforcecore.__version__ == "1.10.0"
 
-    def test_all_count_is_58(self) -> None:
-        assert len(enforcecore.__all__) == 58, (
-            f"Expected 58 symbols in __all__, got {len(enforcecore.__all__)}. "
+    def test_all_count_is_63(self) -> None:
+        assert len(enforcecore.__all__) == 63, (
+            f"Expected 63 symbols in __all__, got {len(enforcecore.__all__)}. "
             f"Current: {sorted(enforcecore.__all__)}"
         )
 

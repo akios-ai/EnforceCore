@@ -52,7 +52,7 @@ class TestAllExportsExist:
         assert len(enforcecore.__all__) == len(set(enforcecore.__all__))
 
     def test_all_count(self) -> None:
-        """__all__ should have exactly 58 symbols (Tier 1 public API).
+        """__all__ should have exactly 63 symbols (Tier 1 public API).
 
         v1.3.0 added 6 sandbox symbols: SandboxConfig, SandboxMemoryError,
         SandboxStrategy, SandboxTimeoutError, SandboxViolationError, SubprocessSandbox.
@@ -66,9 +66,11 @@ class TestAllExportsExist:
         CompliancePeriod, ComplianceReport, ComplianceReporter.
         v1.9.0 added 5 plugin ecosystem symbols: AuditBackendPlugin, GuardPlugin,
         PluginLoadError, PluginManager, RedactorPlugin.
+        v1.11.0 added 5 streaming symbols: StreamAuditEntry, StreamEnforcementResult,
+        StreamingRedactor, StreamingViolation, stream_enforce.
         """
-        assert len(enforcecore.__all__) == 58, (
-            f"Expected 58 symbols in __all__, got {len(enforcecore.__all__)}"
+        assert len(enforcecore.__all__) == 63, (
+            f"Expected 63 symbols in __all__, got {len(enforcecore.__all__)}"
         )
 
 
@@ -107,6 +109,9 @@ TIER1_CLASSES: set[str] = {
     "SensitivityLabelConfig",
     "SensitivityViolation",
     "Settings",
+    "StreamAuditEntry",
+    "StreamEnforcementResult",
+    "StreamingRedactor",
     "SubprocessSandbox",
     "VerificationResult",
 }
@@ -127,6 +132,7 @@ TIER1_EXCEPTIONS: set[str] = {
     "SandboxTimeoutError",
     "SandboxViolationError",
     "SensitivityViolationError",
+    "StreamingViolation",
     "ToolDeniedError",
 }
 
@@ -147,6 +153,7 @@ TIER1_FUNCTIONS: set[str] = {
     "load_policy",
     "load_trail",
     "sensitivity_level",
+    "stream_enforce",
     "verify_trail",
 }
 

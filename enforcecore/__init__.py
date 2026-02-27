@@ -16,7 +16,7 @@ Basic usage::
 
 See https://github.com/akios-ai/EnforceCore for documentation.
 
-**API surface (v1.0.0+):** This package exports 58 core symbols (Tier 1).
+**API surface (v1.11.0+):** This package exports 63 core symbols (Tier 1).
 Advanced types remain importable for backwards compatibility but emit a
 ``DeprecationWarning`` — migrate to submodule imports::
 
@@ -338,6 +338,21 @@ from enforcecore.sandbox import (
     SandboxViolationError,
     SubprocessSandbox,
 )
+from enforcecore.streaming import (
+    StreamAuditEntry as StreamAuditEntry,
+)
+from enforcecore.streaming import (
+    StreamEnforcementResult as StreamEnforcementResult,
+)
+from enforcecore.streaming import (
+    StreamingRedactor as StreamingRedactor,
+)
+from enforcecore.streaming import (
+    StreamingViolation as StreamingViolation,
+)
+from enforcecore.streaming import (
+    stream_enforce as stream_enforce,
+)
 from enforcecore.telemetry import (
     AuditLogExporter as AuditLogExporter,
 )
@@ -351,7 +366,7 @@ from enforcecore.telemetry import (
     EnforceCorePrometheusExporter as EnforceCorePrometheusExporter,
 )
 
-__version__ = "1.10.0"
+__version__ = "1.11.0"
 
 # ── Logging configuration ────────────────────────────────────────────────
 # Wire the ENFORCECORE_LOG_LEVEL setting to stdlib logging so structlog
@@ -412,6 +427,10 @@ __all__ = [
     "SensitivityViolation",
     "SensitivityViolationError",
     "Settings",
+    "StreamAuditEntry",
+    "StreamEnforcementResult",
+    "StreamingRedactor",
+    "StreamingViolation",
     "SubprocessSandbox",
     "ToolDeniedError",
     "VerificationResult",
@@ -423,6 +442,7 @@ __all__ = [
     "load_trail",
     "sensitivity_level",
     "settings",
+    "stream_enforce",
     "verify_trail",
 ]
 
