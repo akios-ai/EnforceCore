@@ -356,12 +356,50 @@ result = llm.invoke("My SSN is 123-45-6789")
 
 ## Next Up
 
-### v1.14.0 — Upstream PR to `langchain-community` 🔜
+### v1.14.0 — Upstream PR to `langchain-community` ✅ **Latest**
 
-Submit `EnforceCoreCallbackHandler` to `langchain-ai/langchain` as an official
-community integration — putting EnforceCore in front of 92.8M monthly PyPI
-users automatically.  Scope: open the PR, write the integration guide, and
-submit to the `langchain-community` cookbook.
+Distribution milestone: submitted `EnforceCoreCallbackHandler` upstream to
+`langchain-ai/langchain` for inclusion in `langchain_community/callbacks/`.
+
+Deliverables (in `internal/upstream-prs/`):
+
+- **`langchain_community/callbacks/enforcecore.py`** — the contribution file;
+  delegation pattern, all 8 `BaseCallbackHandler` methods, lazy import,
+  full Sphinx docstring with policy YAML example.
+- **`tests/unit_tests/callbacks/test_enforcecore_callback.py`** — 15 unit
+  tests, fully mocked, following langchain-community conventions.
+- **`PR_DESCRIPTION.md`** — ready-to-paste PR body with checklist and
+  `__init__.py` diff instructions.
+- **`langchain-cookbook/enforcecore_pii_audit.py`** — cookbook entry
+  demonstrating all 4 PII redaction scenarios + tool policy enforcement.
+
+Once the PR is merged, any LangChain user can add enforcement with:
+
+```python
+from langchain_community.callbacks import EnforceCoreCallbackHandler
+
+handler = EnforceCoreCallbackHandler(policy="policy.yaml")
+llm = ChatOpenAI(callbacks=[handler])
+```
+
+---
+
+## Next Up
+
+### v1.15.0 — Developer Experience 🔜
+
+Make EnforceCore impossible to ignore for any developer who lands on the repo
+or discovers it via LangChain:
+
+- **README rewrite** — lead with the LangChain callback pattern (the most
+  common entry point after v1.14.0 lands), add a 30-second copy-paste block
+  at the very top, remove jargon from the first screen.
+- **HuggingFace Space demo** — interactive Gradio app at
+  `akioud-ai/enforcecore-demo` showing live PII redaction and audit trail
+  in the browser, no install required.  Drive traffic from LangChain cookbook.
+- **`enforcecore init` CLI command** — one-command project scaffolding:
+  `enforcecore init myproject` generates a minimal `policy.yaml`, `.env.example`,
+  and a `quickstart.py` pre-configured for their detected framework.
 
 ### v2.0.0 — Distributed Enforcement
 
