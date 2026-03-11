@@ -63,9 +63,9 @@ class EnforceCoreCallbackHandler:
     * **Merkle-chained audit** — every event is logged to a tamper-proof
       audit trail.
 
-    The handler inherits from LangChain's ``BaseCallbackHandler`` so it
-    works anywhere LangChain accepts callbacks: LLMs, chains, agents,
-    retrievers.
+    The handler implements LangChain's ``BaseCallbackHandler`` protocol
+    via duck typing, so it works anywhere LangChain accepts callbacks:
+    LLMs, chains, agents, retrievers.
 
     Args:
         policy: A YAML policy path, :class:`Policy` object, or ``None``
@@ -273,11 +273,12 @@ class EnforceCoreCallbackHandler:
                 redactions=total_redacted,
                 overhead_ms=round(elapsed, 2),
             )
-            self._record_audit(
-                event_type="llm_start",
-                input_redactions=total_redacted,
-                overhead_ms=round(elapsed, 2),
-            )
+
+        self._record_audit(
+            event_type="llm_start",
+            input_redactions=total_redacted,
+            overhead_ms=round(elapsed, 2),
+        )
 
     def on_llm_end(self, response: Any, **kwargs: Any) -> None:
         """Called when an LLM finishes running.
@@ -342,6 +343,7 @@ class EnforceCoreCallbackHandler:
         """
         self._total_events += 1
         if not self._redact_inputs or self._redactor is None:
+            self._record_audit(event_type="chain_start")
             return
 
         total_redacted = 0
@@ -353,6 +355,10 @@ class EnforceCoreCallbackHandler:
                     total_redacted += count
 
         self._total_input_redactions += total_redacted
+        self._record_audit(
+            event_type="chain_start",
+            input_redactions=total_redacted,
+        )
 
     def on_chain_end(self, outputs: dict[str, Any], **kwargs: Any) -> None:
         """Called when a chain finishes running.
@@ -361,6 +367,7 @@ class EnforceCoreCallbackHandler:
         """
         self._total_events += 1
         if not self._redact_outputs or self._redactor is None:
+            self._record_audit(event_type="chain_end")
             return
 
         total_redacted = 0
@@ -372,6 +379,10 @@ class EnforceCoreCallbackHandler:
                     total_redacted += count
 
         self._total_output_redactions += total_redacted
+        self._record_audit(
+            event_type="chain_end",
+            output_redactions=total_redacted,
+        )
 
     def on_tool_start(
         self,
@@ -404,11 +415,19 @@ class EnforceCoreCallbackHandler:
             self._engine.raise_if_blocked(pre, ctx)
 
         # Redact PII in tool input
+        input_redactions = 0
         if self._redact_inputs and self._redactor is not None:
             # Note: input_str is a parameter, we can't mutate it in-place
             # but we log the redaction for audit purposes
-            _, count = self._redact_text(input_str)
-            self._total_input_redactions += count
+            _, input_redactions = self._redact_text(input_str)
+            self._total_input_redactions += input_redactions
+
+        self._record_audit(
+            event_type="tool_start",
+            tool_name=tool_name,
+            decision="allowed",
+            input_redactions=input_redactions,
+        )
 
     def on_tool_end(self, output: str, **kwargs: Any) -> None:
         """Called when a tool finishes successfully.
