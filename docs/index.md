@@ -32,7 +32,7 @@ async def search_web(query: str) -> str:
 | 💰 **Cost & Resource Guard** | Budget tracking, time limits, memory limits, kill switch |
 | 🌐 **Network Control** | Domain allow/deny lists with wildcard support |
 | ⚡ **Rate Limiting** | Sliding-window per-tool and global rate limits |
-| 🔌 **Framework Integrations** | LangGraph, CrewAI, AutoGen adapters |
+| 🔌 **Framework Integrations** | LangChain callback handler, LangGraph, CrewAI, AutoGen adapters |
 | 📊 **OpenTelemetry** | Traces, metrics, and spans for observability |
 | 🧪 **Evaluation Suite** | 26 adversarial scenarios across 11 threat categories + benchmarks |
 | 🔌 **Plugin Ecosystem** | Custom guards, redactors, and audit backends via PyPI entry-points |

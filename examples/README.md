@@ -7,6 +7,10 @@ This directory contains working examples demonstrating how to use EnforceCore wi
 | File | Description | Requires |
 |---|---|---|
 | `quickstart.py` | Minimal example — enforce a single tool call | enforcecore |
+| `quickstart_langchain.py` | LangChain `EnforceCoreCallbackHandler` — PII redaction + tool policy via callbacks | enforcecore |
+| `quickstart_langgraph.py` | Enforce tools inside a LangGraph agent | enforcecore |
+| `quickstart_crewai.py` | Enforce tools inside a CrewAI agent | enforcecore |
+| `quickstart_autogen.py` | Enforce tools inside an AutoGen agent | enforcecore |
 | `pii_redaction.py` | PII detection, redaction strategies, pipeline integration | enforcecore |
 | `audit_trail.py` | Merkle-chained audit trail — verification & tamper detection | enforcecore |
 | `resource_guard.py` | Time limits, cost budgets, kill switch | enforcecore |

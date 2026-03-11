@@ -70,7 +70,7 @@ async def search_web(query: str) -> str:
 
 ```
   ┌───────────────────────────────────────────────────────────────┐
-  │        Agent  (LangGraph · CrewAI · AutoGen · Python)         │
+  │   Agent  (LangChain · LangGraph · CrewAI · AutoGen · Python)    │
   └───────────────────────────────┬───────────────────────────────┘
                                   │  tool_call(args)
                                   ▼
@@ -199,6 +199,7 @@ EnforceCore works with **any** Python-based agent system — no lock-in:
 | Framework | Status | Example |
 |---|---|---|
 | **Plain Python** | ✅ Available | `@enforce()` decorator |
+| **LangChain** | ✅ Available | `callbacks=[handler]` |
 | **LangGraph** | ✅ Available | `@enforced_tool(policy="...")` |
 | **CrewAI** | ✅ Available | `@enforced_tool(policy="...")` |
 | **AutoGen** | ✅ Available | `@enforced_tool(policy="...")` |
@@ -226,6 +227,14 @@ from enforcecore.integrations.autogen import enforced_tool
 @enforced_tool(policy="policy.yaml", description="Search the web")
 async def search(query: str) -> str:
     return await web_search(query)
+
+# LangChain — passive callback handler (works with any LangChain LLM)
+from enforcecore.integrations.langchain import EnforceCoreCallbackHandler
+
+handler = EnforceCoreCallbackHandler(policy="policy.yaml")
+llm = ChatOpenAI(callbacks=[handler])
+result = llm.invoke("My SSN is 123-45-6789")
+# SSN is redacted before the LLM sees it; audit entry created automatically
 ```
 
 > No hard dependencies on any framework — adapters use optional imports.
@@ -282,7 +291,10 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.9.0** | Plugin Ecosystem (custom guards/redactors from PyPI — `enforcecore plugin list`) | ✅ Shipped |
 | **v1.10.0** | Quality Hardening + Async Streaming Enforcement (`stream_enforce`) | ✅ Shipped |
 | **v1.11.0** | AsyncIO Streaming Enforcement (GA), 2324 tests, 97% coverage | ✅ Shipped |
-| **v1.11.1** | Patch — fix NER example crash, corrected stale docs (2324 tests, 97% coverage) | ✅ **Latest** |
+| **v1.11.1** | Patch — fix NER example crash, corrected stale docs | ✅ Shipped |
+| **v1.12.0** | Merkle Bridge — external hash injection + linkage-only chain verification | ✅ Shipped |
+| **v1.13.0** | LangChain `EnforceCoreCallbackHandler` — passive PII redaction + audit on every LLM call | ✅ **Latest** |
+| **v1.14.0** | Upstream PR to `langchain-community` — distribution to 92M+ monthly users | 🔜 Next |
 | **v2.0.0** | Distributed Enforcement (multi-node, global Merkle root) | 📋 Planned |
 
 See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.
@@ -383,7 +395,7 @@ pytest --cov=enforcecore
 ruff check . && ruff format --check .
 ```
 
-**Current stats:** 2324 tests · 97% coverage · 0 lint errors
+**Current stats:** 2,366 tests · 97% coverage · 0 lint errors
 
 ---
 
