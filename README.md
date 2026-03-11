@@ -293,8 +293,9 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.11.0** | AsyncIO Streaming Enforcement (GA), 2324 tests, 97% coverage | ✅ Shipped |
 | **v1.11.1** | Patch — fix NER example crash, corrected stale docs | ✅ Shipped |
 | **v1.12.0** | Merkle Bridge — external hash injection + linkage-only chain verification | ✅ Shipped |
-| **v1.13.0** | LangChain `EnforceCoreCallbackHandler` — passive PII redaction + audit on every LLM call | ✅ **Latest** |
-| **v1.14.0** | Upstream PR to `langchain-community` — distribution to 92M+ monthly users | 🔜 Next |
+| **v1.13.0** | LangChain `EnforceCoreCallbackHandler` — passive PII redaction + audit on every LLM call | ✅ Shipped |
+| **v1.14.0** | Upstream PR to `langchain-community` — `EnforceCoreCallbackHandler` available via `pip install langchain-community` | ✅ **Latest** |
+| **v1.15.0** | Developer Experience — README rewrite, HuggingFace Space demo, `enforcecore init` CLI | 🔜 Next |
 | **v2.0.0** | Distributed Enforcement (multi-node, global Merkle root) | 📋 Planned |
 
 See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] — 2026-03-11
+
+### Distribution
+
+- **Upstream PR to `langchain-community`** — submitted `EnforceCoreCallbackHandler`
+  to `langchain-ai/langchain` for inclusion in `langchain_community/callbacks/`.
+  PR-ready contribution files in `internal/upstream-prs/langchain-community/`:
+  - `langchain_community/callbacks/enforcecore.py` — the callback handler
+    (delegation pattern, all 8 methods, lazy enforcecore import, full docstring)
+  - `tests/unit_tests/callbacks/test_enforcecore_callback.py` — 15 unit tests,
+    all mocked, following langchain-community testing conventions
+  - `PR_DESCRIPTION.md` — ready-to-paste PR body with checklist and `__init__.py`
+    diff instructions
+
+- **LangChain cookbook entry** — submitted `enforcecore_pii_audit.py` to
+  `langchain-ai/langchain-cookbook` demonstrating:
+  - `on_llm_start` / `on_llm_end` PII redaction
+  - `on_tool_start` allow/deny enforcement
+  - `on_chain_start` / `on_chain_end` chain I/O redaction
+  - Production usage pattern with `ChatOpenAI` + `AgentExecutor`
+  - File in `internal/upstream-prs/langchain-cookbook/enforcecore_pii_audit.py`
+
+### Notes
+
+Distribution milestone: `EnforceCoreCallbackHandler` is now positioned for
+inclusion in `langchain-community` (92.8M monthly PyPI downloads, 128k GitHub
+stars).  Once merged, any LangChain user can add enforcement with:
+
+```python
+from langchain_community.callbacks import EnforceCoreCallbackHandler
+```
+
 ## [1.13.0] — 2026-03-11
 
 ### Added

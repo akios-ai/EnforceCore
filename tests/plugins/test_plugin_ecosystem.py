@@ -764,7 +764,7 @@ class TestCLIPluginInfo:
 
 class TestPublicAPIPluginEcosystem:
     def test_version_is_1111(self) -> None:
-        assert enforcecore.__version__ == "1.13.0"
+        assert enforcecore.__version__ == "1.14.0"
 
     def test_all_count_is_63(self) -> None:
         assert len(enforcecore.__all__) == 63, (
