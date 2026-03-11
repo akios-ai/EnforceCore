@@ -280,7 +280,7 @@ CI-verified on macOS (Python 3.11, 3.12, 3.13).
 
 ## Upcoming
 
-### v1.11.0 — AsyncIO Streaming Enforcement ✅ **Latest**
+### v1.11.0 — AsyncIO Streaming Enforcement ✅
 
 Token-by-token enforcement for streaming LLM outputs — the dominant consumption
 pattern for production AI agents:
@@ -296,6 +296,72 @@ pattern for production AI agents:
 - Framework streaming adapters — LangChain `StreamingCallbackHandler`,
   AutoGen `stream_reply`, LangGraph `astream` integration
 - Zero-buffer mode — configurable lookahead window; no full-response buffering
+
+### v1.11.1 — Eval Polish + NER Fix ✅
+
+Patch release:
+
+- Fixed NER example crash at startup (missing model download step)
+- Corrected stale documentation links and version references across all docs
+- 2,347 tests, 97% coverage
+
+### v1.12.0 — Merkle Bridge ✅
+
+Allow external systems (AKIOS, custom pipelines) to inject pre-computed
+Merkle hashes into the audit trail without recomputation:
+
+- **`AuditStore.record(external_hash=..., external_prev_hash=...)`** — store
+  a pre-computed hash verbatim, chaining it to the previous entry.  Required
+  when the upstream system uses a different hashing scheme (e.g. AKIOS binary
+  Merkle tree).
+- **`AuditStore.verify_chain(skip_entry_hash=True)`** — linkage-only
+  verification that checks chain continuity without recomputing individual
+  entry hashes from payload.  Used when entries were written with
+  `external_hash`.
+- **`verify_trail(path, skip_entry_hash=True)`** — same flag exposed on the
+  `Auditor`-level convenience function.
+- All three backends (JSONL, SQLite, PostgreSQL) updated.
+- 23 new tests; 2,347 total, 97% coverage.
+
+### v1.13.0 — LangChain Callback Handler ✅ **Latest**
+
+First-class passive integration with LangChain — the framework with 92.8M
+PyPI downloads/month and 128k GitHub stars:
+
+- **`EnforceCoreCallbackHandler`** — drop-in LangChain callback that applies
+  PII redaction, policy enforcement, and Merkle-chained audit to every LLM
+  call, chain invocation, and tool execution automatically.
+- **`on_llm_start` / `on_llm_end`** — redacts PII from prompts before the
+  LLM sees them and from response generations after.
+- **`on_tool_start`** — enforces tool allow/deny policy; raises
+  `ToolDeniedError` if the tool is blocked.
+- **`on_chain_start` / `on_chain_end`** — redacts PII in chain inputs/outputs.
+- **`on_llm_error` / `on_tool_error`** — logs errors to the Merkle-chained
+  audit trail.
+- Event counters: `total_input_redactions`, `total_output_redactions`,
+  `total_events`.
+- Configurable flags: `redact_inputs`, `redact_outputs`, `audit`.
+- 19 new tests; 2,366 total, 97% coverage.
+
+```python
+from enforcecore.integrations.langchain import EnforceCoreCallbackHandler
+
+handler = EnforceCoreCallbackHandler(policy="policy.yaml")
+llm = ChatOpenAI(callbacks=[handler])
+result = llm.invoke("My SSN is 123-45-6789")
+# SSN is redacted before the LLM sees it; audit entry created automatically
+```
+
+---
+
+## Next Up
+
+### v1.14.0 — Upstream PR to `langchain-community` 🔜
+
+Submit `EnforceCoreCallbackHandler` to `langchain-ai/langchain` as an official
+community integration — putting EnforceCore in front of 92.8M monthly PyPI
+users automatically.  Scope: open the PR, write the integration guide, and
+submit to the `langchain-community` cookbook.
 
 ### v2.0.0 — Distributed Enforcement
 

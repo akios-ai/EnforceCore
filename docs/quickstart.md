@@ -82,6 +82,41 @@ enforcecore dry-run policies/strict.yaml search_web
 enforcecore eval policies/strict.yaml
 ```
 
+## LangChain Integration
+
+Add PII redaction, policy enforcement, and audit to any LangChain LLM with a
+single callback — no changes to your chain topology required.
+
+```bash
+pip install langchain-core
+```
+
+```python
+from enforcecore.integrations.langchain import EnforceCoreCallbackHandler
+
+handler = EnforceCoreCallbackHandler(policy="policies/strict.yaml")
+
+# Attach to any LangChain LLM
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(callbacks=[handler])
+result = llm.invoke("Contact alice@example.com for details")
+# Email is automatically redacted; audit entry written
+
+# Or attach to an entire agent / chain
+from langchain.agents import AgentExecutor
+agent = AgentExecutor(agent=my_agent, tools=tools, callbacks=[handler])
+```
+
+What happens automatically on every call:
+
+- **`on_llm_start`** — PII in prompts is redacted before the LLM sees them
+- **`on_llm_end`** — PII in LLM responses is redacted before your code sees them
+- **`on_tool_start`** — tool name is checked against `allowed_tools` / `denied_tools`; raises `ToolDeniedError` if blocked
+- **`on_chain_start` / `on_chain_end`** — PII in chain inputs/outputs is redacted
+- **Audit** — every event is Merkle-chained to `audit_logs/trail.jsonl`
+
+See [`examples/quickstart_langchain.py`](../examples/quickstart_langchain.py) for a fully runnable demo (no API key needed).
+
 ## Next Steps
 
 - Read the [Architecture](architecture.md) to understand how enforcement works
