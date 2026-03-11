@@ -18,7 +18,7 @@ Run from the repo root:
 from __future__ import annotations
 
 from enforcecore.core.policy import PIIRedactionConfig, Policy, PolicyRules
-from enforcecore.core.types import RedactionStrategy, ToolDeniedError
+from enforcecore.core.types import RedactionStrategy
 from enforcecore.redactor.engine import Redactor
 
 # ---------------------------------------------------------------------------
