@@ -63,6 +63,55 @@ class MockStructuredTool:
         )
 
 
+class MockBaseCallbackHandler:
+    """Simulates ``langchain_core.callbacks.base.BaseCallbackHandler``.
+
+    Provides no-op stubs for every callback method that LangChain defines.
+    Our ``EnforceCoreCallbackHandler`` subclasses this in tests.
+    """
+
+    def on_llm_start(self, serialized: dict[str, Any], prompts: list[str], **kwargs: Any) -> None:
+        pass
+
+    def on_llm_end(self, response: Any, **kwargs: Any) -> None:
+        pass
+
+    def on_llm_error(self, error: BaseException, **kwargs: Any) -> None:
+        pass
+
+    def on_chain_start(
+        self, serialized: dict[str, Any], inputs: dict[str, Any], **kwargs: Any
+    ) -> None:
+        pass
+
+    def on_chain_end(self, outputs: dict[str, Any], **kwargs: Any) -> None:
+        pass
+
+    def on_tool_start(self, serialized: dict[str, Any], input_str: str, **kwargs: Any) -> None:
+        pass
+
+    def on_tool_end(self, output: str, **kwargs: Any) -> None:
+        pass
+
+    def on_tool_error(self, error: BaseException, **kwargs: Any) -> None:
+        pass
+
+
+class MockLLMResult:
+    """Simulates ``langchain_core.outputs.LLMResult``."""
+
+    def __init__(self, generations: list[list[Any]] | None = None) -> None:
+        self.generations = generations or []
+        self.llm_output: dict[str, Any] | None = None
+
+
+class MockGeneration:
+    """Simulates ``langchain_core.outputs.Generation``."""
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
 @pytest.fixture
 def mock_langchain(monkeypatch: pytest.MonkeyPatch) -> types.ModuleType:
     """Install a mock ``langchain_core`` into ``sys.modules``."""
@@ -74,6 +123,28 @@ def mock_langchain(monkeypatch: pytest.MonkeyPatch) -> types.ModuleType:
     monkeypatch.setitem(sys.modules, "langchain_core", lc)
     monkeypatch.setitem(sys.modules, "langchain_core.tools", lc_tools)
     return lc_tools
+
+
+@pytest.fixture
+def mock_langchain_callbacks(monkeypatch: pytest.MonkeyPatch) -> types.ModuleType:
+    """Install mock ``langchain_core`` with callbacks into ``sys.modules``."""
+    lc = types.ModuleType("langchain_core")
+    lc_callbacks = types.ModuleType("langchain_core.callbacks")
+    lc_callbacks_base = types.ModuleType("langchain_core.callbacks.base")
+    lc_callbacks_base.BaseCallbackHandler = MockBaseCallbackHandler  # type: ignore[attr-defined]
+    lc_callbacks.base = lc_callbacks_base  # type: ignore[attr-defined]
+    lc_callbacks.BaseCallbackHandler = MockBaseCallbackHandler  # type: ignore[attr-defined]
+    lc.callbacks = lc_callbacks  # type: ignore[attr-defined]
+
+    lc_tools = types.ModuleType("langchain_core.tools")
+    lc_tools.StructuredTool = MockStructuredTool  # type: ignore[attr-defined]
+    lc.tools = lc_tools  # type: ignore[attr-defined]
+
+    monkeypatch.setitem(sys.modules, "langchain_core", lc)
+    monkeypatch.setitem(sys.modules, "langchain_core.callbacks", lc_callbacks)
+    monkeypatch.setitem(sys.modules, "langchain_core.callbacks.base", lc_callbacks_base)
+    monkeypatch.setitem(sys.modules, "langchain_core.tools", lc_tools)
+    return lc_callbacks_base
 
 
 # ---------------------------------------------------------------------------

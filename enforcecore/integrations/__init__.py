@@ -9,6 +9,7 @@ function — importing the module itself always succeeds.
 
 Available adapters::
 
+    from enforcecore.integrations.langchain import EnforceCoreCallbackHandler  # LangChain
     from enforcecore.integrations.langgraph import enforced_tool   # LangChain / LangGraph
     from enforcecore.integrations.crewai import enforced_tool      # CrewAI
     from enforcecore.integrations.autogen import enforced_tool     # AutoGen v0.4+

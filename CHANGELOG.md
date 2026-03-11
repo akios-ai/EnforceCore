@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] — 2026-03-11
+
+### Added
+
+- **LangChain callback handler** — `EnforceCoreCallbackHandler` for automatic
+  PII redaction, policy enforcement, and Merkle-chained audit on every LangChain
+  LLM call, chain invocation, and tool execution.  Drop-in integration via
+  `callbacks=[handler]` — works with any LangChain LLM (ChatOpenAI, ChatAnthropic,
+  Ollama, etc.).  New module: `enforcecore/integrations/langchain.py`.
+
+  - **`on_llm_start`** — redacts PII from prompts before the LLM sees them
+  - **`on_llm_end`** — redacts PII from LLM response generations
+  - **`on_chain_start` / `on_chain_end`** — redacts PII in chain inputs/outputs
+  - **`on_tool_start`** — enforces tool allow/deny policy
+  - **`on_llm_error` / `on_tool_error`** — logs errors to audit trail
+  - Configurable: `redact_inputs`, `redact_outputs`, `audit` flags
+  - Event counters: `total_input_redactions`, `total_output_redactions`, `total_events`
+
+- **`examples/quickstart_langchain.py`** — copy-paste example showing the callback
+  handler in action (no API key required).
+
+- **18 new tests** in `tests/integrations/test_langchain.py` covering import safety,
+  PII redaction, tool policy enforcement, error handling, chain callbacks, and
+  configuration.
+
+### Notes
+
+LangChain has ~92.8M PyPI downloads/month and 128k GitHub stars — this is the
+highest-leverage distribution action for EnforceCore.  The callback handler is
+the integration pattern that will be submitted upstream to `langchain-community`
+in v1.14.0.
+
 ## [1.12.0] — 2026-02-27
 
 ### Added
