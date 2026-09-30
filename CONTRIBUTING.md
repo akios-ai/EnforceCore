@@ -11,7 +11,7 @@ Be respectful, constructive, and professional. We're building a security-critica
 
 ### Reporting Issues
 
-- **Security vulnerabilities:** Email security@akios.ai privately. Do NOT open a public issue.
+- **Security vulnerabilities:** No security reports are handled for this project (see [SECURITY.md](SECURITY.md)).
 - **Bugs:** Open a GitHub issue with a minimal reproduction case.
 - **Feature requests:** Open a GitHub issue with a clear description of the use case.
 

@@ -4,9 +4,13 @@
 
 <h1 align="center">EnforceCore</h1>
 
+## Project status: discontinued
+
+EnforceCore is discontinued. It is no longer maintained, receives no fixes, including security fixes, and is not suitable for production use. No support is provided. The package and the source code remain available as they are, under their licence and without any warranty. Work on agent containment continues in AKIOS.
+
 <p align="center">
   <strong>The runtime enforcement layer for agentic AI systems.</strong><br />
-  Policy-driven · Fail-closed · Tamper-proof audit trails
+  Policy-driven · Fail-closed · Tamper-evident audit trails
 </p>
 
 <p align="center">
@@ -90,7 +94,7 @@ async def search_web(query: str) -> str:
   ║                                                    │          ║
   ║  ┌─────────────────────────────────────────────────▼───────┐  ║
   ║  │                       Audit Trail                       │  ║
-  ║  │          Merkle chain · tamper-proof · always logs      │  ║
+  ║  │         Merkle chain · tamper-evident · always logs     │  ║
   ║  └─────────────────────────────────────────────────────────┘  ║
   ╚═══════════════════════════════════════════════════════════════╝
                                   │
@@ -104,7 +108,7 @@ async def search_web(query: str) -> str:
 <tr><td><strong>Policy Engine</strong></td><td>Declarative YAML policies — allowed tools, denied tools, violation handling</td></tr>
 <tr><td><strong>Enforcer</strong></td><td>Intercepts every call, evaluates policy, blocks or allows</td></tr>
 <tr><td><strong>Redactor</strong></td><td>Real-time PII detection and redaction on inputs &amp; outputs</td></tr>
-<tr><td><strong>Auditor</strong></td><td>Tamper-proof Merkle-tree audit trail for every enforced call</td></tr>
+<tr><td><strong>Auditor</strong></td><td>Tamper-evident Merkle-tree audit trail for every enforced call</td></tr>
 <tr><td><strong>Guard</strong></td><td>Resource limits (time, memory, cost) with hard kill switch</td></tr>
 </table>
 
@@ -295,10 +299,6 @@ Negligible compared to tool call latency (100ms–10s for API calls).
 | **v1.12.0** | Merkle Bridge — external hash injection + linkage-only chain verification | ✅ Shipped |
 | **v1.13.0** | LangChain `EnforceCoreCallbackHandler` — passive PII redaction + audit on every LLM call | ✅ Shipped |
 | **v1.14.0** | Upstream PR to `langchain-community` — `EnforceCoreCallbackHandler` available via `pip install langchain-community` | ✅ **Latest** |
-| **v1.15.0** | Developer Experience — README rewrite, HuggingFace Space demo, `enforcecore init` CLI | 🔜 Next |
-| **v2.0.0** | Distributed Enforcement (multi-node, global Merkle root) | 📋 Planned |
-
-See [docs/roadmap.md](docs/roadmap.md) for the full roadmap including component details and future directions.
 
 ---
 

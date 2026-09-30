@@ -93,9 +93,9 @@ Sections 7 and 8, which are incorporated here by reference.
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability in EnforceCore, please report it
-responsibly by emailing **security@akios.ai**. Do not open a public GitHub
-issue for security vulnerabilities.
+EnforceCore is discontinued. It is no longer maintained, receives no fixes,
+including security fixes, and is not suitable for production use. No security
+reports are handled for this project.
 
 ---
 
